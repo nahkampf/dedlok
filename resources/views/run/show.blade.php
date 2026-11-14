@@ -6,79 +6,9 @@
 
 @section('content')
 
-{{-- TWO COLUMNS WHEN THERE IS ROOM (the kit's .map-split): the run itself on the left (overview, mission, map,
-     actions) and what is watching it on the right, narrower (the trace, the ICE, the log). One column below that. --}}
-<div class="map-split" style="margin-top:0">
-<div class="map-split__body">
-<div style="min-width:0">
-
-{{-- THE ONLY SCREEN A PLAYER IN A RUN CAN REACH.
-
-     EnsureRunIsFinished sends every other request here, which is what replaces
-     atomicity: signing out does not end a run, it postpones a turn. So this
-     page has to be able to stand alone — there is no rail out of it, and the
-     only way off it is to finish what was started. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
-    <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.heading') }}</h2>
-        <div class="spacer"></div>
-        {{-- Where the run has got to, and the one number to watch: large, and green because it is
-             progress rather than danger (the trace below is the danger). --}}
-        <span class="num" style="font-size:var(--fs-xl);line-height:1;color:var(--ok)">{{ Text::get('cyberspace.run.turn', ['turn' => $run->turn]) }}</span>
-    </div>
-
-    {{-- The target, drawn from the RUN and not from the system: the row carries the address and the
-         position it went in at, so a system that has since moved does not change what this run was
-         against. --}}
-    <div style="padding:var(--s-3) 0">
-        <div class="card__stats" style="padding:0;border:0">
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.coordinates') }}</span>
-                <b class="num">{{ $run->position() }}</b>
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.address') }}</span>
-                <b><x-address :address="$run->address" /></b>
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.type') }}</span>
-                <b>{{ $system?->type->label() ?? '—' }}</b>
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.name') }}</span>
-                @if ($system)
-                    <b>{{ $system->displayName() }}</b>
-                @else
-                    {{-- Burned or relocated out from under them. Nothing here cancels the run — that is
-                         the simulator's, and it is why the row carries an address rather than a foreign key. --}}
-                    <span class="tag tag--warn">{{ Text::get('cyberspace.run.ended.cancelled') }}</span>
-                @endif
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.run_type') }}</span>
-                <b>{{ $run->purpose->label() }}@if ($run->backdoorKind()) · {{ $run->backdoorKind()->label() }}@endif</b>
-            </div>
-            {{-- THIS CHARACTER'S STANDING INSTRUCTIONS, set once from the map. Zero is off. --}}
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.threshold_trace') }}</span>
-                <b class="num">{{ $character->egress_trace_at > 0 ? $character->egress_trace_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.threshold_si') }}</span>
-                <b class="num">{{ $character->egress_si_at > 0 ? $character->egress_si_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
-            </div>
-        </div>
-    </div>
-</div>
-
-{{-- WHAT THEY CAME FOR: every open mission of theirs against this system, by job and client. --}}
-@foreach ($missions as $mission)
-    <div class="callout" style="margin-top:var(--s-4)">
-        <p style="margin:0">{{ Text::get('cyberspace.run.mission', ['action' => $mission->action->label(), 'entity' => $mission->entity?->name ?? '']) }}</p>
-        <p class="micro" style="margin:var(--s-1) 0 0;color:var(--ink-2)">{{ $mission->action->description() }}</p>
-    </div>
-@endforeach
-
+{{-- THE MAP ON TOP, the whole width: it is the run. Then two columns when there is room (the kit's .map-split): what
+     the runner does on the left (mission, actions) and what is watching it on the right, narrower (the overview, folded
+     as they leave it, the trace, the ICE, the log). One column below that. --}}
 {{-- A TREE RUN (docs/RUN_TREE.md): where you stand in the system, what you have found of it, and the noise bar. The bar
      is a meter against the IDS when the runner's scan read it, and only a count of points when it did not: how loud
      they have been, not how close the alarm is. --}}
@@ -175,6 +105,17 @@
                     :waiting="$waiting ? ($run->pending_action === 'move' ? (string) $run->pending_node : '-') : ''" />
     </div>
 @endif
+
+<div class="map-split" style="margin-top:0">
+<div class="map-split__body">
+<div style="min-width:0">
+{{-- WHAT THEY CAME FOR: every open mission of theirs against this system, by job and client. --}}
+@foreach ($missions as $mission)
+    <div class="callout" style="margin-top:var(--s-4)">
+        <p style="margin:0">{{ Text::get('cyberspace.run.mission', ['action' => $mission->action->label(), 'entity' => $mission->entity?->name ?? '']) }}</p>
+        <p class="micro" style="margin:var(--s-1) 0 0;color:var(--ink-2)">{{ $mission->action->description() }}</p>
+    </div>
+@endforeach
 
 {{-- WRITTEN ONCE, SHOWN TWO WAYS. The kit clones this into the floating
      inspector on hover and into a modal on click. --}}
@@ -528,6 +469,66 @@
 
 </div>
 <aside class="map-side">
+{{-- THE ONLY SCREEN A PLAYER IN A RUN CAN REACH.
+
+     EnsureRunIsFinished sends every other request here, which is what replaces
+     atomicity: signing out does not end a run, it postpones a turn. So this
+     page has to be able to stand alone — there is no rail out of it, and the
+     only way off it is to finish what was started. --}}
+<details class="panel panel--snug" style="margin-top:var(--s-4)" open data-remember="run-overview">
+    <summary class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.heading') }}</h2>
+        <div class="spacer"></div>
+        {{-- Where the run has got to, and the one number to watch: large, and green because it is
+             progress rather than danger (the trace below is the danger). --}}
+        <span class="num" style="font-size:var(--fs-xl);line-height:1;color:var(--ok)">{{ Text::get('cyberspace.run.turn', ['turn' => $run->turn]) }}</span>
+    </summary>
+
+    {{-- The target, drawn from the RUN and not from the system: the row carries the address and the
+         position it went in at, so a system that has since moved does not change what this run was
+         against. --}}
+    <div style="padding:var(--s-3) 0">
+        <div class="card__stats" style="padding:0;border:0">
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.coordinates') }}</span>
+                <b class="num">{{ $run->position() }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.address') }}</span>
+                <b><x-address :address="$run->address" /></b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.type') }}</span>
+                <b>{{ $system?->type->label() ?? '—' }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.name') }}</span>
+                @if ($system)
+                    {{-- The one long value, in a narrow column: it wraps, right-aligned. --}}
+                    <b style="white-space:normal;text-align:right;min-width:0">{{ $system->displayName() }}</b>
+                @else
+                    {{-- Burned or relocated out from under them. Nothing here cancels the run — that is
+                         the simulator's, and it is why the row carries an address rather than a foreign key. --}}
+                    <span class="tag tag--warn">{{ Text::get('cyberspace.run.ended.cancelled') }}</span>
+                @endif
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.run_type') }}</span>
+                <b>{{ $run->purpose->label() }}@if ($run->backdoorKind()) · {{ $run->backdoorKind()->label() }}@endif</b>
+            </div>
+            {{-- THIS CHARACTER'S STANDING INSTRUCTIONS, set once from the map. Zero is off. --}}
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.threshold_trace') }}</span>
+                <b class="num">{{ $character->egress_trace_at > 0 ? $character->egress_trace_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.threshold_si') }}</span>
+                <b class="num">{{ $character->egress_si_at > 0 ? $character->egress_si_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
+            </div>
+        </div>
+    </div>
+</details>
+
 {{-- THE TRACE, AND THE ONE QUESTION IT ANSWERS: is it time to leave.
 
      Drawn as the chain it actually is — the machine at one end, you at the

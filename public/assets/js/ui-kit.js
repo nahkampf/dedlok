@@ -686,6 +686,19 @@
     });
   });
 
+  /* A fold that remembers: <details data-remember="key"> keeps its open state in this browser across page loads (the
+     run screen reloads after every turn). Storage that fails leaves the markup's own default. */
+  document.querySelectorAll("details[data-remember]").forEach((d) => {
+    const key = "fold:" + d.dataset.remember;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved !== null) d.open = saved === "1";
+    } catch (e) { /* the default stands */ }
+    d.addEventListener("toggle", () => {
+      try { localStorage.setItem(key, d.open ? "1" : "0"); } catch (e) { /* not remembered */ }
+    });
+  });
+
   /* Unfolding an inbox message reads it: <details data-mark-read="URL">. Once, on the first
      open, with keepalive like the patch notes. The row quietens and the rail's count comes
      down, so the page agrees with the server without a reload. */
