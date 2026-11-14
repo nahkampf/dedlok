@@ -22,6 +22,7 @@ use App\Cyberspace\Tree\RunTree;
 use App\Cyberspace\Tree\TrapEffect;
 use App\Cyberspace\Tree\TreeView;
 use App\Models\Character;
+use App\Models\CharacterSkill;
 use App\Models\Entity;
 use App\Models\EntityBook;
 use App\Models\Ice;
@@ -908,6 +909,32 @@ final class TreeRunTest extends TestCase
 
         $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Disarm, node: $pots[0]);
         $this->assertSame('spent', $run->fresh()->trapStates()[$pots[0]]);
+    }
+
+    public function test_an_egress_tunnel_makes_its_node_an_exit_easier_by_its_strength(): void
+    {
+        $tree = $this->grade7();
+        $item = Item::factory()->program(ProgramKind::Script, qflops: 0.1, memory: 0.1, storage: 0.1, background: false, lifetime: 3600)->create();
+        $item->program->forceFill(['tunnel_strength' => 4])->save();
+        InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1]);
+        $run = $this->begin();
+        $node = $tree->path($tree->entry, $tree->core)[2];
+        $run->forceFill(['node' => $node, 'sentries' => []])->save();
+
+        $this->assertSame(RunRefusal::NoTunnel, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Tunnel)->refusal, 'not without the skill');
+        CharacterSkill::query()->create(['character_id' => $this->character->id, 'skill_id' => Skill::query()->where('slug', 'egress_tunneling')->value('id'), 'attained_level' => 1, 'skill_points' => 0]);
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Egress)->refusal);
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Tunnel);
+        $run = $run->fresh();
+        $this->assertNotNull($run->tunnel);
+        $this->assertSame([$node], $run->tunnelNodes());
+        $report = app(Simulator::class)->egressReport($this->character->fresh(), $run);
+        $this->assertSame(4, $report->tunnel);
+        $this->assertSame(13 - 4, $report->gradeDifficulty, "grade 6's 13, less the strength");
+
+        $this->assertNull($this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Egress)->refusal);
+        $this->assertSame(0, InventoryItem::query()->where('item_id', $item->id)->count(), 'spent with the run');
     }
 
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void

@@ -112,6 +112,9 @@ enum RunAction: string
     /** A tree run: shut down the ICE controller you stand on, with the OS roll. It posts no more sentries. */
     case Shutdown = 'shutdown';
 
+    /** A tree run: start an Egress Tunnel from the stash on the node you stand on (not the core): an exit while you stay. */
+    case Tunnel = 'tunnel';
+
     /** A tree run: Crash Jackout. Out from anywhere, for certain, at a price in Synaptic Integrity. */
     case Jackout = 'jackout';
 

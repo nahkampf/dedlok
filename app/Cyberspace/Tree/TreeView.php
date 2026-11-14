@@ -64,6 +64,9 @@ final readonly class TreeView
         public array $sentriesHere = [],
         // Standing on the ICE controller while it runs: the chance a Shut down's OS roll lands. Null otherwise.
         public ?float $shutdownChance = null,
+        // An Egress Tunnel may be started here (not the core, none of theirs up, a script and the skill); theirs is up.
+        public bool $canTunnel = false,
+        public bool $tunnelling = false,
     ) {}
 
     /** What a node is called on the map: a trap reads as a conduit until it is found, and as one again once spent. */
@@ -148,7 +151,7 @@ final readonly class TreeView
             $links,
             $maxCol + 1,
             $lanes,
-            $tree->isExit($here),
+            $simulator->atExit($run),
             $here === $tree->core,
             $simulator->refusal($character, $run, RunAction::Nmap, null) === null,
             $simulator->noiseLevel($run),
@@ -183,6 +186,8 @@ final readonly class TreeView
                 'awake' => (bool) $s['awake'],
             ], $simulator->sentriesHere($run))),
             $simulator->controllerOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
+            $simulator->refusal($character, $run, RunAction::Tunnel, null) === null,
+            $run->tunnel !== null,
         );
     }
 

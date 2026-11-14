@@ -191,6 +191,8 @@ class ItemRequest extends FormRequest
             'nmap_reach' => $this->numberOrNull('nmap_reach'),
             // A Loopback's strength (docs/RUN_TREE.md): blank is not a Loopback.
             'loopback_strength' => $this->numberOrNull('loopback_strength'),
+            // An Egress Tunnel's strength: blank is not one.
+            'tunnel_strength' => $this->numberOrNull('tunnel_strength'),
             // A group a skill can sharpen (a Compressor): blank is none.
             'family' => $this->filled('family') ? $this->input('family') : null,
             // A Decryptor's cycle, an Assembler's reduction and a Booster's boost: stored together as `programs.produces`.
@@ -497,6 +499,9 @@ class ItemRequest extends FormRequest
                 ? ['nullable', 'integer', 'min:1', 'max:3']
                 : ['prohibited'],
             'loopback_strength' => $this->programKind() === ProgramKind::Script
+                ? ['nullable', 'integer', 'min:1', 'max:20']
+                : ['prohibited'],
+            'tunnel_strength' => $this->programKind() === ProgramKind::Script
                 ? ['nullable', 'integer', 'min:1', 'max:20']
                 : ['prohibited'],
             'family' => $this->programKind() === ProgramKind::Utility
@@ -998,7 +1003,7 @@ class ItemRequest extends FormRequest
         // is a program — the row is what says so — so none of these stay.
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
-            $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['assess_step'], $data['nmap_reach'], $data['loopback_strength'], $data['family'], $data['background_process'], $data['multithreaded'], $data['nmap_deep'],
+            $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['assess_step'], $data['nmap_reach'], $data['loopback_strength'], $data['tunnel_strength'], $data['family'], $data['background_process'], $data['multithreaded'], $data['nmap_deep'],
             $data['locates'], $data['walks'], $data['jumps'], $data['swarms'], $data['tracks'],
             $data['design_product'], $data['design_seconds'], $data['design_single_use'], $data['design_skill_id'], $data['design_skill_level'], $data['design_lines'],
             $data['program_modifiers'], $data['program_decrypts'],
@@ -1302,6 +1307,7 @@ class ItemRequest extends FormRequest
             'assess_step' => isset($data['assess_step']) ? (int) $data['assess_step'] : null,
             'nmap_reach' => isset($data['nmap_reach']) ? (int) $data['nmap_reach'] : null,
             'loopback_strength' => isset($data['loopback_strength']) ? (int) $data['loopback_strength'] : null,
+            'tunnel_strength' => isset($data['tunnel_strength']) ? (int) $data['tunnel_strength'] : null,
             'family' => $data['family'] ?? null,
             'produces' => ($produces = array_filter([
                 'cycle_minutes' => isset($data['produce_cycle_minutes']) ? (float) $data['produce_cycle_minutes'] : null,

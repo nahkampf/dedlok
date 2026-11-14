@@ -116,6 +116,9 @@
                 {{ Text::get($sentry['awake'] ? 'cyberspace.tree.sentry_awake' : 'cyberspace.tree.sentry_asleep', ['name' => $sentry['name'], 'integrity' => rtrim(rtrim(number_format($sentry['integrity'], 2), '0'), '.')]) }}
             </p>
         @endforeach
+        @if ($tree->tunnelling)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">{{ Text::get('cyberspace.tree.tunnel_holding') }}</p>
+        @endif
         @if ($tree->shutdownChance !== null)
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
                 {{ Text::get('cyberspace.tree.shutdown_chance', ['chance' => (int) round($tree->shutdownChance * 100)]) }}
@@ -289,7 +292,7 @@
         </div>
         <div class="card__stats">
             <div class="card__stat">
-                <span>{{ $egress->grade === null ? Text::get('cyberspace.run.evasion_ice_none') : Text::get($egress->port ? 'cyberspace.run.evasion_port' : 'cyberspace.run.evasion_grade', ['grade' => $egress->grade]) }}</span>
+                <span>{{ $egress->grade === null ? Text::get('cyberspace.run.evasion_ice_none') : Text::get($egress->tunnel > 0 ? 'cyberspace.run.evasion_tunnel' : ($egress->port ? 'cyberspace.run.evasion_port' : 'cyberspace.run.evasion_grade'), ['grade' => $egress->grade, 'strength' => $egress->tunnel]) }}</span>
                 <b class="num">{{ $egress->gradeDifficulty }}</b>
             </div>
             <div class="card__stat">
@@ -414,6 +417,12 @@
             @if ($tree && ! $tree->atCore && collect($tree->sentriesHere)->contains('awake', true))
                 <button type="submit" name="action" value="attack" class="btn cut">
                     {{ Text::get('cyberspace.run.action.attack') }}
+                </button>
+            @endif
+            {{-- AN EGRESS TUNNEL from the stash: this node becomes an exit while they stay. --}}
+            @if ($tree && $tree->canTunnel)
+                <button type="submit" name="action" value="tunnel" class="btn cut">
+                    {{ Text::get('cyberspace.run.action.tunnel') }}
                 </button>
             @endif
             {{-- THE ICE CONTROLLER while it runs: Shut down is its OS roll. --}}

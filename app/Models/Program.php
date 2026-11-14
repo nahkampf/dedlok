@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * storage by owning it, compute and memory only while it runs.
  */
 #[Fillable([
-    'item_id', 'kind', 'produces', 'leech_resource', 'leech_amount', 'qflops_cost', 'memory_cost', 'storage_size', 'lifetime_seconds', 'traverse_seconds', 'assess_step', 'nmap_reach', 'nmap_deep', 'loopback_strength', 'family',
+    'item_id', 'kind', 'produces', 'leech_resource', 'leech_amount', 'qflops_cost', 'memory_cost', 'storage_size', 'lifetime_seconds', 'traverse_seconds', 'assess_step', 'nmap_reach', 'nmap_deep', 'loopback_strength', 'tunnel_strength', 'family',
     'background_process', 'multithreaded', 'modifiers', 'decrypts', 'locates', 'walks', 'jumps', 'swarms', 'tracks',
 ])]
 class Program extends Model
@@ -42,6 +42,7 @@ class Program extends Model
             'nmap_reach' => 'integer',
             'nmap_deep' => 'boolean',
             'loopback_strength' => 'integer',
+            'tunnel_strength' => 'integer',
             'background_process' => 'boolean',
             'multithreaded' => 'boolean',
             'locates' => 'boolean',

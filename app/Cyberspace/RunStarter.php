@@ -312,10 +312,10 @@ final readonly class RunStarter
                 $character->forceFill(['current_run_id' => null])->save();
             }
 
-            // A Loopback still holding is spent with the run.
-            if ($run->loopback !== null) {
-                InventoryItem::query()->whereKey($run->loopback)->delete();
-                $run->forceFill(['loopback' => null])->save();
+            // A Loopback or an Egress Tunnel still holding is spent with the run.
+            if ($run->loopback !== null || $run->tunnel !== null) {
+                InventoryItem::query()->whereKey(array_filter([$run->loopback, $run->tunnel]))->delete();
+                $run->forceFill(['loopback' => null, 'tunnel' => null])->save();
             }
 
             // Nothing run-only outlives the run that started it.

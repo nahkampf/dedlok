@@ -354,6 +354,8 @@ final readonly class Simulator
                 [$log[], $breachTier] = $this->subvert($character, $run);
             } elseif ($action === RunAction::Loopback) {
                 $log[] = $this->loopback($character, $run);
+            } elseif ($action === RunAction::Tunnel) {
+                $log[] = $this->tunnel($character, $run);
             } else {
                 $log[] = $this->line('cyberspace.run.log.hold');
             }
@@ -449,7 +451,7 @@ final readonly class Simulator
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
         if (! $run->isTreeRun()) {
-            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Disarm, RunAction::Wipe, RunAction::Shutdown, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
+            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Tunnel, RunAction::Disarm, RunAction::Wipe, RunAction::Shutdown, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
         }
 
         $tree = $this->treeOf($run);
@@ -487,8 +489,14 @@ final readonly class Simulator
             // Attack also wherever an awake sentry stands.
             RunAction::Attack => (int) $run->node !== $tree->core && $this->sentriesHere($run, awake: true) === [] ? RunRefusal::NotHere : null,
             RunAction::Install, RunAction::Burn, RunAction::Leech => (int) $run->node !== $tree->core ? RunRefusal::NotHere : null,
-            // The entry or a maintenance port.
-            RunAction::Flood, RunAction::Egress => ! $tree->isExit((int) $run->node) ? RunRefusal::NotHere : null,
+            // The entry, a maintenance port, or a node an Egress Tunnel holds.
+            RunAction::Flood, RunAction::Egress => ! $this->atExit($run) ? RunRefusal::NotHere : null,
+            RunAction::Tunnel => match (true) {
+                (int) $run->node === $tree->core || $run->tunnel !== null => RunRefusal::NotHere,
+                ($row = $this->tunnelToHand($character)) === null || $this->skillLevel($character, 'egress_tunneling') < 1 => RunRefusal::NoTunnel,
+                app(ProgramRunner::class)->refusalFor($character, $row, true) !== null => RunRefusal::LoopbackRefused,
+                default => null,
+            },
             default => null,
         };
     }
@@ -866,6 +874,13 @@ final readonly class Simulator
         if ($sentry['countdown'] !== null) {
             $sentry['countdown']--;
 
+            // An Egress Tunnel went up on it meanwhile: the cut is stopped, and it looks again.
+            if (in_array($node, $actor->tunnelNodes(), true)) {
+                $sentry['countdown'] = null;
+
+                return [$sentry, null];
+            }
+
             if ($sentry['countdown'] > 0) {
                 return [$sentry, null];
             }
@@ -894,7 +909,9 @@ final readonly class Simulator
 
         usort($exits, static fn (int $a, int $b): int => $tree->distance((int) $runner->node, $a) <=> $tree->distance((int) $runner->node, $b));
         $route = $tree->path((int) $runner->node, $exits[0]);
-        $cuttable = array_values(array_filter($route, static fn (int $n): bool => $n !== (int) $runner->node
+        // A node an Egress Tunnel holds cannot be cut.
+        $held = $actor->tunnelNodes();
+        $cuttable = array_values(array_filter($route, static fn (int $n): bool => $n !== (int) $runner->node && ! in_array($n, $held, true)
             && in_array($tree->nodes[$n]['kind'], [NodeKind::Relay, NodeKind::Switch, NodeKind::Port], true)));
 
         if ($cuttable === []) {
@@ -1127,6 +1144,59 @@ final readonly class Simulator
         return [$this->line('cyberspace.run.log.tree.hub_subverted', tone: 'ok'), 'act'];
     }
 
+    /** Where egress is possible for this runner: the entry, a maintenance port, or a node an Egress Tunnel holds. */
+    public function atExit(Run $run): bool
+    {
+        $tree = $this->treeOf($run);
+
+        return $tree !== null && ($tree->isExit((int) $run->node) || in_array((int) $run->node, $run->tunnelNodes(), true));
+    }
+
+    /** A character's attained level in a skill, by slug. */
+    private function skillLevel(Character $character, string $slug): int
+    {
+        return (int) $character->characterSkills()->whereHas('skill', static fn ($q) => $q->where('slug', $slug))->value('attained_level');
+    }
+
+    /** The strongest Egress Tunnel script in the stash, not running. */
+    public function tunnelToHand(Character $character): ?InventoryItem
+    {
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->whereNull('running_on_deck_id')
+            ->join('programs', 'programs.item_id', '=', 'inventory_items.item_id')
+            ->whereNotNull('programs.tunnel_strength')
+            ->orderByDesc('programs.tunnel_strength')
+            ->select('inventory_items.*')
+            ->get()
+            ->first(static fn (InventoryItem $row): bool => ! $row->isElsewhere() && ! $row->isListed());
+    }
+
+    /** EGRESS TUNNEL: one copy from the stash starts on the deck and holds this node as an exit while they stay. */
+    private function tunnel(Character $character, Run $run): array
+    {
+        $row = $this->tunnelToHand($character);
+        $result = $row === null ? null : app(ProgramRunner::class)->start($character, $row, true);
+
+        if ($result === null || ! $result->succeeded()) {
+            return $this->line('cyberspace.run.refused.loopback_refused', tone: 'warn');
+        }
+
+        $run->tunnel = (int) $result->process?->getKey();
+
+        return $this->line('cyberspace.run.log.tree.tunnel', tone: 'ok');
+    }
+
+    /** The strongest Egress Tunnel holding on the runner's node (any of the party's), or 0. */
+    private function tunnelStrengthHere(Run $run): int
+    {
+        $rows = $run->run_party_id === null
+            ? array_filter([$run->tunnel])
+            : Run::query()->live()->where('run_party_id', $run->run_party_id)->where('node', $run->node)->whereNotNull('tunnel')->pluck('tunnel')->all();
+
+        return (int) InventoryItem::query()->whereKey($rows)->with('item.program')->get()->max(fn (InventoryItem $r): int => (int) $r->item?->program?->tunnel_strength);
+    }
+
     /** The strongest Loopback script in the stash, not running: the copy a Loopback would start. */
     public function loopbackToHand(Character $character): ?InventoryItem
     {
@@ -1210,10 +1280,16 @@ final readonly class Simulator
         }
     }
 
-    /** One step along an edge. Through a firewall only once it is breached; back the way you came always. Leaving a relay spends its Loopback. */
+    /** One step along an edge. Through a firewall only once it is breached; back the way you came always. Leaving a relay spends its Loopback, and leaving a node its Egress Tunnel. */
     private function move(Run $run, int $node): array
     {
         $this->dropLoopback($run);
+
+        if ($run->tunnel !== null) {
+            InventoryItem::query()->whereKey($run->tunnel)->delete();
+            $run->tunnel = null;
+        }
+
         $run->node = $node;
         $this->reveal($run, [$node]);
 
@@ -2169,7 +2245,8 @@ final readonly class Simulator
         $grade = System::query()->where('address', $run->address)->value('grade');
         $grade = $grade === null ? null : (int) $grade;
         $port = $this->atPort($run);
-        $gradeDifficulty = (int) ($table[$grade === null ? 1 : max(1, $grade - ($port ? 1 : 0))] ?? ($table[1] ?? 0));
+        $tunnel = $run->isTreeRun() ? $this->tunnelStrengthHere($run) : 0;
+        $gradeDifficulty = max(0, (int) ($table[$grade === null ? 1 : max(1, $grade - ($port || $tunnel > 0 ? 1 : 0))] ?? ($table[1] ?? 0)) - $tunnel);
 
         $ice = $run->ice_id === null || ! $run->iceReachesHere() ? null : Ice::query()->find($run->ice_id);
         $snare = $ice?->attackLevel(AttackTag::Ensnare);
@@ -2190,6 +2267,7 @@ final readonly class Simulator
             multiplier: $multiplier,
             chance: $this->checks->chance($resolved->value, (float) $difficulty, 'egress', $multiplier),
             port: $port,
+            tunnel: $tunnel,
         );
     }
 
@@ -2213,8 +2291,11 @@ final readonly class Simulator
         // Only an ICE that can reach the runner holds them (on a tree run, one on the core while they are at the entry cannot).
         $level = $run->ice_id === null || ! $run->iceReachesHere() ? 0 : (int) (Ice::query()->whereKey($run->ice_id)->value('level') ?? 0);
 
-        // A maintenance port asks what the grade below would.
-        return $this->egressDifficultyFor(max(1, (int) $grade - ($this->atPort($run) ? 1 : 0)), $level);
+        // A maintenance port asks what the grade below would; an Egress Tunnel the same, less its strength.
+        $tunnel = $run->isTreeRun() ? $this->tunnelStrengthHere($run) : 0;
+        $below = $this->atPort($run) || $tunnel > 0;
+
+        return max(0.0, $this->egressDifficultyFor(max(1, (int) $grade - ($below ? 1 : 0)), $level) - $tunnel);
     }
 
     /** Standing on a maintenance port of a tree run. */

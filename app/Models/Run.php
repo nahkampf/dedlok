@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'traps', 'snared_until', 'log_wiped', 'alert_cost', 'sentries', 'controller', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'tunnel', 'traps', 'snared_until', 'log_wiped', 'alert_cost', 'sentries', 'controller', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -64,6 +64,7 @@ class Run extends Model
             'mapped' => 'boolean',
             'opened' => 'array',
             'loopback' => 'integer',
+            'tunnel' => 'integer',
             'traps' => 'array',
             'snared_until' => 'integer',
             'log_wiped' => 'boolean',
@@ -183,6 +184,16 @@ class Run extends Model
         $traps = $this->traps ?? [];
         $traps[$node] = $state;
         $this->traps = $traps;
+    }
+
+    /** @return list<int> Nodes where an Egress Tunnel holds: this runner's own, and on a party run every live ally's. */
+    public function tunnelNodes(): array
+    {
+        $runs = $this->run_party_id === null
+            ? collect($this->tunnel !== null ? [$this] : [])
+            : self::query()->live()->where('run_party_id', $this->run_party_id)->whereNotNull('tunnel')->get(['node']);
+
+        return $runs->pluck('node')->map(static fn ($n): int => (int) $n)->unique()->values()->all();
     }
 
     /** A Loopback holds on an internal relay, theirs or (on a party run) a live ally's: the trace stalls. */

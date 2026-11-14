@@ -666,6 +666,15 @@
                         @error('loopback_strength') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
 
+                    {{-- An Egress Tunnel's strength, off the egress difficulty at its node (docs/RUN_TREE.md). A Script only. --}}
+                    <div class="field" style="margin-top:var(--s-3)" @error('tunnel_strength') data-invalid @enderror>
+                        <label class="field__label" for="tunnel_strength">{{ Text::get('admin.items.fields.tunnel_strength') }}</label>
+                        <input class="input num" id="tunnel_strength" name="tunnel_strength" type="number" min="1" max="20" step="1"
+                               value="{{ old('tunnel_strength', $item?->program?->tunnel_strength) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.tunnel_strength_hint') }}</span>
+                        @error('tunnel_strength') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+
                     {{-- A Utility's family: the group a skill can sharpen together. Blank is none. --}}
                     <div class="field" style="margin-top:var(--s-3)" @error('family') data-invalid @enderror>
                         <label class="field__label" for="family">{{ Text::get('admin.items.fields.family') }}</label>

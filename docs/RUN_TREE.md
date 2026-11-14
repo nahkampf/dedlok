@@ -369,6 +369,17 @@ the Cordon tag**, each designed and built on its own, traps first.
 - **A found honeypot** is disarmed like a trap (OS roll), from the next node or standing on it; once spent it is an
   empty vault. Extracting from a found, live one still sets it off.
 
+### Egress Tunnel
+
+- **A Script** (`programs.tunnel_strength`, set in the item admin) started from the stash by an action on any node but
+  the core (`RunAction::Tunnel`; the `egress_tunneling` skill at level 1 is needed, added by migration with placeholder
+  text, off the market). It holds its memory on the deck. No hold roll: it lasts while its runner stays on the node, and
+  is spent when they move off, at the run's end, or when the script's lifetime runs out.
+- **While it holds, the node is an exit for everybody in the party, its runner too** (`Run::tunnelNodes`,
+  `Simulator::atExit`): Egress and Flood work there. Egress asks the grade below's difficulty, as at a maintenance port,
+  less the tunnel's strength (the strongest on the node), plus a reaching ICE.
+- **A Cordon cannot cut a node an Egress Tunnel holds**, and a cut under way stops when one goes up on it.
+
 ## To come back to
 
 Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.
@@ -388,5 +399,5 @@ Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next s
 - **Trap rates at grade 4**: about 28% of compute and relay trees (one path that may carry a trap); planned about half.
 - **Deep Nmappers**: none exist yet; create them in the item admin (an Nmapper with Deep ticked).
 - **Sentry speed as a scan fact** (the proposal reads it with the ICE) is not built; neither is a party test of the round's sentry turn.
-- **The Egress Tunnel** (a script that keeps a node from being cut, and counts as an exit for allies) is not built.
+- **Egress Tunnel items and the Egress Tunneling skill**: none exist yet / placeholder text; create and price them.
 - **A review of the whole branch** before the flag is turned on.
