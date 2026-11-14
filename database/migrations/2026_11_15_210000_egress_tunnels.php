@@ -26,7 +26,7 @@ return new class extends Migration
         DB::table('skills')->insertOrIgnore([
             'slug' => 'egress_tunneling',
             'title' => 'Egress Tunneling',
-            'description' => 'Setting up an Egress Tunnel let\'s you exit a system from a place of your choosing, rather than the maintenance ports. This can be very useful. Each level of this skill makes the egress easier.',
+            'description' => 'Setting up an Egress Tunnel lets you exit a system from a place of your choosing, rather than the maintenance ports. This can be very useful. Each level of this skill makes the egress easier.',
             'category' => 'Networking',
             'rank' => 16,
             'primary_attribute' => 'intellect',
