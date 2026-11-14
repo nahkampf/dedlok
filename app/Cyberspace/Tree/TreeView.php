@@ -7,6 +7,7 @@ namespace App\Cyberspace\Tree;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\Simulator;
 use App\Models\Character;
+use App\Models\InventoryItem;
 use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemScan;
@@ -46,6 +47,12 @@ final readonly class TreeView
         public ?float $hubChance = null,
         // The party has subverted the hub: no alert can go off.
         public bool $subverted = false,
+        // Standing on an internal relay with no Loopback of theirs holding: the Loopback action is offered there.
+        public bool $atRelay = false,
+        // The chance a Loopback holds each turn: theirs while it holds, otherwise the copy they would start. Null for none.
+        public ?float $loopbackChance = null,
+        // Their own Loopback holds on the relay they stand on.
+        public bool $looping = false,
     ) {}
 
     public static function for(Run $run, Character $character, Simulator $simulator, ?SystemScan $scan): ?self
@@ -113,6 +120,15 @@ final readonly class TreeView
             $tree->nodes[$here]['kind'] === NodeKind::Vault,
             $simulator->hubOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
             $simulator->hubSubverted($run),
+            $tree->nodes[$here]['kind'] === NodeKind::Relay && $run->loopback === null,
+            $tree->nodes[$here]['kind'] !== NodeKind::Relay ? null : (static function () use ($simulator, $character, $run): ?float {
+                $strength = $run->loopback !== null
+                    ? InventoryItem::query()->with('item.program')->find($run->loopback)?->item?->program?->loopback_strength
+                    : $simulator->loopbackToHand($character)?->item?->program?->loopback_strength;
+
+                return $strength === null ? null : $simulator->loopbackChance($character, $run, (int) $strength);
+            })(),
+            $run->loopback !== null,
         );
     }
 

@@ -177,10 +177,11 @@ final readonly class RunStarter
                 }
 
                 // A tree run (docs/RUN_TREE.md) starts on the entry, knowing it, with an empty noise bar; somebody holding a
-                // backdoor here comes in at the core instead, unless they chose the entry. Decided here, once.
+                // backdoor here comes in at the maintenance port instead (the core without one), unless they chose the
+                // entry. Decided here, once.
                 $tree = RunTree::appliesTo($system) ? RunTree::of($system) : null;
                 $start = $tree === null ? null
-                    : ((new Backdoors)->heldOn($character, $system) !== null && ! $atEntry ? $tree->core : $tree->entry);
+                    : ((new Backdoors)->heldOn($character, $system) !== null && ! $atEntry ? $tree->backdoorStart() : $tree->entry);
 
                 // What the runner's own scan read of the tree: the Layout shows the whole shape, the Nodes every node.
                 // Their party's runs are read together (Run::knownNodes(), Run::mapped()), so the best scan in a party
@@ -299,6 +300,12 @@ final readonly class RunStarter
             // somehow moved on is not dragged back by an old row finishing.
             if ($character->current_run_id === $run->getKey()) {
                 $character->forceFill(['current_run_id' => null])->save();
+            }
+
+            // A Loopback still holding is spent with the run.
+            if ($run->loopback !== null) {
+                InventoryItem::query()->whereKey($run->loopback)->delete();
+                $run->forceFill(['loopback' => null])->save();
             }
 
             // Nothing run-only outlives the run that started it.

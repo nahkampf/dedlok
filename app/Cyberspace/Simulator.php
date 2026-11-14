@@ -18,6 +18,7 @@ use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\Ice;
+use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Leech;
 use App\Models\Run;
@@ -26,6 +27,7 @@ use App\Models\System;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Programs\ProgramKind;
+use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use App\Stats\Damage;
@@ -311,6 +313,8 @@ final readonly class Simulator
                 [$log[], $breachTier] = $this->breach($character, $run);
             } elseif ($action === RunAction::Subvert) {
                 [$log[], $breachTier] = $this->subvert($character, $run);
+            } elseif ($action === RunAction::Loopback) {
+                $log[] = $this->loopback($character, $run);
             } else {
                 $log[] = $this->line('cyberspace.run.log.hold');
             }
@@ -340,6 +344,10 @@ final readonly class Simulator
             }
 
             // --- and then the machine does ------------------------------------
+
+            if ($run->isTreeRun() && $action !== RunAction::Loopback) {
+                $log = [...$log, ...$this->holdLoopback($character, $run)];
+            }
 
             $log = [...$log, ...$this->advanceTrace($character, $run)];
 
@@ -396,7 +404,7 @@ final readonly class Simulator
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
         if (! $run->isTreeRun()) {
-            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
+            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
         }
 
         $tree = $this->treeOf($run);
@@ -414,6 +422,12 @@ final readonly class Simulator
             },
             RunAction::Breach => $this->firewallClosed($run) ? null : RunRefusal::NotHere,
             RunAction::Subvert => $this->hubOpen($run) ? null : RunRefusal::NotHere,
+            RunAction::Loopback => match (true) {
+                $tree->nodes[(int) $run->node]['kind'] !== NodeKind::Relay || $run->loopback !== null => RunRefusal::NotHere,
+                ($row = $this->loopbackToHand($character)) === null => RunRefusal::NoLoopback,
+                app(ProgramRunner::class)->refusalFor($character, $row, true) !== null => RunRefusal::LoopbackRefused,
+                default => null,
+            },
             RunAction::Nmap => $this->nmapReach($character) < 1 ? RunRefusal::NoNmapper : null,
             // A data vault takes an Extract too.
             RunAction::Extract => (int) $run->node !== $tree->core && $tree->nodes[(int) $run->node]['kind'] !== NodeKind::Vault ? RunRefusal::NotHere : null,
@@ -612,9 +626,93 @@ final readonly class Simulator
         return [$this->line('cyberspace.run.log.tree.hub_subverted', tone: 'ok'), 'act'];
     }
 
-    /** One step along an edge. Through a firewall only once it is breached; back the way you came always. */
+    /** The strongest Loopback script in the stash, not running: the copy a Loopback would start. */
+    public function loopbackToHand(Character $character): ?InventoryItem
+    {
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->whereNull('running_on_deck_id')
+            ->join('programs', 'programs.item_id', '=', 'inventory_items.item_id')
+            ->whereNotNull('programs.loopback_strength')
+            ->orderByDesc('programs.loopback_strength')
+            ->select('inventory_items.*')
+            ->get()
+            ->first(static fn (InventoryItem $row): bool => ! $row->isElsewhere() && ! $row->isListed());
+    }
+
+    /** LOOPBACK: one copy from the stash starts on the deck (holding its memory and compute) and holds on this relay. */
+    private function loopback(Character $character, Run $run): array
+    {
+        $row = $this->loopbackToHand($character);
+        $result = $row === null ? null : app(ProgramRunner::class)->start($character, $row, true);
+
+        if ($result === null || ! $result->succeeded()) {
+            return $this->line('cyberspace.run.refused.loopback_refused', tone: 'warn');
+        }
+
+        $run->loopback = (int) $result->process?->getKey();
+
+        return $this->line('cyberspace.run.log.tree.loopback', tone: 'ok');
+    }
+
+    /**
+     * The hold roll a Loopback makes each turn after the one it started on: its strength plus the Loopback skill level,
+     * against the egress difficulty of the grade. Held, the IDS gets a move's look; missed (or the script ran out), it is
+     * spent and the trace moves this turn.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function holdLoopback(Character $character, Run $run): array
+    {
+        $row = $run->loopback === null ? null : InventoryItem::query()->with('item.program')->find($run->loopback);
+
+        if ($run->loopback === null) {
+            return [];
+        }
+
+        $level = (int) $character->characterSkills()
+            ->whereHas('skill', static fn ($q) => $q->where('slug', 'loopback_routing'))
+            ->value('attained_level');
+        $value = (float) ($row?->item?->program?->loopback_strength ?? 0) + $level;
+
+        if ($row === null || ! $row->isRunning() || ! $this->checks->roll($value, $this->loopbackDifficulty($run), 'loopback')->passed) {
+            $this->dropLoopback($run);
+
+            return [$this->line('cyberspace.run.log.tree.loopback_fails', tone: 'warn')];
+        }
+
+        return $this->noise($character, $run, 'move');
+    }
+
+    /** What a Loopback's hold roll asks on this run: the egress table's figure for the grade, nothing fighting you. */
+    private function loopbackDifficulty(Run $run): float
+    {
+        return $this->egressDifficultyFor((int) System::query()->where('address', $run->address)->value('grade'));
+    }
+
+    /** The chance a Loopback with this strength holds for this runner on this run. For the run screen. */
+    public function loopbackChance(Character $character, Run $run, int $strength): float
+    {
+        $level = (int) $character->characterSkills()
+            ->whereHas('skill', static fn ($q) => $q->where('slug', 'loopback_routing'))
+            ->value('attained_level');
+
+        return $this->checks->chance($strength + $level, $this->loopbackDifficulty($run), 'loopback');
+    }
+
+    /** The Loopback is spent: its copy is gone, and nothing holds the trace. */
+    private function dropLoopback(Run $run): void
+    {
+        if ($run->loopback !== null) {
+            InventoryItem::query()->whereKey($run->loopback)->delete();
+            $run->loopback = null;
+        }
+    }
+
+    /** One step along an edge. Through a firewall only once it is breached; back the way you came always. Leaving a relay spends its Loopback. */
     private function move(Run $run, int $node): array
     {
+        $this->dropLoopback($run);
         $run->node = $node;
         $this->reveal($run, [$node]);
 
@@ -675,7 +773,7 @@ final readonly class Simulator
             RunAction::Move => $this->onLiveHub($run) ? 'loud' : 'move',
             RunAction::Breach, RunAction::Subvert => $breachTier,
             RunAction::Egress => 'move',
-            RunAction::Nmap => 'act',
+            RunAction::Nmap, RunAction::Loopback => 'act',
             RunAction::Flood => 'loud',
             RunAction::Attack => $iceAwake ? 'loud' : null,
             RunAction::Extract, RunAction::Install, RunAction::Burn, RunAction::Leech => $osFailed ? 'loud' : 'act',
@@ -860,6 +958,11 @@ final readonly class Simulator
     {
         if (! $run->detected || $run->trace >= 100) {
             return [];
+        }
+
+        // A Loopback holding on an internal relay, theirs or an ally's: the trace stalls.
+        if ($run->isTreeRun() && $run->loopbackHolds()) {
+            return [$this->line('cyberspace.run.log.tree.loopback_stalls')];
         }
 
         $rate = System::query()->where('address', $run->address)->value('tracer_rate');

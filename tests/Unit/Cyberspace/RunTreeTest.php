@@ -110,6 +110,13 @@ final class RunTreeTest extends TestCase
             $this->assertContains($from['kind'], [NodeKind::Switch, NodeKind::Vault], $why);
         }
 
+        // Internal relays only on the quiet path from grade 3: one, two at most on a relay system.
+        foreach ($tree->nodesOf(NodeKind::Relay) as $relay) {
+            $this->assertSame('quiet', $tree->nodes[$relay]['path'], $why);
+        }
+
+        $this->assertLessThanOrEqual($grade < 3 ? 0 : ($type === SystemType::Relay ? 2 : 1), count($tree->nodesOf(NodeKind::Relay)), $why);
+
         // The quiet path is the long one: about 5 moves at grade 5 and 7 at grade 9 when nothing cuts across.
         $this->assertLessThanOrEqual(2 + (int) round(($grade - 1) * 7 / 8) - 1, $tree->distance($tree->entry, $tree->core), $why);
     }

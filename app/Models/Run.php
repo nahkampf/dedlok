@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -63,6 +63,7 @@ class Run extends Model
             'known' => 'array',
             'mapped' => 'boolean',
             'opened' => 'array',
+            'loopback' => 'integer',
             'pending_node' => 'integer',
             'pull_node' => 'integer',
             'noise' => 'float',
@@ -128,6 +129,14 @@ class Run extends Model
         return $this->run_party_id === null
             ? (bool) $this->mapped
             : self::query()->where('run_party_id', $this->run_party_id)->where('mapped', true)->exists();
+    }
+
+    /** A Loopback holds on an internal relay, theirs or (on a party run) a live ally's: the trace stalls. */
+    public function loopbackHolds(): bool
+    {
+        return $this->run_party_id === null
+            ? $this->loopback !== null
+            : self::query()->live()->where('run_party_id', $this->run_party_id)->whereNotNull('loopback')->exists();
     }
 
     /** The firewalls this runner may pass: their own opening, and on a party run everybody's. @return list<int> */

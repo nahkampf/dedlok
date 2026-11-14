@@ -438,7 +438,8 @@
     </div>
 </div>
 
-{{-- WHERE A BACKDOOR TAKES YOU on a tree run (docs/RUN_TREE.md): in at the core, or at the entry like everybody else.
+{{-- WHERE A BACKDOOR TAKES YOU on a tree run (docs/RUN_TREE.md): in at the maintenance port (the core on a tree without
+     one), or at the entry like everybody else. The value stays `core` for either.
      Only for somebody holding a backdoor on this system. Part of the run form, so a party member's choice is saved with
      their loadout. --}}
 @if ($chooseStart)
@@ -450,7 +451,7 @@
         <label class="check check--radio">
             <input type="radio" name="start_at" value="core" form="run-form" @checked(! $startAtEntry)>
             <span class="check__box"></span>
-            <span>{{ Text::get('cyberspace.tree.start_core') }}</span>
+            <span>{{ Text::get($startAtPort ? 'cyberspace.tree.start_port' : 'cyberspace.tree.start_core') }}</span>
         </label>
         <label class="check check--radio">
             <input type="radio" name="start_at" value="entry" form="run-form" @checked($startAtEntry)>

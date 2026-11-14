@@ -255,8 +255,40 @@ states' job.
 - **The scan's Nodes reading counts hubs.**
 - **No IDS, no hub**: on such a system the node is a conduit, labelled and played as one (`RunTree::of`).
 
-### Backdoors (to change, with backdoors at any node)
+### Internal relay and Loopback
 
-- **A backdoor on the system takes you to the maintenance port, not the core** (noted 2026-11-14). Today it still
-  starts at the core; this changes when backdoors at any node are built, and what a tree with no port does is decided
-  then.
+- **On the quiet path from grade 3**: one of its conduits; a relay system gets a second where there is room
+  (`NodeKind::Relay`).
+- **Loopback** (`RunAction::Loopback`, a button on the relay) takes one copy of the strongest Loopback script in the
+  stash (`programs.loopback_strength`, a Script) and starts it on the deck, holding its memory and compute
+  (`runs.loopback`, the running row). An act's noise.
+- **While it holds, the whole party's traces stall** (`Run::loopbackHolds`).
+- **Each turn after the one it started on it rolls to keep holding**: strength plus the `loopback_routing` skill level
+  (added by migration, placeholder text, off the market) against the egress table's figure for the grade (3–19). Held,
+  the IDS gets a move's look (3–6 on a failed stealth roll). Missed, the copy is spent and the trace moves that turn.
+- **Moving off the relay, or the run ending, spends it.** A Script's lifetime running out ends it too.
+
+### Backdoors
+
+- **A backdoor takes its holder to the maintenance port** (`RunTree::backdoorStart`), the core on a tree without one
+  (grades 1–2, and trees with no rich path). Installing stays at the core, as before; backdoors at any node are dropped.
+- **The briefing's choice is the port (or core) or the entry**, the port by default; the arrival rolls are skipped
+  either way. (Replaces "starts at the core" above.)
+
+## To come back to
+
+Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.
+
+- **Strings**: every player-facing line added on this branch is a suggestion for the user to rewrite (`config/strings.php`,
+  the `cyberspace.tree`, `cyberspace.run.action`, `cyberspace.run.log.tree`, `cyberspace.run.refused`,
+  `cyberspace.reading` and `programs.spec` keys).
+- **The Loopback skill** (`loopback_routing`): placeholder title and description, off the market; the user rewrites it
+  and decides its price and when it goes on sale.
+- **Loopback items**: none exist yet. Create them in the item admin (Script, Loopback strength 1–20) and decide where
+  they are sold. The hold roll is flat (spread 8): strength 10 with no skill holds about 47% at grade 5.
+- **The safe path** (an internal relay and a maintenance port on a path of its own) is not built.
+- **A party test for the Loopback**: an ally's trace stalling while another runner's Loopback holds is untested.
+- **The nmap migration grants items at deploy** (to every Deck Jockey, and shop shelves): decide before merging.
+- **The nmap item in the Deck Jockey loadout**: added in the archetype editor at release.
+- **ACiD's local nmap stack** reads 2 (granted onto an existing row); reset it to 1 if wanted.
+- **A review of the whole branch** before the flag is turned on.

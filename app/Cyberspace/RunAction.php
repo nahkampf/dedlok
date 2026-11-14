@@ -100,6 +100,9 @@ enum RunAction: string
     /** A tree run: subvert the security hub you stand on, with the OS roll. Landed, no alert can go off for the run. */
     case Subvert = 'subvert';
 
+    /** A tree run: start a Loopback from the stash on the internal relay you stand on. It holds while you stay. */
+    case Loopback = 'loopback';
+
     /** A tree run: Crash Jackout. Out from anywhere, for certain, at a price in Synaptic Integrity. */
     case Jackout = 'jackout';
 

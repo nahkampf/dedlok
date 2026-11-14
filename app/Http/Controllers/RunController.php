@@ -237,8 +237,10 @@ class RunController extends Controller
             ),
             'lockedDown' => $target->isLockedDown(),
             'backdoor' => $held = (new Backdoors)->heldOn($character, $target),
-            // A backdoor holder on a tree run's system chooses where to start (docs/RUN_TREE.md): the core unless they say.
-            'chooseStart' => $held !== null && RunTree::appliesTo($target),
+            // A backdoor holder on a tree run's system chooses where to start (docs/RUN_TREE.md): the maintenance port (the
+            // core without one) unless they say.
+            'chooseStart' => $chooseStart = $held !== null && RunTree::appliesTo($target),
+            'startAtPort' => $chooseStart && RunTree::of($target)->backdoorStart() !== RunTree::of($target)->core,
             'startAtEntry' => (bool) RunPartyMember::query()->where('character_id', $character->id)->whereNull('dropped_at')->value('start_at_entry'),
         ]);
     }

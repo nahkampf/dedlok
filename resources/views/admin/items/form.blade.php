@@ -647,6 +647,15 @@
                         @error('nmap_reach') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
 
+                    {{-- A Loopback's strength in its hold roll on an internal relay (docs/RUN_TREE.md). A Script only; blank is not one. --}}
+                    <div class="field" style="margin-top:var(--s-3)" @error('loopback_strength') data-invalid @enderror>
+                        <label class="field__label" for="loopback_strength">{{ Text::get('admin.items.fields.loopback_strength') }}</label>
+                        <input class="input num" id="loopback_strength" name="loopback_strength" type="number" min="1" max="20" step="1"
+                               value="{{ old('loopback_strength', $item?->program?->loopback_strength) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.loopback_strength_hint') }}</span>
+                        @error('loopback_strength') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+
                     {{-- A Utility's family: the group a skill can sharpen together. Blank is none. --}}
                     <div class="field" style="margin-top:var(--s-3)" @error('family') data-invalid @enderror>
                         <label class="field__label" for="family">{{ Text::get('admin.items.fields.family') }}</label>

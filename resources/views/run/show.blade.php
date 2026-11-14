@@ -106,6 +106,11 @@
                 {{ Text::get('cyberspace.tree.hub_chance', ['chance' => (int) round($tree->hubChance * 100)]) }}
             </p>
         @endif
+        @if ($tree->loopbackChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get($tree->looping ? 'cyberspace.tree.loopback_holding' : 'cyberspace.tree.loopback_chance', ['chance' => (int) round($tree->loopbackChance * 100)]) }}
+            </p>
+        @endif
         @if ($tree->subverted && ! $run->alerted)
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
                 {{ Text::get('cyberspace.tree.subverted') }}
@@ -362,6 +367,12 @@
             @if ($tree && $tree->firewallChance !== null)
                 <button type="submit" name="action" value="breach" class="btn cut btn--go">
                     {{ Text::get('cyberspace.run.action.breach') }}
+                </button>
+            @endif
+            {{-- AN INTERNAL RELAY: a Loopback from the stash holds the trace while they stay. --}}
+            @if ($tree && $tree->atRelay)
+                <button type="submit" name="action" value="loopback" class="btn cut btn--go" @if ($tree->loopbackChance === null) disabled @endif>
+                    {{ Text::get('cyberspace.run.action.loopback') }}
                 </button>
             @endif
             {{-- A SECURITY HUB nobody has subverted: Subvert is its OS roll. --}}

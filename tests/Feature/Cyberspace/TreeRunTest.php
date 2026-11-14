@@ -34,6 +34,7 @@ use App\Models\SystemScan;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -459,6 +460,81 @@ final class TreeRunTest extends TestCase
         $this->assertCount(1, RunTree::generate('DEADBEEF', 7, SystemType::Compute)->nodesOf(NodeKind::Hub));
     }
 
+    /**
+     * A grade 3 relay system (its quiet path always carries an internal relay), the runner standing on the relay with
+     * their trace running and two Loopback scripts in the stash.
+     *
+     * @return array{0: Run, 1: int}
+     */
+    private function relay(): array
+    {
+        System::query()->where('address', 'DEADBEEF')->update(['type' => SystemType::Relay->value]);
+        $tree = RunTree::of(System::query()->where('address', 'DEADBEEF')->sole());
+        $item = Item::factory()->program(ProgramKind::Script, qflops: 0.1, memory: 0.1, storage: 0.1, background: false, lifetime: 3600)->create();
+        $item->program->forceFill(['loopback_strength' => 10])->save();
+        InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 2]);
+
+        $run = $this->begin();
+        $relay = $tree->nodesOf(NodeKind::Relay)[0];
+        $run->forceFill(['node' => $relay, 'detected' => true, 'trace' => 0])->save();
+
+        return [$run->fresh(), $relay];
+    }
+
+    private function loopbacks(): int
+    {
+        return (int) InventoryItem::query()->where('character_id', $this->character->id)
+            ->whereHas('item.program', static fn ($q) => $q->whereNotNull('loopback_strength'))->sum('quantity');
+    }
+
+    public function test_a_loopback_on_a_relay_stalls_the_trace_until_a_hold_roll_fails(): void
+    {
+        [$run] = $this->relay();
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Loopback);
+        $run = $run->fresh();
+        $this->assertNotNull($run->loopback);
+        $this->assertTrue(InventoryItem::query()->find($run->loopback)->isRunning(), 'it runs on the deck');
+        $this->assertSame(0, (int) $run->trace, 'stalled on the turn it starts');
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Loopback)->refusal, 'one at a time');
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Hold);
+        $this->assertSame(0, (int) $run->fresh()->trace, 'held');
+
+        $this->simulator(1.0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $run = $run->fresh();
+        $this->assertNull($run->loopback);
+        $this->assertGreaterThan(0, (int) $run->trace, 'the trace moves on the turn it fails');
+        $this->assertSame(1, $this->loopbacks(), 'the failed copy is spent');
+    }
+
+    public function test_leaving_the_relay_or_the_run_spends_the_loopback(): void
+    {
+        [$run, $relay] = $this->relay();
+        $tree = RunTree::of(System::query()->where('address', 'DEADBEEF')->sole());
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Loopback);
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $tree->neighbours($relay)[0]);
+        $this->assertNull($run->fresh()->loopback);
+        $this->assertSame(1, $this->loopbacks());
+
+        $run->fresh()->forceFill(['node' => $relay])->save();
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Loopback);
+        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Egress);
+        $this->assertSame(0, $this->loopbacks());
+    }
+
+    public function test_a_loopback_needs_a_relay_and_a_script(): void
+    {
+        $run = $this->begin();
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Loopback)->refusal);
+
+        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Egress);
+        [$run] = $this->relay();
+        InventoryItem::query()->where('character_id', $this->character->id)->whereHas('item.program', static fn ($q) => $q->whereNotNull('loopback_strength'))->delete();
+        $this->assertSame(RunRefusal::NoLoopback, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Loopback)->refusal);
+    }
+
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void
     {
         // A grade 3 compute tree with a rich path, and so a port.
@@ -525,19 +601,29 @@ final class TreeRunTest extends TestCase
         $this->assertTrue($run->fresh()->isLive(), 'nobody was pulled out');
     }
 
-    public function test_a_backdoor_holder_starts_at_the_core_unless_they_choose_the_entry(): void
+    public function test_a_backdoor_holder_starts_at_the_port_unless_they_choose_the_entry(): void
     {
-        (new Backdoors)->install($this->character, System::query()->where('address', 'DEADBEEF')->sole(), BackdoorKind::Siphon);
+        // A grade 3 silo always has a rich path, and so a maintenance port.
+        System::query()->where('address', 'DEADBEEF')->update(['type' => SystemType::Silo->value]);
+        $system = System::query()->where('address', 'DEADBEEF')->sole();
+        $tree = RunTree::of($system);
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
 
         $this->checks(1.0);
         $run = app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction)->run;
-        $this->assertSame($this->tree->core, $run->node);
+        $this->assertSame($tree->nodesOf(NodeKind::Port)[0], $run->node);
         $this->assertSame(0.0, (float) $run->noise, 'the arrival rolls are skipped');
         app(RunStarter::class)->end($this->character->fresh(), $run, RunEnding::Egress);
 
         $run = app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction, atEntry: true)->run;
-        $this->assertSame($this->tree->entry, $run->node);
+        $this->assertSame($tree->entry, $run->node);
         $this->assertSame(0.0, (float) $run->noise, 'still skipped at the entry');
+        app(RunStarter::class)->end($this->character->fresh(), $run, RunEnding::Egress);
+
+        // No port (grade 2 has one path): the core, as before.
+        System::query()->where('address', 'DEADBEEF')->update(['grade' => 2]);
+        $run = app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction)->run;
+        $this->assertSame(RunTree::of($system->fresh())->core, $run->node);
     }
 
     public function test_the_briefing_offers_where_to_start_only_to_a_backdoor_holder(): void
@@ -547,7 +633,8 @@ final class TreeRunTest extends TestCase
         (new Backdoors)->install($this->character, System::query()->where('address', 'DEADBEEF')->sole(), BackdoorKind::Siphon);
 
         $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))->assertOk()
-            ->assertSee('name="start_at" value="core"', false)->assertSee('name="start_at" value="entry"', false);
+            ->assertSee('name="start_at" value="core"', false)->assertSee('name="start_at" value="entry"', false)
+            ->assertSeeText(Text::get(RunTree::of(System::query()->where('address', 'DEADBEEF')->sole())->nodesOf(NodeKind::Port) === [] ? 'cyberspace.tree.start_core' : 'cyberspace.tree.start_port'));
     }
 
     public function test_crash_jackout_takes_a_quarter_to_a_half_of_max_si_and_leaves_them_on_the_grid(): void

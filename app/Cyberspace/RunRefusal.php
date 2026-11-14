@@ -60,6 +60,12 @@ enum RunRefusal: string
     /** A tree run: a Move to a node that is not one edge from where you stand. */
     case NotANeighbour = 'not_a_neighbour';
 
+    /** A tree run: a Loopback with no Loopback script to hand. */
+    case NoLoopback = 'no_loopback';
+
+    /** A tree run: the deck will not run the Loopback (memory, compute, or no deck). */
+    case LoopbackRefused = 'loopback_refused';
+
     /** A tree run: Nmap with no Nmapper running. */
     case NoNmapper = 'no_nmapper';
 

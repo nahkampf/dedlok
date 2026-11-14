@@ -228,7 +228,29 @@ final readonly class RunTree
             }
         }
 
+        // Internal relays from grade 3 on the quiet path: one of its conduits, and a second on a relay system where there
+        // is room. Drawn after the port, so the trees before them kept every other node.
+        $quiet = array_search('quiet', $paths, true);
+
+        if ($g >= 3 && $quiet !== false) {
+            for ($n = $type === SystemType::Relay ? 2 : 1; $n > 0; $n--) {
+                $free = array_values(array_filter($own[$quiet]['ids'], static fn (int $id): bool => $nodes[$id]['kind'] === NodeKind::Conduit));
+
+                if ($free === []) {
+                    break;
+                }
+
+                $nodes[$free[$r->getInt(0, count($free) - 1)]]['kind'] = NodeKind::Relay;
+            }
+        }
+
         return new self($nodes, $edges, $entry, $core);
+    }
+
+    /** Where a backdoor brings its holder in: the maintenance port, or the core on a tree without one. */
+    public function backdoorStart(): int
+    {
+        return $this->nodesOf(NodeKind::Port)[0] ?? $this->core;
     }
 
     /** Where egress is possible: the entry or a maintenance port. */
