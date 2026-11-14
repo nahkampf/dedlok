@@ -11,6 +11,7 @@ use App\Characters\Fatigue;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
 use App\Cyberspace\Party\PartyTurns;
+use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
 use App\Decks\DeckTotals;
 use App\Missions\MissionAction;
@@ -148,6 +149,7 @@ final readonly class Simulator
             // What the noise of this turn depends on, read before the action changes it.
             $locked = (bool) $run->os_locked;
             $iceAwake = $run->ice_id !== null;
+            $moveTier = null;
 
             if ($run->isTreeRun()) {
                 $run->acted_at = CarbonImmutable::now();
@@ -169,7 +171,9 @@ final readonly class Simulator
              * It is also what makes `auto-run` possible at all, since a player
              * who hands the whole run to their policy is handing it to this.
              */
-            if ($breached = $this->breachedThreshold($character, $run)) {
+            // ON A TREE RUN A THRESHOLD ONLY WARNS (docs/RUN_TREE.md): leaving takes the entry, so it cannot pull anybody out
+            // from where they stand. The run screen says it is breached.
+            if (! $run->isTreeRun() && ($breached = $this->breachedThreshold($character, $run))) {
                 // SAYS WHICH ONE, and that the action asked for did not happen: a player who pressed Install and found
                 // themselves outside with no backdoor needs the reason in the run's own account.
                 // `notice` marks a line the screen must still say when the run ends and the page moves on to the map:
@@ -280,7 +284,21 @@ final readonly class Simulator
                     return TurnResult::resolved($run, $log, RunEnding::Completed);
                 }
             } elseif ($action === RunAction::Move) {
-                $log[] = $this->move($run, (int) $node);
+                // LEAVING THE CORE MID-FIGHT costs a parting hit: the ICE swings before they are out of its reach.
+                if ($run->inAFight() && $run->iceReachesHere()) {
+                    [$line, $parting, $extra] = $this->iceStrikes($character, $run);
+                    $log = [...$log, $line, ...($extra === null ? [] : [$extra])];
+
+                    if ($parting !== null) {
+                        $run->save();
+                        $this->appendLog($run, $log);
+
+                        return TurnResult::resolved($run, $log, $parting);
+                    }
+                }
+
+                [$lines, $moveTier] = $this->move($character, $run, (int) $node);
+                $log = [...$log, ...$lines];
             } elseif ($action === RunAction::Nmap) {
                 $log[] = $this->nmap($character, $run);
             } else {
@@ -288,7 +306,7 @@ final readonly class Simulator
             }
 
             if ($run->isTreeRun()) {
-                $log = [...$log, ...$this->noiseOf($character, $run, $action, $locked, $iceAwake)];
+                $log = [...$log, ...$this->noiseOf($character, $run, $action, $locked, $iceAwake, $moveTier)];
             }
 
             // Broken. Nothing is left to hit back, so the machine's half of the
@@ -332,7 +350,7 @@ final readonly class Simulator
 
             if ($virusTick !== null && $virusTick['emptied']) {
                 $ending = RunEnding::Defeat;
-            } elseif ($run->ice_id !== null && $iceStrikes) {
+            } elseif ($run->ice_id !== null && $iceStrikes && $run->iceReachesHere()) {
                 [$line, $ending, $extra] = $this->iceStrikes($character, $run);
                 $log[] = $line;
 
@@ -381,7 +399,7 @@ final readonly class Simulator
             RunAction::Move => $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true) ? RunRefusal::NotANeighbour : null,
             RunAction::Nmap => $this->nmapReach($character) < 1 ? RunRefusal::NoNmapper : null,
             RunAction::Extract, RunAction::Install, RunAction::Burn, RunAction::Leech, RunAction::Attack => (int) $run->node !== $tree->core ? RunRefusal::NotHere : null,
-            RunAction::Flood => (int) $run->node !== $tree->entry ? RunRefusal::NotHere : null,
+            RunAction::Flood, RunAction::Egress => (int) $run->node !== $tree->entry ? RunRefusal::NotHere : null,
             default => null,
         };
     }
@@ -399,13 +417,41 @@ final readonly class Simulator
         return $system === null ? null : RunTree::of($system);
     }
 
-    /** @return array{text: string, tone: string} */
-    private function move(Run $run, int $node): array
+    /**
+     * One step along an edge. A FIREWALL blocks the edges leading on from it until its OS roll lands (the core's table):
+     * landed, it stays open for the run and the party and the runner moves on in the same turn, an act's noise; failed,
+     * they stay where they are and it is loud. Going back the way they came is never blocked, and a system that speaks
+     * no OS has nothing for a firewall to ask.
+     *
+     * @return array{0: list<array{text: string, tone: string}>, 1: string} The lines, and the turn's noise tier.
+     */
+    private function move(Character $character, Run $run, int $node): array
     {
+        $tree = $this->treeOf($run);
+        $from = (int) $run->node;
+        $system = $run->system();
+        $lines = [];
+
+        $through = $tree !== null
+            && $tree->nodes[$from]['kind'] === NodeKind::Firewall
+            && in_array([$from, $node], $tree->edges, true)
+            && ! in_array($from, $run->openedFirewalls(), true)
+            && $system?->os_skill_id !== null;
+
+        if ($through) {
+            if (! $this->checks->roll($this->osValue($character, $system), $this->osDifficulty($character, $system?->operatingSystem()->first()), 'os')->passed) {
+                return [[$this->line('cyberspace.run.log.tree.firewall_holds', tone: 'warn')], 'loud'];
+            }
+
+            $run->opened = array_values(array_unique([...array_map('intval', $run->opened ?? []), $from]));
+            $lines[] = $this->line('cyberspace.run.log.tree.firewall_opens', tone: 'ok');
+        }
+
         $run->node = $node;
         $this->reveal($run, [$node]);
+        $lines[] = $this->line('cyberspace.run.log.tree.move');
 
-        return $this->line('cyberspace.run.log.tree.move');
+        return [$lines, $through ? 'act' : 'move'];
     }
 
     /** @return array{text: string, tone: string} */
@@ -432,13 +478,14 @@ final readonly class Simulator
      *
      * @return list<array{text: string, tone: string}>
      */
-    private function noiseOf(Character $character, Run $run, RunAction $action, bool $locked, bool $iceAwake): array
+    private function noiseOf(Character $character, Run $run, RunAction $action, bool $locked, bool $iceAwake, ?string $moveTier = null): array
     {
         $osFailed = $locked && $run->os_locked && ! $run->inAFight()
             && in_array($action, [RunAction::Extract, RunAction::Install, RunAction::Burn, RunAction::Leech], true);
 
         $tier = match ($action) {
-            RunAction::Move, RunAction::Egress => 'move',
+            RunAction::Move => $moveTier ?? 'move',
+            RunAction::Egress => 'move',
             RunAction::Nmap => 'act',
             RunAction::Flood => 'loud',
             RunAction::Attack => $iceAwake ? 'loud' : null,
@@ -1262,7 +1309,7 @@ final readonly class Simulator
         $grade = $grade === null ? null : (int) $grade;
         $gradeDifficulty = (int) ($table[$grade] ?? ($table[1] ?? 0));
 
-        $ice = $run->ice_id === null ? null : Ice::query()->find($run->ice_id);
+        $ice = $run->ice_id === null || ! $run->iceReachesHere() ? null : Ice::query()->find($run->ice_id);
         $snare = $ice?->attackLevel(AttackTag::Ensnare);
         $multiplier = $this->ensnareMultiplier($character, $snare);
         $difficulty = (int) $this->egressDifficulty($run);
@@ -1300,7 +1347,8 @@ final readonly class Simulator
     private function egressDifficulty(Run $run): float
     {
         $grade = System::query()->where('address', $run->address)->value('grade');
-        $level = $run->ice_id === null ? 0 : (int) (Ice::query()->whereKey($run->ice_id)->value('level') ?? 0);
+        // Only an ICE that can reach the runner holds them (on a tree run, one on the core while they are at the entry cannot).
+        $level = $run->ice_id === null || ! $run->iceReachesHere() ? 0 : (int) (Ice::query()->whereKey($run->ice_id)->value('level') ?? 0);
 
         return $this->egressDifficultyFor((int) $grade, $level);
     }
@@ -1359,7 +1407,7 @@ final readonly class Simulator
      */
     private function egressMultiplier(Character $character, Run $run): float
     {
-        if ($run->ice_id === null) {
+        if ($run->ice_id === null || ! $run->iceReachesHere()) {
             return 1.0;
         }
 

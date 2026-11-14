@@ -180,3 +180,14 @@ Decided 2026-11-13, replacing the per-action detection chances.
   already under way.
 - **`detected` means the runner's trace is running** (per runner); **`alerted`** is the alert: the ICE wakes, standing
   is lost, the system locks down after the run. Shared by the party; it also sets `detected` on everyone.
+
+## Step 3 rules
+
+- **A firewall one runner opens stays open for the whole party.**
+- **A backdoor holder chooses their start on their own screen**: solo on the briefing, a party member beside their
+  loadout before launch. Shown only to a runner holding a backdoor on that system. **The core is the default.**
+- **Leaving the core mid-fight costs one parting hit** from the awake ICE; after that they are out of its reach.
+- **The ICE keeps its damage**: coming back to the core finds it as damaged as it was left, for the rest of the run.
+- **Built (step 3)**: a firewall guards the edges leading on from it, never the way back; a system that speaks no OS has
+  nothing for its firewalls to ask. The run screen shows the chance to pass a closed firewall you stand on, and the
+  Egress button is disabled away from the entry.

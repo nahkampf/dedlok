@@ -431,6 +431,29 @@
     </div>
 </div>
 
+{{-- WHERE A BACKDOOR TAKES YOU on a tree run (docs/RUN_TREE.md): in at the core, or at the entry like everybody else.
+     Only for somebody holding a backdoor on this system. Part of the run form, so a party member's choice is saved with
+     their loadout. --}}
+@if ($chooseStart)
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.tree.start_heading') }}</h2>
+    </div>
+    <fieldset class="stack" style="--gap:var(--s-2);border:0;padding:var(--s-3) 0;margin:0">
+        <label class="check check--radio">
+            <input type="radio" name="start_at" value="core" form="run-form" @checked(! $startAtEntry)>
+            <span class="check__box"></span>
+            <span>{{ Text::get('cyberspace.tree.start_core') }}</span>
+        </label>
+        <label class="check check--radio">
+            <input type="radio" name="start_at" value="entry" form="run-form" @checked($startAtEntry)>
+            <span class="check__box"></span>
+            <span>{{ Text::get('cyberspace.tree.start_entry') }}</span>
+        </label>
+    </fieldset>
+</div>
+@endif
+
 @if ($asMember)
 <div class="panel panel--snug" style="margin-top:var(--s-4);margin-bottom:var(--s-6)">
     <div class="panel__bd">

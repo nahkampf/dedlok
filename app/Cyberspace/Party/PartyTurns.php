@@ -247,7 +247,8 @@ final class PartyTurns
     /** The ICE's one strike of the round. */
     private function strike(RunParty $party): void
     {
-        $live = self::liveRuns($party->getKey());
+        // On a tree run the ICE stands on the core: it chooses among the runners there, and hits nobody when none is.
+        $live = self::liveRuns($party->getKey())->filter(fn (Run $r): bool => $r->iceReachesHere())->values();
         $struck = $live->filter(fn (Run $r): bool => $r->ice_id !== null);
 
         if ($struck->isEmpty()) {

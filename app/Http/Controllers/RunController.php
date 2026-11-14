@@ -18,6 +18,7 @@ use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
+use App\Cyberspace\Tree\RunTree;
 use App\Cyberspace\Tree\TreeView;
 use App\Cyberspace\TurnResult;
 use App\Decks\DeckTotals;
@@ -27,6 +28,7 @@ use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Run;
+use App\Models\RunPartyMember;
 use App\Models\System;
 use App\Models\SystemScan;
 use App\Programs\ProgramKind;
@@ -229,7 +231,10 @@ class RunController extends Controller
                 $resolver,
             ),
             'lockedDown' => $target->isLockedDown(),
-            'backdoor' => (new Backdoors)->heldOn($character, $target),
+            'backdoor' => $held = (new Backdoors)->heldOn($character, $target),
+            // A backdoor holder on a tree run's system chooses where to start (docs/RUN_TREE.md): the core unless they say.
+            'chooseStart' => $held !== null && RunTree::appliesTo($target),
+            'startAtEntry' => (bool) RunPartyMember::query()->where('character_id', $character->id)->whereNull('dropped_at')->value('start_at_entry'),
         ]);
     }
 
@@ -316,6 +321,8 @@ class RunController extends Controller
             // Running background processes to switch off for the run; the runner takes only what it offers.
             'suspend' => ['nullable', 'array', 'max:50'],
             'suspend.*' => ['integer', 'distinct'],
+            // A backdoor holder on a tree run's system: start at the core (the default) or the entry.
+            'start_at' => ['nullable', Rule::in(['core', 'entry'])],
         ]);
 
         $ids = array_values(array_filter([$data['icebreaker'] ?? null, ...($data['programs'] ?? [])]));
@@ -357,6 +364,7 @@ class RunController extends Controller
             $rows->concat($scriptRows)->all(),
             $this->runs,
             array_map('intval', $data['suspend'] ?? []),
+            ($data['start_at'] ?? null) === 'entry',
         );
 
         if (! $result->succeeded()) {

@@ -79,9 +79,10 @@ final readonly class RunStarter
      *
      * @param  iterable<InventoryItem>  $loadout
      */
-    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = []): RunResult
+    /** `$atEntry`: a runner holding a backdoor on a tree run's system starts at the entry rather than the core. */
+    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = [], bool $atEntry = false): RunResult
     {
-        return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout, $partyId, $suspend), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
+        return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout, $partyId, $suspend, $atEntry), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
     }
 
     /** Already in a run, hunted or fighting: the three things that come before everything else. THE one list, for the screen as much as for the start. */
@@ -106,7 +107,7 @@ final readonly class RunStarter
         return $deck !== null && DeckTotals::forCharacter($character, $deck, $this->resolver)->isReady();
     }
 
-    private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = []): RunResult
+    private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = [], bool $atEntry = false): RunResult
     {
         if (($blocked = $this->occupied($character)) !== null) {
             return RunResult::refused($blocked);
@@ -153,7 +154,7 @@ final readonly class RunStarter
         }
 
         try {
-            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout, $partyId, $suspend): ?Run {
+            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout, $partyId, $suspend, $atEntry): ?Run {
                 // The check at the top read a model that may be stale: ask the row, locked, so two presses make one run.
                 if (Character::query()->whereKey($character->getKey())->lockForUpdate()->value('current_run_id') !== null) {
                     return null;
@@ -174,11 +175,14 @@ final readonly class RunStarter
                     }
                 }
 
-                // A tree run (docs/RUN_TREE.md) starts on the entry, knowing it, with an empty noise bar. Decided here, once.
+                // A tree run (docs/RUN_TREE.md) starts on the entry, knowing it, with an empty noise bar; somebody holding a
+                // backdoor here comes in at the core instead, unless they chose the entry. Decided here, once.
                 $tree = RunTree::appliesTo($system) ? RunTree::of($system) : null;
+                $start = $tree === null ? null
+                    : ((new Backdoors)->heldOn($character, $system) !== null && ! $atEntry ? $tree->core : $tree->entry);
 
                 $run = Run::query()->create([
-                    ...($tree === null ? [] : ['node' => $tree->entry, 'known' => [$tree->entry], 'noise' => 0]),
+                    ...($tree === null ? [] : ['node' => $start, 'known' => [$start], 'noise' => 0]),
                     'character_id' => $character->getKey(),
                     'run_party_id' => $partyId,
                     'address' => $system->address,

@@ -142,9 +142,9 @@ final class Parties
     }
 
     /** Accepting needs standing at the same door: the party forms where it is going. */
-    public function accept(Character $character, ?array $loadout = null, ?array $suspend = null): ?PartyRefusal
+    public function accept(Character $character, ?array $loadout = null, ?array $suspend = null, ?bool $atEntry = null): ?PartyRefusal
     {
-        return DB::transaction(function () use ($character, $loadout, $suspend): ?PartyRefusal {
+        return DB::transaction(function () use ($character, $loadout, $suspend, $atEntry): ?PartyRefusal {
             $member = RunPartyMember::query()->where('character_id', $character->getKey())->lockForUpdate()->first();
 
             if ($member === null) {
@@ -170,7 +170,9 @@ final class Parties
             $mine = $loadout === null ? ($member->loadout ?? []) : $this->oneIcebreaker(InventoryItem::query()
                 ->where('character_id', $character->getKey())->whereIn('id', $loadout)->with('item.program')->get());
 
-            $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine] + ($suspend === null ? [] : ['suspend' => $suspend]));
+            $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine]
+                + ($suspend === null ? [] : ['suspend' => $suspend])
+                + ($atEntry === null ? [] : ['start_at_entry' => $atEntry]));
 
             return null;
         });
@@ -348,12 +350,12 @@ final class Parties
      * The owner's run starts first and decides it: a refusal there starts nobody. A member who cannot start (deck not
      * ready, moved off the door, a program that will not start) is dropped from the party, told, and the rest go.
      */
-    public function launch(Character $owner, RunPurpose $purpose, ?BackdoorKind $kind, array $ownerLoadout, RunStarter $starter, array $ownerSuspend = []): RunResult
+    public function launch(Character $owner, RunPurpose $purpose, ?BackdoorKind $kind, array $ownerLoadout, RunStarter $starter, array $ownerSuspend = [], bool $ownerAtEntry = false): RunResult
     {
         $party = RunParty::query()->where('owner_character_id', $owner->getKey())->first();
 
         if ($party === null || $party->started_at !== null) {
-            return $starter->start($owner, $purpose, $kind, $ownerLoadout, null, $ownerSuspend);
+            return $starter->start($owner, $purpose, $kind, $ownerLoadout, null, $ownerSuspend, $ownerAtEntry);
         }
 
         // The party forms at the door: an owner who walked off does not take it with them.
@@ -368,7 +370,7 @@ final class Parties
             return RunResult::refused(RunRefusal::NobodyReady);
         }
 
-        $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey(), $ownerSuspend);
+        $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey(), $ownerSuspend, $ownerAtEntry);
 
         if (! $result->succeeded()) {
             return $result;
@@ -386,7 +388,7 @@ final class Parties
             if ($runner !== null && $why === null) {
                 $rows = InventoryItem::query()->whereIn('id', $member->loadout ?? [])
                     ->where('character_id', $runner->getKey())->with('item.program')->get()->all();
-                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey(), $member->suspend ?? []);
+                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey(), $member->suspend ?? [], (bool) $member->start_at_entry);
                 $why = $started->succeeded() ? null : $started->message();
             }
 

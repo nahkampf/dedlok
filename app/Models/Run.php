@@ -8,6 +8,7 @@ use App\Casts\PointsCast;
 use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Position;
 use App\Cyberspace\RunPurpose;
+use App\Cyberspace\Tree\RunTree;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'pending_node', 'noise', 'alerted', 'acted_at'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'opened', 'pending_node', 'noise', 'alerted', 'acted_at'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -60,6 +61,7 @@ class Run extends Model
             'log' => 'array',
             'node' => 'integer',
             'known' => 'array',
+            'opened' => 'array',
             'pending_node' => 'integer',
             'noise' => 'float',
             'alerted' => 'boolean',
@@ -116,6 +118,31 @@ class Run extends Model
             : self::query()->where('run_party_id', $this->run_party_id)->get(['known'])->map(fn (self $r): array => $r->known ?? [])->all();
 
         return array_values(array_unique(array_map('intval', array_merge(...$lists))));
+    }
+
+    /** The firewalls this runner may pass: their own opening, and on a party run everybody's. @return list<int> */
+    public function openedFirewalls(): array
+    {
+        $lists = $this->run_party_id === null
+            ? [$this->opened ?? []]
+            : self::query()->where('run_party_id', $this->run_party_id)->get(['opened'])->map(fn (self $r): array => $r->opened ?? [])->all();
+
+        return array_values(array_unique(array_map('intval', array_merge(...$lists))));
+    }
+
+    /**
+     * Can the system's ICE reach this runner? On a tree run it stands on the core and hits nobody anywhere else; on any
+     * other run there is only the one room.
+     */
+    public function iceReachesHere(): bool
+    {
+        if (! $this->isTreeRun()) {
+            return true;
+        }
+
+        $system = $this->system();
+
+        return $system !== null && (int) $this->node === RunTree::of($system)->core;
     }
 
     /** Is something still swinging at them? */

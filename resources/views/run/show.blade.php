@@ -96,6 +96,12 @@
             @endif
         </div>
 
+        @if ($tree->firewallChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.firewall_chance', ['chance' => (int) round($tree->firewallChance * 100)]) }}
+            </p>
+        @endif
+
         <x-run-tree :view="$tree" :label="Text::get('cyberspace.tree.heading')"
                     :waiting="$waiting ? ($run->pending_action === 'move' ? (string) $run->pending_node : '-') : ''" />
     </div>
@@ -272,6 +278,10 @@
 <div class="panel panel--snug" style="margin-top:var(--s-4)" data-run-watch="{{ $run->id }}" data-turn="{{ $run->turn }}" data-party="{{ $shared ? 1 : 0 }}">
     {{-- ON OR PAST A THRESHOLD: the next turn pulls them out whatever they press. The loud thing on the
          panel, because it is the one fact that changes what the buttons below will do. --}}
+    {{-- A TREE RUN'S THRESHOLD ONLY WARNS: leaving takes the entry, so nothing pulls them out where they stand. --}}
+    @if ($thresholdBreached && $tree)
+        <p class="micro" style="color:var(--warn);margin:var(--s-2) 0 0">{{ Text::get('cyberspace.tree.threshold_warn') }}</p>
+    @endif
     @if ($thresholdBreached)
         <div class="hazard-stripe hazard-stripe--thin" role="img" aria-label="{{ Text::get('cyberspace.run.overview.threshold_hit') }}" title="{{ Text::get('cyberspace.run.overview.threshold_hit') }}"></div>
     @endif
@@ -411,8 +421,9 @@
                  roll uses, so the number a player decides against is the number the game believes. --}}
             {{-- The working behind that number floats from here (hover, or keyboard focus) — it is the
                  button the number is on. Not on click: that is the egress itself. --}}
+            {{-- A TREE RUN LEAVES BY THE ENTRY: elsewhere the button is there but cannot be pressed. --}}
             <button type="submit" name="action" value="egress" class="btn btn--warn cut"
-                    data-inspect="#egress-working" data-inspect-hover>
+                    data-inspect="#egress-working" data-inspect-hover @if ($tree && ! $tree->atEntry) disabled @endif>
                 {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egress->percent()]) }}
             </button>
         </div>

@@ -1277,6 +1277,11 @@ return [
             'noise' => 'Noise',
             'no_ids' => 'No IDS',
             'allies' => 'crew',
+            'firewall_chance' => 'Firewall: :chance% to get through.',
+            'threshold_warn' => 'You are past one of your thresholds. Get to the entry to leave.',
+            'start_heading' => 'Way in',
+            'start_core' => 'Through your backdoor, at the core',
+            'start_entry' => 'At the entry, like anybody else',
             'node' => [
                 'entry' => 'Entrypoint',
                 'switch' => 'Switch',
@@ -1858,6 +1863,8 @@ return [
                     'alert' => 'The IDS reaches a threshold. The system is on alert.',
                     'ice_wakes' => 'The ICE on the core turns its attention to you.',
                     'traced' => 'A tracer catches your signal and starts walking it back.',
+                    'firewall_opens' => 'The firewall accepts you and lets you through.',
+                    'firewall_holds' => 'The firewall turns you away.',
                 ],
                 'egress' => 'You egress.',
                 // HELD, and one line for both reasons — the machine out-rolled

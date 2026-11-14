@@ -14,7 +14,7 @@ class RunPartyMember extends Model
 
     protected function casts(): array
     {
-        return ['joined_at' => 'datetime', 'dropped_at' => 'datetime', 'loadout' => 'array', 'suspend' => 'array'];
+        return ['joined_at' => 'datetime', 'dropped_at' => 'datetime', 'loadout' => 'array', 'suspend' => 'array', 'start_at_entry' => 'boolean'];
     }
 
     /** @return BelongsTo<RunParty, $this> */

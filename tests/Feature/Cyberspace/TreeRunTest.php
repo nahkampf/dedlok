@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Checks\CheckRoller;
+use App\Cyberspace\BackdoorKind;
+use App\Cyberspace\Backdoors;
 use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyTurns;
 use App\Cyberspace\RunAction;
+use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunRefusal;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
 use App\Cyberspace\SystemType;
+use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
 use App\Models\Character;
 use App\Models\Ice;
@@ -20,6 +24,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Run;
 use App\Models\RunParty;
+use App\Models\Skill;
 use App\Models\System;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
@@ -292,6 +297,128 @@ final class TreeRunTest extends TestCase
         $this->checks(0.0);
         $this->actingAs($this->character->fresh()->user)->post(route('run.act'), ['action' => 'move', 'node' => $next]);
         $this->assertSame($next, $run->fresh()->node);
+    }
+
+    /** The tree's first firewall, the node before it and the node it guards. @return array{0: int, 1: int, 2: int} */
+    private function firewall(): array
+    {
+        $os = Skill::factory()->create(['slug' => 'lattice', 'title' => 'Lattice', 'category' => 'Operating Systems', 'rank' => 4]);
+        System::query()->where('address', 'DEADBEEF')->update(['os_skill_id' => $os->id]);
+
+        $wall = $this->tree->nodesOf(NodeKind::Firewall)[0];
+        $before = collect($this->tree->edges)->first(fn (array $e): bool => $e[1] === $wall)[0];
+        $after = collect($this->tree->edges)->first(fn (array $e): bool => $e[0] === $wall)[1];
+
+        return [$before, $wall, $after];
+    }
+
+    public function test_a_firewall_holds_on_a_failed_os_roll_and_it_is_loud(): void
+    {
+        [, $wall, $after] = $this->firewall();
+        $run = $this->begin();
+        $run->forceFill(['node' => $wall])->save();
+
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $after);
+        $run = $run->fresh();
+
+        $this->assertSame($wall, $run->node, 'turned away');
+        $this->assertSame(20.0, (float) $run->noise, 'the bottom of the loud tier');
+        $this->assertSame([], $run->openedFirewalls());
+    }
+
+    public function test_a_landed_os_roll_opens_the_firewall_for_the_party_and_moves_in_the_same_turn(): void
+    {
+        [$before, $wall, $after] = $this->firewall();
+        $run = $this->begin();
+        $run->forceFill(['node' => $wall])->save();
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $after);
+        $run = $run->fresh();
+
+        $this->assertSame($after, $run->node);
+        $this->assertSame([$wall], $run->openedFirewalls());
+        $this->assertSame(1, $run->turn);
+
+        // Going back the way you came is never blocked, and the way on again needs no second roll.
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run, RunAction::Move, node: $wall);
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $after);
+        $this->assertSame($after, $run->fresh()->node);
+        unset($before);
+    }
+
+    public function test_egress_is_only_from_the_entry(): void
+    {
+        $run = $this->begin();
+        $run->forceFill(['node' => $this->tree->core])->save();
+
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Egress)->refusal);
+    }
+
+    public function test_the_ice_on_the_core_strikes_nobody_elsewhere_and_holds_nobody_at_the_entry(): void
+    {
+        $run = $this->begin();
+        $ice = Ice::query()->where('level', 1)->sole();
+        $run->forceFill(['ice_id' => $ice->id, 'ice_integrity' => $ice->integrity])->save();
+        $si = (float) $this->character->fresh()->current_synaptic_integrity;
+
+        $this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+        $this->assertSame($si, (float) $this->character->fresh()->current_synaptic_integrity, 'nothing reached the entry');
+        $this->assertFalse($run->fresh()->iceReachesHere());
+    }
+
+    public function test_leaving_the_core_mid_fight_costs_a_parting_hit_and_the_ice_keeps_its_damage(): void
+    {
+        $run = $this->begin();
+        $ice = Ice::query()->where('level', 1)->sole();
+        $run->forceFill(['node' => $this->tree->core, 'ice_id' => $ice->id, 'ice_integrity' => 3, 'ice_damage' => 5])->save();
+        $away = $this->tree->neighbours($this->tree->core)[0];
+        $si = (float) $this->character->fresh()->current_synaptic_integrity;
+
+        // The die at its low end: the ICE's skill roll lands.
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $away);
+        $run = $run->fresh();
+
+        $this->assertSame($away, $run->node);
+        $this->assertLessThan($si, (float) $this->character->fresh()->current_synaptic_integrity, 'one parting hit');
+        $this->assertSame(3.0, (float) $run->ice_integrity, 'as damaged as it was left');
+    }
+
+    public function test_a_threshold_only_warns_on_a_tree_run(): void
+    {
+        $this->character->forceFill(['egress_trace_at' => 1])->save();
+        $run = $this->begin();
+        $run->forceFill(['detected' => true, 'trace' => 50])->save();
+
+        $result = $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+        $this->assertNull($result->ending);
+        $this->assertTrue($run->fresh()->isLive(), 'nobody was pulled out');
+    }
+
+    public function test_a_backdoor_holder_starts_at_the_core_unless_they_choose_the_entry(): void
+    {
+        (new Backdoors)->install($this->character, System::query()->where('address', 'DEADBEEF')->sole(), BackdoorKind::Siphon);
+
+        $this->checks(1.0);
+        $run = app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction)->run;
+        $this->assertSame($this->tree->core, $run->node);
+        $this->assertSame(0.0, (float) $run->noise, 'the arrival rolls are skipped');
+        app(RunStarter::class)->end($this->character->fresh(), $run, RunEnding::Egress);
+
+        $run = app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction, atEntry: true)->run;
+        $this->assertSame($this->tree->entry, $run->node);
+        $this->assertSame(0.0, (float) $run->noise, 'still skipped at the entry');
+    }
+
+    public function test_the_briefing_offers_where_to_start_only_to_a_backdoor_holder(): void
+    {
+        $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))->assertOk()->assertDontSee('name="start_at"', false);
+
+        (new Backdoors)->install($this->character, System::query()->where('address', 'DEADBEEF')->sole(), BackdoorKind::Siphon);
+
+        $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))->assertOk()
+            ->assertSee('name="start_at" value="core"', false)->assertSee('name="start_at" value="entry"', false);
     }
 
     public function test_a_party_shares_one_bar_and_the_alert_but_not_the_trace(): void

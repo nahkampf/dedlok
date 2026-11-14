@@ -36,6 +36,8 @@ final readonly class TreeView
         public float $noise,
         // The bar's depth when the runner's scan read the IDS (0: it has none); null when it did not.
         public ?float $ids,
+        // Standing on a firewall that is still closed: the chance its OS roll lands (the core's own figure). Null otherwise.
+        public ?float $firewallChance = null,
     ) {}
 
     public static function for(Run $run, Character $character, Simulator $simulator, ?SystemScan $scan): ?self
@@ -90,6 +92,9 @@ final readonly class TreeView
             $simulator->refusal($character, $run, RunAction::Nmap, null) === null,
             $simulator->noiseLevel($run),
             $ids,
+            $tree->nodes[$here]['kind'] === NodeKind::Firewall && ! in_array($here, $run->openedFirewalls(), true) && $system->os_skill_id !== null
+                ? $simulator->osChanceFor($character, $system->operatingSystem()->first())
+                : null,
         );
     }
 }
