@@ -18,7 +18,7 @@
             <h2>{{ Text::get('cyberspace.tree.heading') }}</h2>
             <div class="spacer"></div>
             @if ($run->alerted)
-                <span class="tag tag--crit">{{ Text::get('cyberspace.tree.alerted') }}</span>
+                <span class="tag tag--crit tag--pulse">{{ Text::get('cyberspace.tree.alerted') }}</span>
             @endif
         </div>
 

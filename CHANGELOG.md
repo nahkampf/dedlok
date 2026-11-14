@@ -39,6 +39,7 @@
 - **Run trees: Wipe shows greyed out on a log server before the alert (same flag).** With a line saying there is nothing to wipe yet (`cyberspace.tree.wipe_quiet`, `TreeView::$logQuiet`).
 - **A crew run waiting on the others dims the whole screen.** A centred "Waiting for crew..." with the round timer under it (`.wait-overlay` in the UI kit, `cyberspace.run.waiting`).
 - **"You are here" is a pulsing green diamond**, on the run tree and the City map (`.here-mark`), no longer ember.
+- **The run map's Alert tag pulses** while the alert is on (`.tag--pulse`).
 
 ### Changed
 - **The Darknet gateway moves to `DEADBEEF`.** A migration gives the main-grid end of the Darknet the reserved address and carries scans, contacts, bookmarks, mission targets, runs, run parties and the `darknet_access` messages already sent along with it.

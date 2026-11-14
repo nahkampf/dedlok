@@ -1494,6 +1494,8 @@ button.tag:hover, button.tag:focus-visible { border-color: var(--crit); }
 .tag--ok    { color: var(--ok);  border-color: color-mix(in srgb, var(--ok) 35%, transparent);  background: var(--ok-a); }
 .tag--warn  { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); background: var(--warn-a); }
 .tag--crit  { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 40%, transparent); background: var(--crit-a); }
+/* A tag that is live (a run's Alert): it breathes, at the pace of the you-are-here diamond. */
+.tag--pulse { animation: here-mark 1.6s ease-in-out infinite; }
 .tag--info  { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
 /* A tag whose text may be longer than the room it has (a system's name, a scan's reading): it wraps and grows
    rather than running out of its box. After .tag, which it overrides at the same weight. */
