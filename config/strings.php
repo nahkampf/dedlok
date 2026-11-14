@@ -1289,6 +1289,7 @@ return [
             'disarm_chance' => 'Traps: :chance% to disarm.',
             'wipe_chance' => 'Log server: :chance% to wipe the alert from the record.',
             'sentry' => 'sentry',
+            'ice' => 'ICE',
             'tunnel_holding' => 'Your Egress Tunnel holds this node open as a way out, for you and your crew, while you stay.',
             'shutdown_chance' => 'ICE controller: :chance% to shut it down.',
             'cutting' => 'A Cordon is cutting this node: :turns turns left.',

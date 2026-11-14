@@ -952,6 +952,9 @@ final class TreeRunTest extends TestCase
         $threat = fn (): bool => collect(TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->nodes)->firstWhere('key', $hub)['threat'];
 
         $this->assertTrue($threat(), 'a security hub nobody has subverted');
+        $core = RunTree::of(System::query()->where('address', 'DEADBEEF')->sole())->core;
+        $run->fresh()->forceFill(['known' => [...$run->fresh()->knownNodes(), $core]])->save();
+        $this->assertTrue(collect(TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->nodes)->firstWhere('key', $core)['ice'], 'the core\'s own ICE is marked');
         $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
             ->assertSee('board__node--threat', false)->assertSee('data-tree-run="'.$run->id.'"', false)->assertDontSee('board--alert', false);
 

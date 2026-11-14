@@ -25,7 +25,7 @@ use App\Support\Text;
 final readonly class TreeView
 {
     /**
-     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, cutting: ?int, move: bool, known: bool, threat?: bool, kind?: ?string, sprung?: bool}>  $nodes
+     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, cutting: ?int, move: bool, known: bool, threat?: bool, kind?: ?string, sprung?: bool, ice?: bool}>  $nodes
      * @param  list<array{0: int, 1: int}>  $links
      */
     public function __construct(
@@ -183,6 +183,8 @@ final readonly class TreeView
             'threat' => in_array($n, $known, true) && $threat($n),
             'kind' => in_array($n, $known, true) || $shown($n) ? self::kindShown($tree, $n, $shown($n)) : null,
             'sprung' => ($traps[$n] ?? null) === 'sprung',
+            // The system's own ICE, on the core while it stands.
+            'ice' => in_array($n, $known, true) && $tree->nodes[$n]['kind'] === NodeKind::Core && $coreIce,
         ], $seen);
 
         // An edge is drawn when the runner knows one of its ends: that is what standing on a node or an Nmap shows.
