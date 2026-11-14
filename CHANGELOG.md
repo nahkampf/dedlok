@@ -36,6 +36,7 @@
 - **Run trees: fixes from the branch review (same flag).** A refused Install no longer makes the run a backdoor run; the scan's tree never names a honeypot; a landed backdoor no longer ends a tree party's runs where they stand (each still walks out); the idle sweep pages by id; the Egress Tunnel says its own refusal (`RunRefusal::TunnelRefused`); a tunnel's strength comes off the grade term only, in the roll as on the screen; an empty map no longer breaks the run screen; trees are generated once per system per process, and the run screen asks the OS chance and the sentries' ICE once.
 - **The run log is grouped by turn**: each turn opens with a centred rule naming it (`.rule--center`), instead of a tag on every line.
 - **Run trees: an Nmap reveals the nearest ring first (same flag).** Each press reveals the nodes at the nearest distance, within the Nmapper's reach, that still holds anything unrevealed (to a deep Nmapper also unfound traps and honeypots and unread sentries); with nothing left in reach the button is greyed out and a press refused (`RunRefusal::NothingToMap`).
+- **Run trees: Wipe shows greyed out on a log server before the alert (same flag).** With a line saying there is nothing to wipe yet (`cyberspace.tree.wipe_quiet`, `TreeView::$logQuiet`).
 
 ### Changed
 - **The Darknet gateway moves to `DEADBEEF`.** A migration gives the main-grid end of the Darknet the reserved address and carries scans, contacts, bookmarks, mission targets, runs, run parties and the `darknet_access` messages already sent along with it.

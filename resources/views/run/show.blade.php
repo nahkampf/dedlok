@@ -77,6 +77,8 @@
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
                 {{ Text::get('cyberspace.tree.wipe_chance', ['chance' => (int) round($tree->wipeChance * 100)]) }}
             </p>
+        @elseif ($tree->logQuiet)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">{{ Text::get('cyberspace.tree.wipe_quiet') }}</p>
         @endif
         {{-- FOUND TRAPS next door: a Disarm each (the OS roll), its own form since it names a node. --}}
         @if ($tree->disarm !== [])
@@ -313,9 +315,9 @@
                     {{ Text::get('cyberspace.run.action.shutdown') }}
                 </button>
             @endif
-            {{-- A LOG SERVER holding an alert: Wipe is its OS roll. --}}
-            @if ($tree && $tree->wipeChance !== null)
-                <button type="submit" name="action" value="wipe" class="btn cut btn--go">
+            {{-- A LOG SERVER holding an alert: Wipe is its OS roll. Before the alert it shows, greyed out. --}}
+            @if ($tree && ($tree->wipeChance !== null || $tree->logQuiet))
+                <button type="submit" name="action" value="wipe" class="btn cut btn--go" @if ($tree->logQuiet) disabled @endif>
                     {{ Text::get('cyberspace.run.action.wipe') }}
                 </button>
             @endif

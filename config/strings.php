@@ -1288,6 +1288,7 @@ return [
             'loopback_chance' => 'Loopback: :chance% to hold each turn.',
             'disarm_chance' => 'Traps: :chance% to disarm.',
             'wipe_chance' => 'Log server: :chance% to wipe the alert from the record.',
+            'wipe_quiet' => 'Log server: nothing to wipe until an alert goes off.',
             'sentry' => 'sentry',
             'ice' => 'ICE',
             'barrier' => 'barrier',

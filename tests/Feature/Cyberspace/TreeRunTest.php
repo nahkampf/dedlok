@@ -711,6 +711,9 @@ final class TreeRunTest extends TestCase
         $run = $this->begin();
         $run->forceFill(['node' => $log])->save();
         $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Wipe)->refusal, 'nothing to wipe before the alert');
+        $quiet = TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null);
+        $this->assertTrue($quiet->logQuiet, 'Wipe shows greyed out before the alert');
+        $this->assertNull($quiet->wipeChance);
 
         // The alert, on the step back off the log server.
         $run->fresh()->forceFill(['noise' => 39.9, 'opened' => $tree->nodesOf(NodeKind::Firewall)])->save();

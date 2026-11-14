@@ -68,6 +68,8 @@ final readonly class TreeView
         // An Egress Tunnel may be started here (not the core, none of theirs up, a script and the skill); theirs is up.
         public bool $canTunnel = false,
         public bool $tunnelling = false,
+        // Standing on a log server before the alert: Wipe shows, greyed out, with nothing yet to wipe.
+        public bool $logQuiet = false,
     ) {}
 
     /** What a node is called on the map: a trap reads as a conduit until it is found, and as one again once spent. */
@@ -251,6 +253,7 @@ final readonly class TreeView
             $simulator->controllerOpen($run) ? $osChance() : null,
             $simulator->refusal($character, $run, RunAction::Tunnel, null) === null,
             $run->tunnel !== null,
+            $tree->nodes[$here]['kind'] === NodeKind::Log && ! $run->alerted && $system->os_skill_id !== null,
         );
     }
 
