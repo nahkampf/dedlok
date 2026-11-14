@@ -309,6 +309,8 @@ final readonly class Simulator
                 $log[] = $this->nmap($character, $run);
             } elseif ($action === RunAction::Breach) {
                 [$log[], $breachTier] = $this->breach($character, $run);
+            } elseif ($action === RunAction::Subvert) {
+                [$log[], $breachTier] = $this->subvert($character, $run);
             } else {
                 $log[] = $this->line('cyberspace.run.log.hold');
             }
@@ -394,7 +396,7 @@ final readonly class Simulator
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
         if (! $run->isTreeRun()) {
-            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
+            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
         }
 
         $tree = $this->treeOf($run);
@@ -411,6 +413,7 @@ final readonly class Simulator
                 default => null,
             },
             RunAction::Breach => $this->firewallClosed($run) ? null : RunRefusal::NotHere,
+            RunAction::Subvert => $this->hubOpen($run) ? null : RunRefusal::NotHere,
             RunAction::Nmap => $this->nmapReach($character) < 1 ? RunRefusal::NoNmapper : null,
             // A data vault takes an Extract too.
             RunAction::Extract => (int) $run->node !== $tree->core && $tree->nodes[(int) $run->node]['kind'] !== NodeKind::Vault ? RunRefusal::NotHere : null,
@@ -558,6 +561,57 @@ final readonly class Simulator
             && $run->system()?->os_skill_id !== null;
     }
 
+    /**
+     * Standing on a security hub there is still something to do about: nobody in the party has subverted it, the alert
+     * has not gone off, and the system speaks an OS to roll against.
+     */
+    public function hubOpen(Run $run): bool
+    {
+        $tree = $this->treeOf($run);
+        $here = (int) $run->node;
+
+        return $tree !== null
+            && $tree->nodes[$here]['kind'] === NodeKind::Hub
+            && ! $run->alerted
+            && ! in_array($here, $run->openedFirewalls(), true)
+            && $run->system()?->os_skill_id !== null;
+    }
+
+    /** On a security hub that nobody has subverted. */
+    private function onLiveHub(Run $run): bool
+    {
+        $tree = $this->treeOf($run);
+
+        return $tree !== null && $tree->nodes[(int) $run->node]['kind'] === NodeKind::Hub && ! $this->hubSubverted($run);
+    }
+
+    /** Somebody in the party has subverted this tree's security hub: no alert can go off. */
+    public function hubSubverted(Run $run): bool
+    {
+        $tree = $run->isTreeRun() ? $this->treeOf($run) : null;
+
+        return $tree !== null && array_intersect($tree->nodesOf(NodeKind::Hub), $run->openedFirewalls()) !== [];
+    }
+
+    /**
+     * SUBVERT: the security hub's OS roll (a firewall's). Landed, it is the party's for the run (kept in `runs.opened`)
+     * and no alert can go off, an act's noise; failed, it is loud.
+     *
+     * @return array{0: array{text: string, tone: string}, 1: string} The line, and the turn's noise tier.
+     */
+    private function subvert(Character $character, Run $run): array
+    {
+        $system = $run->system();
+
+        if (! $this->checks->roll($this->osValue($character, $system), $this->osDifficulty($character, $system?->operatingSystem()->first()), 'os')->passed) {
+            return [$this->line('cyberspace.run.log.tree.hub_holds', tone: 'warn'), 'loud'];
+        }
+
+        $run->opened = array_values(array_unique([...array_map('intval', $run->opened ?? []), (int) $run->node]));
+
+        return [$this->line('cyberspace.run.log.tree.hub_subverted', tone: 'ok'), 'act'];
+    }
+
     /** One step along an edge. Through a firewall only once it is breached; back the way you came always. */
     private function move(Run $run, int $node): array
     {
@@ -617,8 +671,9 @@ final readonly class Simulator
             && in_array($action, [RunAction::Extract, RunAction::Install, RunAction::Burn, RunAction::Leech], true);
 
         $tier = match ($action) {
-            RunAction::Move => 'move',
-            RunAction::Breach => $breachTier,
+            // Stepping onto a security hub nobody has subverted is loud.
+            RunAction::Move => $this->onLiveHub($run) ? 'loud' : 'move',
+            RunAction::Breach, RunAction::Subvert => $breachTier,
             RunAction::Egress => 'move',
             RunAction::Nmap => 'act',
             RunAction::Flood => 'loud',
@@ -711,7 +766,8 @@ final readonly class Simulator
      */
     private function alertTheSystem(Character $character, Run $run, System $system): array
     {
-        if ($run->alerted) {
+        // A subverted security hub: the bar still fills, and nothing goes off.
+        if ($run->alerted || $this->hubSubverted($run)) {
             return [];
         }
 

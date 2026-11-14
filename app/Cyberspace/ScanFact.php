@@ -177,6 +177,7 @@ enum ScanFact: string
             'firewalls' => Text::plural('cyberspace.reading.firewalls', count($tree->nodesOf(NodeKind::Firewall))),
             'vaults' => Text::plural('cyberspace.reading.vaults', count($tree->nodesOf(NodeKind::Vault))),
             'ports' => Text::plural('cyberspace.reading.ports', count($tree->nodesOf(NodeKind::Port))),
+            'hubs' => Text::plural('cyberspace.reading.hubs', count($tree->nodesOf(NodeKind::Hub))),
         ]);
     }
 

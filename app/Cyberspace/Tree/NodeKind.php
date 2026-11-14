@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Cyberspace\Tree;
 
 /**
- * What a node in a run tree is (docs/RUN_TREE.md). Step 1's six and phase 2's maintenance port; relays, security hubs, traps
- * and the rest arrive with later steps.
+ * What a node in a run tree is (docs/RUN_TREE.md). Step 1's six and phase 2's maintenance port and security hub; relays,
+ * traps and the rest arrive with later steps.
  */
 enum NodeKind: string
 {
@@ -27,6 +27,12 @@ enum NodeKind: string
 
     /** A maintenance port: a second exit, a dead end off the rich path. Egress here rolls against the grade below's difficulty. */
     case Port = 'port';
+
+    /**
+     * A security hub, where the quiet and rich paths meet. Stepping on it is loud on a failed stealth roll; subverted (the
+     * OS roll), no alert can go off for the party's run. On a system with no IDS it is a conduit.
+     */
+    case Hub = 'hub';
 
     /** What the run is for. A firewall too, and where the system's ICE stands. */
     case Core = 'core';

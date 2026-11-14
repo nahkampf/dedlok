@@ -407,6 +407,58 @@ final class TreeRunTest extends TestCase
         $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Egress)->refusal);
     }
 
+    /** A grade 7 tree (quiet and rich always meet at a hub) with an OS; the runner stands on the core beside the hub. */
+    private function hub(): array
+    {
+        $os = Skill::factory()->create(['slug' => 'lattice', 'title' => 'Lattice', 'category' => 'Operating Systems', 'rank' => 4]);
+        System::query()->where('address', 'DEADBEEF')->update(['os_skill_id' => $os->id, 'grade' => 7]);
+        $tree = RunTree::of(System::query()->where('address', 'DEADBEEF')->sole());
+        $run = $this->begin();
+        $run->forceFill(['node' => $tree->core])->save();
+
+        return [$run->fresh(), $tree->nodesOf(NodeKind::Hub)[0]];
+    }
+
+    public function test_stepping_onto_a_security_hub_is_loud_and_a_failed_subvert_too(): void
+    {
+        [$run, $hub] = $this->hub();
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Subvert)->refusal, 'only on the hub');
+
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $hub);
+        $this->assertSame(20.0, (float) $run->fresh()->noise, 'the bottom of the loud tier');
+
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Subvert);
+        $this->assertSame(40.0, (float) $run->fresh()->noise);
+        $this->assertTrue($run->fresh()->alerted, 'the bar is full');
+    }
+
+    public function test_a_subverted_hub_lets_the_bar_fill_and_nothing_go_off(): void
+    {
+        [$run, $hub] = $this->hub();
+        $run->forceFill(['node' => $hub])->save();
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Subvert);
+        $this->assertSame([$hub], $run->fresh()->openedFirewalls());
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Subvert)->refusal, 'once is enough');
+
+        $run->fresh()->forceFill(['noise' => 39.0])->save();
+        $core = RunTree::of(System::query()->where('address', 'DEADBEEF')->sole())->core;
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $core);
+        $run = $run->fresh();
+        $this->assertSame($core, $run->node);
+        $this->assertGreaterThanOrEqual(40.0, (float) $run->noise, 'the bar still fills');
+        $this->assertFalse($run->alerted);
+    }
+
+    public function test_with_no_ids_the_hub_is_a_conduit(): void
+    {
+        System::query()->where('address', 'DEADBEEF')->update(['grade' => 7, 'ids_detection' => 0]);
+        $system = System::query()->where('address', 'DEADBEEF')->sole();
+
+        $this->assertSame([], RunTree::of($system)->nodesOf(NodeKind::Hub));
+        $this->assertCount(1, RunTree::generate('DEADBEEF', 7, SystemType::Compute)->nodesOf(NodeKind::Hub));
+    }
+
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void
     {
         // A grade 3 compute tree with a rich path, and so a port.

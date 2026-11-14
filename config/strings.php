@@ -1280,6 +1280,8 @@ return [
             'no_ids' => 'No IDS',
             'allies' => 'crew',
             'firewall_chance' => 'Firewall: :chance% to get through.',
+            'hub_chance' => 'Security hub: :chance% to subvert.',
+            'subverted' => 'The security hub is subverted. No alert can go off.',
             'threshold_warn' => 'You are past one of your thresholds, and you should egress immediately.',
             'start_heading' => 'Entrypoint',
             'start_core' => 'Through your backdoor, at the core',
@@ -1295,6 +1297,7 @@ return [
                 'firewall' => 'Firewall',
                 'vault' => 'Data vault',
                 'port' => 'Maintenance port',
+                'hub' => 'Security hub',
                 'core' => 'Core',
             ],
         ],
@@ -1841,6 +1844,7 @@ return [
                 'move' => 'Move',
                 'nmap' => 'Network Map',
                 'breach' => 'Breach',
+                'subvert' => 'Subvert',
                 'jackout' => 'Crash Jackout',
                 'jackout_confirm' => 'Pull the plug',
                 'jackout_cancel' => 'Stay in',
@@ -1877,6 +1881,8 @@ return [
                     'traced' => 'A tracer catches your signal and starts walking it back.',
                     'firewall_opens' => 'The firewall accepts you and lets you through.',
                     'firewall_holds' => 'The firewall turns you away.',
+                    'hub_subverted' => 'The security hub takes your word for everything now. Nothing here will raise the alarm.',
+                    'hub_holds' => 'The security hub refuses you, loudly.',
                     // :damage is the Synaptic Integrity it cost.
                     'jackout' => 'You rip the jack out. The system is gone, and so is :damage of your synaptic integrity.',
                     'jackout_neural' => 'Your mind does not come back whole: :damage of neural damage.',
@@ -2175,10 +2181,11 @@ return [
             'layout' => ':paths, :moves to the core',
             'paths' => ['one' => '1 path', 'many' => ':count paths'],
             'moves' => ['one' => '1 move', 'many' => ':count moves'],
-            'nodes' => ':firewalls, :vaults, :ports',
+            'nodes' => ':firewalls, :vaults, :ports, :hubs',
             'firewalls' => ['zero' => 'no firewalls', 'one' => '1 firewall', 'many' => ':count firewalls'],
             'vaults' => ['zero' => 'no data vaults', 'one' => '1 data vault', 'many' => ':count data vaults'],
             'ports' => ['zero' => 'no maintenance ports', 'one' => '1 maintenance port', 'many' => ':count maintenance ports'],
+            'hubs' => ['zero' => 'no security hubs', 'one' => '1 security hub', 'many' => ':count security hubs'],
 
             /*
             | The guard and the reprisal, read together. A machine whose owner

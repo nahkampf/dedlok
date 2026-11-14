@@ -242,6 +242,19 @@ states' job.
 - **The scan's Nodes reading counts ports** alongside firewalls and vaults.
 - **Drawn in a lane of its own** below the rich path.
 
+### Security hub
+
+- **Where quiet and rich meet** (the conduit that joined them before), so only trees with both (some at grades 5–6,
+  all at 7–9). The fast path never passes one. `NodeKind::Hub`.
+- **Stepping onto it is loud** on a failed stealth roll (20–30 instead of a move's 3–6), until it is subverted.
+- **Subvert** (`RunAction::Subvert`, a button on the hub): the OS roll, as a firewall's. Landed, an act's noise;
+  failed, loud, and it can be tried again.
+- **Subverted, no alert can go off for the party's run**: the bar still fills, and nothing happens when it is full.
+  Kept in `runs.opened`, read across the party as opened firewalls are. If the alert has already gone off, it stays,
+  and Subvert is not offered.
+- **The scan's Nodes reading counts hubs.**
+- **No IDS, no hub**: on such a system the node is a conduit, labelled and played as one (`RunTree::of`).
+
 ### Backdoors (to change, with backdoors at any node)
 
 - **A backdoor on the system takes you to the maintenance port, not the core** (noted 2026-11-14). Today it still

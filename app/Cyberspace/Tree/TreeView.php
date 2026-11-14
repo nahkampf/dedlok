@@ -42,6 +42,10 @@ final readonly class TreeView
         public ?float $firewallChance = null,
         // Standing on a data vault: it takes an Extract on any purpose.
         public bool $atVault = false,
+        // Standing on a security hub there is still something to do about: the chance its OS roll lands. Null otherwise.
+        public ?float $hubChance = null,
+        // The party has subverted the hub: no alert can go off.
+        public bool $subverted = false,
     ) {}
 
     public static function for(Run $run, Character $character, Simulator $simulator, ?SystemScan $scan): ?self
@@ -107,6 +111,8 @@ final readonly class TreeView
                 ? $simulator->osChanceFor($character, $system->operatingSystem()->first())
                 : null,
             $tree->nodes[$here]['kind'] === NodeKind::Vault,
+            $simulator->hubOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
+            $simulator->hubSubverted($run),
         );
     }
 

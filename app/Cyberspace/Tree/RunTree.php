@@ -43,9 +43,18 @@ final readonly class RunTree
             && in_array($system->type, [SystemType::Silo, SystemType::Compute, SystemType::Relay], true);
     }
 
+    /** A system with no IDS has no security hub: the node is a conduit there. */
     public static function of(System $system): self
     {
-        return self::generate($system->address, (int) $system->grade, $system->type);
+        $tree = self::generate($system->address, (int) $system->grade, $system->type);
+
+        if ((float) $system->ids_detection > 0) {
+            return $tree;
+        }
+
+        $nodes = array_map(static fn (array $n): array => $n['kind'] === NodeKind::Hub ? ['kind' => NodeKind::Conduit, 'path' => $n['path']] : $n, $tree->nodes);
+
+        return new self($nodes, $tree->edges, $tree->entry, $tree->core);
     }
 
     public static function generate(string $address, int $grade, SystemType $type): self
@@ -89,8 +98,8 @@ final readonly class RunTree
 
         $core = $add(NodeKind::Core);
 
-        // Quiet and rich meet at one conduit before the core (a security hub in phase 2), which counts as their last node.
-        $meet = $join ? $add(NodeKind::Conduit) : null;
+        // Quiet and rich meet at a security hub before the core, which counts as their last node.
+        $meet = $join ? $add(NodeKind::Hub) : null;
 
         if ($meet !== null) {
             $edges[] = [$meet, $core];
@@ -297,7 +306,7 @@ final readonly class RunTree
     /**
      * Where each node is drawn, left to right: its column is the longest way to it from the entry along the edges (so a
      * crossover never points backwards), its lane the path it belongs to. Nodes on no path (the entry, a switch where
-     * paths split, the conduit where quiet and rich meet, the core) sit between the lanes they join; a maintenance port
+     * paths split, the hub where quiet and rich meet, the core) sit between the lanes they join; a maintenance port
      * in a lane of its own below the rich path it hangs off.
      *
      * @return array<int, array{col: int, lane: float}>
@@ -334,8 +343,8 @@ final readonly class RunTree
                 $lane = (float) count($paths);
             }
 
-            // The conduit where quiet and rich meet sits between them.
-            if ($node['path'] === null && $node['kind'] === NodeKind::Conduit && isset($lanes['quiet'], $lanes['rich'])) {
+            // The hub where quiet and rich meet (a conduit with no IDS) sits between them.
+            if ($node['path'] === null && in_array($node['kind'], [NodeKind::Hub, NodeKind::Conduit], true) && isset($lanes['quiet'], $lanes['rich'])) {
                 $lane = ($lanes['quiet'] + $lanes['rich']) / 2;
             }
 

@@ -97,6 +97,9 @@ enum RunAction: string
     /** A tree run: breach the firewall you stand on, with its OS roll. Moving on through it is the next turn. */
     case Breach = 'breach';
 
+    /** A tree run: subvert the security hub you stand on, with the OS roll. Landed, no alert can go off for the run. */
+    case Subvert = 'subvert';
+
     /** A tree run: Crash Jackout. Out from anywhere, for certain, at a price in Synaptic Integrity. */
     case Jackout = 'jackout';
 

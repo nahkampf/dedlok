@@ -101,6 +101,16 @@
                 {{ Text::get('cyberspace.tree.firewall_chance', ['chance' => (int) round($tree->firewallChance * 100)]) }}
             </p>
         @endif
+        @if ($tree->hubChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.hub_chance', ['chance' => (int) round($tree->hubChance * 100)]) }}
+            </p>
+        @endif
+        @if ($tree->subverted && ! $run->alerted)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.subverted') }}
+            </p>
+        @endif
 
         <x-run-tree :view="$tree" :label="Text::get('cyberspace.tree.heading')"
                     :waiting="$waiting ? ($run->pending_action === 'move' ? (string) $run->pending_node : '-') : ''" />
@@ -352,6 +362,12 @@
             @if ($tree && $tree->firewallChance !== null)
                 <button type="submit" name="action" value="breach" class="btn cut btn--go">
                     {{ Text::get('cyberspace.run.action.breach') }}
+                </button>
+            @endif
+            {{-- A SECURITY HUB nobody has subverted: Subvert is its OS roll. --}}
+            @if ($tree && $tree->hubChance !== null)
+                <button type="submit" name="action" value="subvert" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.subvert') }}
                 </button>
             @endif
             @if ($tree)
