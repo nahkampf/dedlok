@@ -132,8 +132,8 @@ proposal disagree, this file wins. Decided with the user, 2026-11-13.
 
 ## nmap, the Nmapper
 
-- **Nothing ships before the whole run tree is done**: `feature/run-tree` merges only when the flag is ready to turn on,
-  because migrations (the nmap grant and shelves) run on production at every deploy.
+- **Released with the flag off** (0.97.0, decided 2026-11-15), replacing "nothing ships before the whole run tree is
+  done": its migrations run at that deploy, so the nmap grant and shelves land then.
 - **Nmap without an nmapper running is refused**, with no turn spent (the button is greyed anyway).
 - **The four shelves sell it at exchanges of grades 1–5.**
 
@@ -455,7 +455,7 @@ Extract works on any tree run. Old single-room runs keep their purposes.
 
 ## To come back to
 
-Kept up to date as the branch grows. All of it blocks the merge.
+Kept up to date as the work grows. Released in 0.97.0 with the flag off; all of it blocks turning the flag on.
 
 - **Strings**: every player-facing line added on this branch is a suggestion for the user to rewrite (`config/strings.php`,
   the `cyberspace.tree`, `cyberspace.run.action`, `cyberspace.run.log.tree`, `cyberspace.run.refused`,
