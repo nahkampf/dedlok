@@ -337,6 +337,13 @@
                  every way it can fail is a refusal with a sentence attached —
                  "nobody can get anything out of it now" teaches more than an
                  absent button, and nothing is spent by being told. --}}
+            {{-- The run tree the file read (docs/RUN_TREE.md); the modal says so if its system has moved on. --}}
+            @if ((int) $entry->scanFile()?->tree >= 1 && config('features.intrusion_runs_v2'))
+                <button type="button" class="btn btn--sm btn--ghost cut" data-listing="{{ route('inventory.tree', $entry) }}" data-dialog="#tree-view">
+                    {{ Text::get('cyberspace.tree.view') }}
+                </button>
+            @endif
+
             @if ($entry->scanFile())
                 <form method="POST" action="{{ route('inventory.read', $entry) }}">
                     @csrf

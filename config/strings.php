@@ -1285,6 +1285,9 @@ return [
             'start_core' => 'Through your backdoor, at the core',
             'start_entry' => 'At the entry, like anybody else',
             'jackout_warning' => 'Are you sure you want to pull the plug? This can cause serious neural damage!',
+            // The tree modal, opened from a scan (the scanner window, the map's Interact box, the briefing, a scan file).
+            'view' => 'View tree',
+            'gone' => 'This system has moved on, and its tree with it. The file no longer describes anything.',
             'node' => [
                 'entry' => 'Entrypoint',
                 'switch' => 'Switch',

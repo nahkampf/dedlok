@@ -594,6 +594,11 @@
                         </div>
                     @endforeach
                 </div>
+
+                {{-- Once the read has the Layout: the tree, in #tree-view. The poll sets where it is fetched from. --}}
+                <div data-reading-tree hidden>
+                    <button type="button" class="btn btn--sm btn--ghost cut" data-listing="" data-dialog="#tree-view">{{ Text::get('cyberspace.tree.view') }}</button>
+                </div>
             </div>
         </div>
 
@@ -648,6 +653,14 @@
         <div class="panel__hd">
             <span class="micro">{{ Text::get('market.offers.listing') }}</span>
             <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+        </div>
+        <div class="panel__bd" data-listing-body></div>
+    </dialog>
+    {{-- A system's run tree as a scan read it (cyberspace.tree, inventory.tree): docs/RUN_TREE.md. Filled by the same handler. --}}
+    <dialog id="tree-view" class="modal modal--wide">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('cyberspace.tree.heading') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
         </div>
         <div class="panel__bd" data-listing-body></div>
     </dialog>

@@ -106,6 +106,10 @@ proposal disagree, this file wins. Decided with the user, 2026-11-13.
   when inspecting a scan file in the stash.
 - **Allies are marked on the tree**, and reveals are shared: one runner's Nmap clears the fog for the party.
 - **The tree's view in the Interact box is a *View tree* button**, opening the same modal as the stash's scan file.
+- **Everywhere outside a run it is a *View tree* button and one modal** (`#tree-view`, fetched from `cyberspace.tree` or
+  `inventory.tree`): in the scanner window, the Interact box, the briefing and on a scan file. It appears once the scan
+  has read the Layout (nodes as "?"), names them once it has the Nodes. The briefing's is the party's best scan, what
+  the run starts with. A scan file whose system has moved on still offers it, and the modal says the tree is gone.
 
 ## More decided
 

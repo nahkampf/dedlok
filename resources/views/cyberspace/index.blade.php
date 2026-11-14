@@ -425,8 +425,14 @@
                              read yet" instead of looking like nothing to find. Not a count of anything hidden. --}}
                         @if ($target->type->isScannable())
                             <div style="margin-top:var(--s-3)">
-                                <x-scan-facts :facts="($scan ?? new \App\Models\SystemScan)->facts($character)" />
+                                <x-scan-facts :facts="($scan ?? new \App\Models\SystemScan(['tree' => \App\Cyberspace\Tree\RunTree::appliesTo($target) ? 0 : null]))->facts($character)" />
                             </div>
+                            {{-- The run tree, once the read has its Layout (docs/RUN_TREE.md). --}}
+                            @if ($scan && \App\Cyberspace\ScanFact::Layout->appliesTo($scan) && \App\Cyberspace\ScanFact::Layout->isKnownOn($scan))
+                                <div style="margin-top:var(--s-3)">
+                                    <button type="button" class="btn btn--sm btn--ghost cut" data-listing="{{ route('cyberspace.tree', ['address' => $target->address]) }}" data-dialog="#tree-view">{{ Text::get('cyberspace.tree.view') }}</button>
+                                </div>
+                            @endif
                         @endif
                     @endif
 

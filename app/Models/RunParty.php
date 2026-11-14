@@ -39,4 +39,17 @@ class RunParty extends Model
     {
         return $this->hasMany(RunPartyMember::class);
     }
+
+    /**
+     * Who is going in: the owner and every member who joined and has not dropped out.
+     *
+     * @return list<int>
+     */
+    public function crew(): array
+    {
+        return [
+            (int) $this->owner_character_id,
+            ...$this->members()->whereNotNull('joined_at')->whereNull('dropped_at')->pluck('character_id')->map(static fn ($id): int => (int) $id)->all(),
+        ];
+    }
 }

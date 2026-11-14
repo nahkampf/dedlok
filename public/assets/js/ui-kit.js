@@ -1452,6 +1452,13 @@
         value.innerHTML = mark + esc(known ? fact.value : dlg.dataset.readingUnread);
       });
 
+      // The tree, once the read has the Layout: the button fetches from where the poll says.
+      dlg.querySelectorAll("[data-reading-tree]").forEach((box) => {
+        box.hidden = !data.tree;
+        const btn = box.querySelector("[data-listing]");
+        if (btn && data.tree) btn.dataset.listing = data.tree;
+      });
+
       /* A read goes round by itself until the file is whole or the file goes
          stale, so a stopped read that is not complete stopped for the one
          remaining reason: nothing is running at it. */

@@ -10,6 +10,7 @@ use App\Cyberspace\ScanFact;
 use App\Cyberspace\ScanFile;
 use App\Cyberspace\SystemType;
 use App\Models\Character;
+use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Skill;
 use App\Models\System;
@@ -18,6 +19,7 @@ use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Sheet;
 use App\Stats\SkillStats;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -117,5 +119,42 @@ final class ScanTreeTest extends TestCase
 
         $this->assertSame(1, $file?->tree);
         $this->assertSame(['nodes'], $file->toScan()->unknowns(), 'a file that read the Layout only is not complete');
+    }
+
+    public function test_the_tree_modal_opens_once_the_layout_is_read_and_names_nodes_once_they_are(): void
+    {
+        $user = $this->character->user;
+        $this->pass();
+
+        $this->assertNull($this->actingAs($user)->getJson(route('cyberspace.reading', ['address' => 'DEADBEEF']))->json('tree'));
+        $this->actingAs($user)->get(route('cyberspace.tree', ['address' => 'DEADBEEF']))->assertNotFound();
+
+        $this->pass();
+        $url = $this->actingAs($user)->getJson(route('cyberspace.reading', ['address' => 'DEADBEEF']))->json('tree');
+        $this->assertSame(route('cyberspace.tree', ['address' => 'DEADBEEF']), $url);
+        $this->actingAs($user)->get($url)->assertOk()->assertSee('board__node--fog', false)->assertDontSee('data-turn-form', false)
+            ->assertDontSeeText(Text::get('cyberspace.tree.node.core'));
+
+        $this->pass();
+        $this->actingAs($user)->get($url)->assertOk()->assertDontSee('board__node--fog', false)
+            ->assertSeeText(Text::get('cyberspace.tree.node.core'));
+        $this->actingAs($user)->get(route('cyberspace.index'))->assertOk()->assertSee($url, false);
+    }
+
+    public function test_a_scan_file_whose_system_has_moved_on_says_so(): void
+    {
+        $this->pass();
+        $this->pass();
+        $this->pass();
+        // A finished read files itself.
+        $row = InventoryItem::query()->where('character_id', $this->character->id)->whereNotNull('scan_file')->sole();
+
+        $this->actingAs($this->character->user)->get(route('inventory.tree', $row))->assertOk()
+            ->assertSeeText(Text::get('cyberspace.tree.node.core'));
+
+        System::query()->where('address', 'DEADBEEF')->update(['address' => 'CAFEBABE']);
+
+        $this->actingAs($this->character->user)->get(route('inventory.tree', $row))->assertOk()
+            ->assertSeeText(Text::get('cyberspace.tree.gone'));
     }
 }

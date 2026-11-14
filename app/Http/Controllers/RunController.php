@@ -173,6 +173,10 @@ class RunController extends Controller
             'chain' => $chain,
             // The party forming at this door, if the character owns or is in one; and how many they may call.
             'party' => $partyHere,
+            // How far the best scan in the party (or theirs alone) read the run tree: what the run will start with.
+            'treeRead' => RunTree::appliesTo($target) ? (int) SystemScan::query()
+                ->whereIn('character_id', [$character->id, ...($partyHere?->crew() ?? [])])
+                ->where('address', $target->address)->live()->max('tree') : 0,
             'coopSlots' => $character->coopSlots(),
             // Who of the party could go in if the owner pressed Start now, and what stops the rest: {character id: reason}.
             'obstacles' => $partyHere === null ? [] : $parties->obstacles($partyHere, $this->runs),

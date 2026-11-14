@@ -77,6 +77,13 @@
 
         <x-scan-facts :facts="$overview" />
 
+        {{-- The run tree, as the party's best scan read it: what the run starts with (docs/RUN_TREE.md). --}}
+        @if ($treeRead >= 1)
+            <div style="margin-top:var(--s-3)">
+                <button type="button" class="btn btn--sm btn--ghost cut" data-listing="{{ route('cyberspace.tree', ['address' => $target->address, 'party' => 1]) }}" data-dialog="#tree-view">{{ Text::get('cyberspace.tree.view') }}</button>
+            </div>
+        @endif
+
         {{-- THE ASSESSOR'S OVERALL, while one runs on the deck. The figure for the loadout as ticked, worked out by the
              server on every tick (`run.assess`); the briefing's script only shows what comes back. --}}
         @if ($assess)

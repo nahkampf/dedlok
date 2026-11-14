@@ -24,12 +24,14 @@ use App\Cyberspace\Position;
 use App\Cyberspace\Probe;
 use App\Cyberspace\ScanExporter;
 use App\Cyberspace\ScanExportRefusal;
+use App\Cyberspace\ScanFact;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\SystemType;
 use App\Cyberspace\Terrain;
 use App\Cyberspace\Tracker;
 use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
+use App\Cyberspace\Tree\TreeView;
 use App\Cyberspace\ViewShape;
 use App\Missions\MissionLedger;
 use App\Models\Bookmark;
@@ -695,6 +697,35 @@ class CyberspaceController extends Controller
             // The character, so the operating system can say whether they can
             // operate it — a fact that is also a gate.
             'facts' => $scan->facts($character),
+            // The tree modal, once the read has the Layout (docs/RUN_TREE.md).
+            'tree' => ScanFact::Layout->appliesTo($scan) && ScanFact::Layout->isKnownOn($scan)
+                ? route('cyberspace.tree', ['address' => $scan->address]) : null,
+        ]);
+    }
+
+    /**
+     * The tree modal's body for a system (docs/RUN_TREE.md): what the character's live scan read of its tree, or with
+     * `party` (the briefing) the best read in the party forming here, which is what the run will start with.
+     */
+    public function tree(Request $request, Parties $parties): View
+    {
+        $character = $this->character($request);
+        $data = $request->validate(['address' => ['required', 'string', 'max:32'], 'party' => ['sometimes', 'boolean']]);
+        $address = strtoupper($data['address']);
+
+        $readers = [$character->id];
+
+        if ($request->boolean('party')) {
+            $readers = [...$readers, ...($parties->partyOf($character)?->crew() ?? [])];
+        }
+
+        $read = SystemScan::query()->whereIn('character_id', $readers)->where('address', $address)->live()->max('tree');
+        abort_unless($read !== null && (int) $read >= 1, 404);
+        $system = System::query()->where('address', $address)->first();
+
+        return view('cyberspace._tree', [
+            'view' => TreeView::ofScan($system, (int) $read),
+            'label' => $system?->displayName() ?? $address,
         ]);
     }
 

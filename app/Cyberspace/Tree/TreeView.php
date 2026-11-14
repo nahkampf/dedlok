@@ -8,6 +8,7 @@ use App\Cyberspace\RunAction;
 use App\Cyberspace\Simulator;
 use App\Models\Character;
 use App\Models\Run;
+use App\Models\System;
 use App\Models\SystemScan;
 use App\Support\Text;
 
@@ -101,5 +102,34 @@ final readonly class TreeView
                 : null,
             $tree->nodes[$here]['kind'] === NodeKind::Vault,
         );
+    }
+
+    /**
+     * What a scan read of a system's tree, drawn outside a run: the whole shape once it read the Layout (`$read` 1),
+     * every node named once it read the Nodes (2). Null when there is nothing to draw: no tree here, or not read.
+     */
+    public static function ofScan(?System $system, ?int $read): ?self
+    {
+        if ($system === null || $read === null || $read < 1 || ! RunTree::appliesTo($system)) {
+            return null;
+        }
+
+        $tree = RunTree::of($system);
+        $layout = $tree->layout();
+        $maxCol = max(array_column($layout, 'col'));
+        $lanes = $tree->lanes();
+
+        $nodes = array_map(static fn (int $n): array => [
+            'key' => $n,
+            'label' => $read >= 2 ? Text::get('cyberspace.tree.node.'.$tree->nodes[$n]['kind']->value) : '?',
+            'x' => round(($layout[$n]['col'] + .5) / ($maxCol + 1) * 100, 2),
+            'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
+            'here' => false,
+            'allies' => 0,
+            'move' => false,
+            'known' => $read >= 2,
+        ], array_keys($tree->nodes));
+
+        return new self($nodes, $tree->edges, $maxCol + 1, $lanes, false, false, false, 0.0, null);
     }
 }

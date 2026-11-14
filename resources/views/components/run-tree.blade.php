@@ -5,6 +5,8 @@
     'label',
     // What the runner has chosen and is waiting on the round for: the node of a Move, '-' for anything else, '' for nothing.
     'waiting' => '',
+    // Drawn from a scan outside a run (the tree modal): no form, nothing to move to, no you-are-here.
+    'static' => false,
 ])
 
 {{-- A RUN TREE, left to right (docs/RUN_TREE.md): the board's own classes, as the city map uses them, on a board as wide
@@ -12,9 +14,13 @@
      turn as every other action. --}}
 @php($at = collect($view->nodes)->keyBy('key'))
 
+@if ($static)
+<div>
+@else
 <form method="POST" action="{{ route('run.act') }}" data-turn-form data-turn-field="node" data-waiting="{{ $waiting }}">
     @csrf
     <input type="hidden" name="action" value="move">
+@endif
     <div class="board-wrap">
         <div class="frame scanlines brackets board board--tree" role="group" aria-label="{{ $label }}"
              style="--tree-cols:{{ $view->cols }};--tree-lanes:{{ $view->lanes }}">
@@ -42,5 +48,9 @@
             @endforeach
         </div>
     </div>
+@if ($static)
+</div>
+@else
     <p class="micro here-legend"><span class="here-mark" aria-hidden="true">&#9670;</span> {{ Text::get('city.you_are_here') }} · &#9671; {{ Text::get('cyberspace.tree.allies') }}</p>
 </form>
+@endif
