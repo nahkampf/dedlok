@@ -3032,8 +3032,8 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 @keyframes here-pulse {
   50% { border-color: var(--ink-0); }
 }
-/* The diamond that says "you are here": ember and live, so it pulses. */
-.here-mark { color: var(--ember); animation: here-mark 1.6s ease-in-out infinite; }
+/* The diamond that says "you are here": green and live, so it pulses. */
+.here-mark { color: var(--ok); animation: here-mark 1.6s ease-in-out infinite; }
 @keyframes here-mark { 50% { opacity: .3; } }
 .here-legend { margin-top: var(--s-2); letter-spacing: .08em; }
 /* A map's node is a NAME in the box, wrapping rather than overflowing: the
