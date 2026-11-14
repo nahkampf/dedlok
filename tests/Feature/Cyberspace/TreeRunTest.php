@@ -1017,6 +1017,22 @@ final class TreeRunTest extends TestCase
         $this->assertSame(1, $run->floodedTurns());
     }
 
+    public function test_a_runner_on_a_node_the_cordon_cuts_is_thrown_to_the_neighbour_nearest_an_exit(): void
+    {
+        $tree = $this->grade7();
+        $switch = $tree->neighbours($tree->entry)[0];
+        $run = $this->sentry($switch, $switch);
+        // Mid-cut, one turn left, the runner standing on it.
+        $run->forceFill(['node' => $switch, 'sentries' => [['cordon' => true, 'countdown' => 1] + $run->sentries[0]]])->save();
+
+        $this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $run = $run->fresh();
+
+        $this->assertSame([$switch], $run->cutNodes());
+        $this->assertSame($tree->entry, $run->node, 'the entry is the neighbour nearest an exit');
+        $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_thrown', ['node' => Text::get('cyberspace.tree.node.entry')]), array_column($run->log, 'text'));
+    }
+
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void
     {
         // A grade 3 compute tree with a rich path, and so a port.

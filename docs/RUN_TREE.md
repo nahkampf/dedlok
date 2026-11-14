@@ -365,6 +365,8 @@ the Cordon tag**, each designed and built on its own, traps first.
   border blinks dashed ember, and ✂ with the turns left sits under it), in a warning line, and in the log naming the
   kind of node; at zero the node and its edges are gone for the party's run, as a Node Disconnect.
   With no such node it hunts like any sentry. It never strikes.
+- **Whoever stands on the node when the cut lands is thrown clear** (decided 2026-11-14): onto its neighbour nearest an
+  exit (the entry, a maintenance port, an Egress Tunnel) as the tree is without it, told where they landed in the log.
 - **Two Cordons can cut at once.** A cut costs no standing.
 - **Only breaking it with Attack stops a cut, for now**; the Egress Tunnel script comes later.
 

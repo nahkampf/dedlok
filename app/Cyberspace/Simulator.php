@@ -813,6 +813,11 @@ final readonly class Simulator
                     $everybody($line);
                 }
 
+                // Whoever stood on the node it tore out was thrown clear: told where they landed.
+                foreach ($cut[2] ?? [] as $runId => $landed) {
+                    $out[$runId] = [[...($out[$runId][0] ?? []), $this->line('cyberspace.run.log.tree.cordon_thrown', ['node' => $landed], 'crit')], $out[$runId][1] ?? null];
+                }
+
                 continue;
             }
 
@@ -868,7 +873,7 @@ final readonly class Simulator
      * most (or closes it). Null when there is no such node: it hunts like any sentry instead.
      *
      * @param  Collection<int, Run>  $live
-     * @return array{0: array<string, mixed>, 1: ?array{text: string, tone: string}}|null The sentry after its turn, and a line for everybody.
+     * @return array{0: array<string, mixed>, 1: ?array{text: string, tone: string}, 2?: array<int, string>}|null The sentry after its turn, a line for everybody, and who was thrown clear (run id => where they landed).
      */
     private function cordonTurn(RunTree $tree, Collection $live, array $sentry, Run $actor): ?array
     {
@@ -890,10 +895,11 @@ final readonly class Simulator
 
             $actor->markTrap($node, 'cut');
             $sentry['countdown'] = null;
+            $thrown = $this->throwClear($tree, $live, $node, $actor);
             // It steps off the node it tore out, back the way it came.
             $sentry['node'] = $tree->neighbours($node)[0] ?? $node;
 
-            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_cuts', ['node' => Text::get('cyberspace.tree.node.'.$tree->nodes[$node]['kind']->value)], 'crit')];
+            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_cuts', ['node' => Text::get('cyberspace.tree.node.'.$tree->nodes[$node]['kind']->value)], 'crit'), $thrown];
         }
 
         $runs = $live->filter(fn (Run $r): bool => $r->isLive() && $tree->distance($node, (int) $r->node) !== null);
@@ -941,6 +947,43 @@ final readonly class Simulator
         }
 
         return [$sentry, null];
+    }
+
+    /**
+     * A node is torn out from under whoever stands on it: each is thrown onto the neighbour nearest an exit (the entry,
+     * a maintenance port, a node an Egress Tunnel holds) as the tree is without it, and knows that node.
+     *
+     * @param  Collection<int, Run>  $live
+     * @return array<int, string> By run id, the name of the node each landed on.
+     */
+    public function throwClear(RunTree $tree, Collection $live, int $node, Run $actor): array
+    {
+        $after = $tree->cut([$node]);
+        $exits = array_values(array_unique([$after->entry, ...$after->nodesOf(NodeKind::Port), ...$actor->tunnelNodes()]));
+        $toExit = static fn (int $n): int => min(array_map(static fn (int $e): int => $after->distance($n, $e) ?? PHP_INT_MAX, $exits));
+        $landing = collect($tree->neighbours($node))->sortBy($toExit)->first();
+        $thrown = [];
+
+        if ($landing === null) {
+            return [];
+        }
+
+        foreach ($live as $run) {
+            if ((int) $run->node !== $node || ! $run->isLive()) {
+                continue;
+            }
+
+            $run->node = $landing;
+            $run->known = array_values(array_unique([...array_map('intval', $run->known ?? []), $landing]));
+
+            if (! $run->is($actor)) {
+                $run->save();
+            }
+
+            $thrown[$run->getKey()] = Text::get('cyberspace.tree.node.'.$tree->nodes[$landing]['kind']->value);
+        }
+
+        return $thrown;
     }
 
     /** One controller for a party, written on every live run of it. */
