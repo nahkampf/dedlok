@@ -61,6 +61,6 @@
 @if ($static)
 </div>
 @else
-    <p class="micro here-legend"><span class="here-mark" aria-hidden="true">&#9670;</span> {{ Text::get('city.you_are_here') }} · &#9671; {{ Text::get('cyberspace.tree.allies') }} · &#9650; {{ Text::get('cyberspace.tree.sentry') }}</p>
+    <p class="micro here-legend"><span class="here-mark" aria-hidden="true">&#9670;</span> {{ Text::get('city.you_are_here') }} · &#9671; {{ Text::get('cyberspace.tree.allies') }} · <span style="color:var(--crit)" aria-hidden="true">&#9650;</span> {{ Text::get('cyberspace.tree.sentry') }}</p>
 </form>
 @endif
