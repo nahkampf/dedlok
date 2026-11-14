@@ -7,6 +7,7 @@ namespace App\Cyberspace\Tree;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\Simulator;
 use App\Models\Character;
+use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Run;
 use App\Models\System;
@@ -24,7 +25,7 @@ use App\Support\Text;
 final readonly class TreeView
 {
     /**
-     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, move: bool, known: bool}>  $nodes
+     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, move: bool, known: bool}>  $nodes
      * @param  list<array{0: int, 1: int}>  $links
      */
     public function __construct(
@@ -59,6 +60,8 @@ final readonly class TreeView
         public ?float $disarmChance = null,
         // Standing on a log server with an alert to wipe: the chance the OS roll lands. Null otherwise.
         public ?float $wipeChance = null,
+        /** @var list<array{name: string, integrity: float, awake: bool}> The unbroken sentries on the runner's node. */
+        public array $sentriesHere = [],
     ) {}
 
     /** What a node is called on the map: a trap reads as a conduit until it is found, and as one again once spent. */
@@ -103,6 +106,8 @@ final readonly class TreeView
         $allies = $run->run_party_id === null ? [] : Run::query()->live()->where('run_party_id', $run->run_party_id)
             ->whereKeyNot($run->getKey())->pluck('node')->countBy()->all();
         $moves = $tree->neighbours($here);
+        // Sentries are seen where the runner can see: a node they know.
+        $guards = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0)->countBy('node')->all();
 
         // A firewall nobody has breached lets them back the way they came, and no further.
         if ($simulator->firewallClosed($run)) {
@@ -117,6 +122,7 @@ final readonly class TreeView
             'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
             'here' => $n === $here,
             'allies' => (int) ($allies[$n] ?? 0),
+            'sentries' => in_array($n, $known, true) ? (int) ($guards[$n] ?? 0) : 0,
             'move' => in_array($n, $moves, true),
             'known' => in_array($n, $known, true) || ($traps[$n] ?? null) === 'found',
         ], $seen);
@@ -157,6 +163,11 @@ final readonly class TreeView
             )),
             $disarm !== [] && $system->os_skill_id !== null ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
             $simulator->logOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
+            array_values(array_map(static fn (array $s): array => [
+                'name' => (string) Ice::query()->whereKey($s['ice'])->value('name'),
+                'integrity' => (float) $s['integrity'],
+                'awake' => (bool) $s['awake'],
+            ], $simulator->sentriesHere($run))),
         );
     }
 
@@ -183,6 +194,7 @@ final readonly class TreeView
             'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
             'here' => false,
             'allies' => 0,
+            'sentries' => 0,
             'move' => false,
             'known' => $read >= 2,
         ], array_keys($tree->nodes));

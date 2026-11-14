@@ -43,6 +43,7 @@ use App\Support\Text;
 use App\Support\Trace;
 use Carbon\CarbonImmutable;
 use Closure;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -298,6 +299,21 @@ final readonly class Simulator
                     return TurnResult::resolved($run, $log, RunEnding::Completed);
                 }
             } elseif ($action === RunAction::Move) {
+                // LEAVING A SENTRY that hunts them costs its parting hit too.
+                foreach ($this->sentriesHere($run, awake: true) as $i => $sentry) {
+                    if (($sentry['target'] ?? null) === $run->getKey() && ($ice = Ice::query()->find($sentry['ice'])) !== null) {
+                        [$line, $parting, $extra] = $this->iceStrikes($character, $run, $ice);
+                        $log = [...$log, $line, ...($extra === null ? [] : [$extra])];
+
+                        if ($parting !== null) {
+                            $run->save();
+                            $this->appendLog($run, $log);
+
+                            return TurnResult::resolved($run, $log, $parting);
+                        }
+                    }
+                }
+
                 // LEAVING THE CORE MID-FIGHT costs a parting hit: the ICE swings before they are out of its reach.
                 if ($run->inAFight() && $run->iceReachesHere()) {
                     [$line, $parting, $extra] = $this->iceStrikes($character, $run);
@@ -318,6 +334,9 @@ final readonly class Simulator
                 } else {
                     $log = [...$log, ...$this->move($run, (int) $node)];
                 }
+
+                // Stepping onto a sleeping sentry's node: their stealth against its detection.
+                $log = [...$log, ...$this->sentriesLook($character, $run)];
             } elseif ($action === RunAction::Wipe) {
                 [$wipeLog, $breachTier] = $this->wipe($character, $run);
                 $log = [...$log, ...$wipeLog];
@@ -394,6 +413,12 @@ final readonly class Simulator
                 }
             }
 
+            // A solo runner's sentries take their turn after the turn's own; a party's take theirs once a round (PartyTurns).
+            if ($ending === null && $iceStrikes && $run->isTreeRun() && ! PartyTurns::shared($run)) {
+                [$sentryLog, $ending] = $this->sentriesAct(collect([$run]), $run)[$run->getKey()] ?? [[], null];
+                $log = [...$log, ...$sentryLog];
+            }
+
             // The node shakes a solo flooder off after enough turns (a party's round does it, in PartyTurns).
             if ($ending === null && $run->purpose === RunPurpose::Denial && ! PartyTurns::shared($run) && $run->turn >= (int) Config::get('cyberspace.denial.turns', 12)) {
                 $log[] = $this->line('cyberspace.run.log.flood_shaken_off', tone: 'warn');
@@ -454,7 +479,9 @@ final readonly class Simulator
             RunAction::Nmap => $this->nmapReach($character) < 1 ? RunRefusal::NoNmapper : null,
             // A data vault takes an Extract too.
             RunAction::Extract => (int) $run->node !== $tree->core && $tree->nodes[(int) $run->node]['kind'] !== NodeKind::Vault ? RunRefusal::NotHere : null,
-            RunAction::Install, RunAction::Burn, RunAction::Leech, RunAction::Attack => (int) $run->node !== $tree->core ? RunRefusal::NotHere : null,
+            // Attack also wherever an awake sentry stands.
+            RunAction::Attack => (int) $run->node !== $tree->core && $this->sentriesHere($run, awake: true) === [] ? RunRefusal::NotHere : null,
+            RunAction::Install, RunAction::Burn, RunAction::Leech => (int) $run->node !== $tree->core ? RunRefusal::NotHere : null,
             // The entry or a maintenance port.
             RunAction::Flood, RunAction::Egress => ! $tree->isExit((int) $run->node) ? RunRefusal::NotHere : null,
             default => null,
@@ -630,6 +657,153 @@ final readonly class Simulator
         }
 
         return [[$this->line('cyberspace.run.log.tree.wiped', tone: 'ok')], 'act'];
+    }
+
+    // --- sentries (docs/RUN_TREE.md) ----------------------------------------------------------------------------------
+
+    /** @return list<array{post: int, node: int, ice: int, integrity: float, awake: bool, fast: bool, target: ?int}> */
+    public function sentriesOf(Run $run): array
+    {
+        return array_values($run->sentries ?? []);
+    }
+
+    /** One set of sentries for a party: written on every live run of it, as the noise bar is. */
+    private function writeSentries(Run $run, array $sentries): void
+    {
+        $run->sentries = array_values($sentries);
+
+        if ($run->run_party_id !== null) {
+            Run::query()->live()->where('run_party_id', $run->run_party_id)->whereKeyNot($run->getKey())
+                ->update(['sentries' => json_encode(array_values($sentries))]);
+        }
+    }
+
+    /**
+     * What a tree's sentries start as: each the catalogue's ICE a level below the system's own (level 1 at least), asleep
+     * at its post at full integrity. A system with no ICE posts none.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function postedSentries(System $system, RunTree $tree): array
+    {
+        $level = $system->ice?->level;
+        $ice = $level === null ? null : Ice::query()->where('level', max(1, (int) $level - 1))->first();
+
+        if ($ice === null) {
+            return [];
+        }
+
+        return array_map(static fn (array $s): array => [
+            'post' => $s['post'], 'node' => $s['post'], 'ice' => $ice->getKey(), 'integrity' => (float) $ice->integrity,
+            'awake' => false, 'fast' => $s['fast'], 'target' => null,
+        ], $tree->sentries);
+    }
+
+    /** @return array<int, array<string, mixed>> The unbroken sentries on the runner's node, keyed by their index. */
+    public function sentriesHere(Run $run, ?bool $awake = null): array
+    {
+        return array_filter($this->sentriesOf($run), static fn (array $s): bool => (int) $s['node'] === (int) $run->node
+            && (float) $s['integrity'] > 0 && ($awake === null || (bool) $s['awake'] === $awake));
+    }
+
+    /**
+     * A runner arriving on a sleeping sentry's node: their stealth against its detection. A failure wakes it.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function sentriesLook(Character $character, Run $run): array
+    {
+        $all = $this->sentriesOf($run);
+        $log = [];
+
+        foreach ($this->sentriesHere($run, awake: false) as $i => $sentry) {
+            $ice = Ice::query()->find($sentry['ice']);
+
+            if ($ice !== null && ! $this->checks->roll($character->stat('stealth')->value, (float) $ice->detection, 'detection')->passed) {
+                $all[$i]['awake'] = true;
+                $all[$i]['target'] = $run->getKey();
+                $log[] = $this->line('cyberspace.run.log.tree.sentry_wakes', tone: 'crit', tag: $ice->name);
+            }
+        }
+
+        if ($log !== []) {
+            $this->writeSentries($run, $all);
+        }
+
+        return $log;
+    }
+
+    /**
+     * THE SENTRIES' TURN: once after a solo runner's turn, once a round for a party. Each awake, unbroken sentry keeps
+     * hunting its runner while they are within three steps, or locks on to the closest runner within three (the least
+     * stealthy on a tie, then at random), or, with nobody near, walks back to its post. It moves a node (a Fast one two)
+     * along the edges towards them, and strikes them if it stands on their node.
+     *
+     * Returns, by run id, the lines it wrote for that runner and the ending it dealt them, if any; the caller logs and
+     * resolves them (the solo turn for its runner, PartyTurns for a party).
+     *
+     * @param  Collection<int, Run>  $live  The party's live tree runs (or the solo run).
+     * @return array<int, array{0: list<array{text: string, tone: string}>, 1: ?RunEnding}>
+     */
+    public function sentriesAct(Collection $live, Run $actor): array
+    {
+        $all = $this->sentriesOf($actor);
+        $tree = $this->treeOf($actor);
+
+        if ($all === [] || $tree === null) {
+            return [];
+        }
+
+        $out = [];
+
+        foreach ($all as $i => $sentry) {
+            if (! $sentry['awake'] || (float) $sentry['integrity'] <= 0) {
+                continue;
+            }
+
+            $runs = $live->filter(fn (Run $r): bool => $r->isLive() && $tree->distance((int) $sentry['node'], (int) $r->node) !== null);
+            $near = $runs->filter(fn (Run $r): bool => $tree->distance((int) $sentry['node'], (int) $r->node) <= 3);
+            $target = $near->first(fn (Run $r): bool => $r->getKey() === $sentry['target']);
+
+            if ($target === null && $near->isNotEmpty()) {
+                $closest = $near->min(fn (Run $r): int => (int) $tree->distance((int) $sentry['node'], (int) $r->node));
+                $tied = $near->filter(fn (Run $r): bool => $tree->distance((int) $sentry['node'], (int) $r->node) === $closest);
+                $stealth = $tied->mapWithKeys(fn (Run $r): array => [$r->getKey() => (float) Character::query()->find($r->character_id)?->stat('stealth')->value]);
+                $target = $tied->filter(fn (Run $r): bool => $stealth[$r->getKey()] === $stealth->min())->random();
+            }
+
+            $all[$i]['target'] = $target?->getKey();
+            $goal = $target !== null ? (int) $target->node : (int) $sentry['post'];
+
+            for ($step = 0; $step < ($sentry['fast'] ? 2 : 1) && (int) $all[$i]['node'] !== $goal; $step++) {
+                $here = (int) $all[$i]['node'];
+                $next = collect($tree->neighbours($here))->sortBy(fn (int $n): int => $tree->distance($n, $goal) ?? PHP_INT_MAX)->first();
+
+                if ($next === null || ($tree->distance($next, $goal) ?? PHP_INT_MAX) >= ($tree->distance($here, $goal) ?? PHP_INT_MAX)) {
+                    break;
+                }
+
+                $all[$i]['node'] = $next;
+            }
+
+            if ($target === null || (int) $all[$i]['node'] !== (int) $target->node || ($ice = Ice::query()->find($sentry['ice'])) === null) {
+                continue;
+            }
+
+            $character = Character::query()->find($target->character_id);
+
+            if ($character === null) {
+                continue;
+            }
+
+            [$line, $dealt, $extra] = $this->iceStrikes($character, $target, $ice);
+            $key = $target->getKey();
+            $out[$key] = [[...($out[$key][0] ?? []), ...array_values(array_filter([$line, $extra]))], $out[$key][1] ?? $dealt];
+        }
+
+        $this->writeSentries($actor, $all);
+
+        return $out;
     }
 
     /** Standing on a honeypot nobody in the party has sprung. */
@@ -946,7 +1120,7 @@ final readonly class Simulator
             RunAction::Egress => 'move',
             RunAction::Nmap, RunAction::Loopback => 'act',
             RunAction::Flood => 'loud',
-            RunAction::Attack => $iceAwake ? 'loud' : null,
+            RunAction::Attack => $iceAwake || $this->sentriesHere($run, awake: true) !== [] ? 'loud' : null,
             RunAction::Extract, RunAction::Install, RunAction::Burn, RunAction::Leech => $osFailed ? 'loud' : 'act',
             RunAction::Hold => 'drain',
             default => null,
@@ -1047,6 +1221,9 @@ final readonly class Simulator
             Run::query()->live()->where('run_party_id', $run->run_party_id)->whereKeyNot($run->getKey())
                 ->update(['alerted' => true, 'detected' => true, ...$wake]);
         }
+
+        // The alert wakes every sentry.
+        $this->writeSentries($run, array_map(static fn (array $s): array => ['awake' => true] + $s, $this->sentriesOf($run)));
 
         // Kept on the run as it landed, so a log wipe can give it back.
         $run->alert_cost = (new StandingLedger)->record($character, $system->owner, StandingReason::Noticed);
@@ -1371,13 +1548,36 @@ final readonly class Simulator
         $icebreaker = $character->runningProcesses()
             ->first(fn ($process): bool => $process->item?->program?->kind === ProgramKind::Icebreaker);
 
-        if ($icebreaker === null || $damage <= 0 || $run->ice_id === null) {
+        // An awake sentry on this node takes the blow before the core's ICE does.
+        $sentries = $this->sentriesHere($run, awake: true);
+
+        if ($icebreaker === null || $damage <= 0 || ($run->ice_id === null && $sentries === [])) {
             return $this->line('cyberspace.run.log.attack_fails');
         }
 
         // A hit that lands may be critical; one die, spent only when there is a chance at all.
         $critical = CriticalHit::rolls($character, $this->roll);
         $damage = $critical ? CriticalHit::scale($damage) : $damage;
+
+        if ($sentries !== []) {
+            $i = array_key_first($sentries);
+            $all = $this->sentriesOf($run);
+            $all[$i]['integrity'] = max(0, Points::of((float) $all[$i]['integrity'] - $damage));
+            $this->writeSentries($run, $all);
+
+            if ($all[$i]['integrity'] <= 0) {
+                return $this->line('cyberspace.run.log.tree.sentry_broken', tone: 'ok');
+            }
+
+            return $this->line(
+                $critical ? 'cyberspace.run.log.attack_critical' : 'cyberspace.run.log.attack',
+                ['damage' => $damage],
+                'ok',
+                (string) $icebreaker->item?->displayName(),
+                'ok',
+                'cyberspace.run.log.attack_before',
+            );
+        }
 
         $dealt = min($damage, max(0, $run->ice_integrity));
         $run->ice_integrity = max(0, Points::of($run->ice_integrity - $damage));
@@ -2447,11 +2647,12 @@ final readonly class Simulator
      * What lands goes through `DamageResolver`, so a resistance to ICE is a
      * modifier and never a branch in here.
      *
-     * @return array{0: array{text: string, tone: string}, 1: ?RunEnding}
+     * @return array{0: array{text: string, tone: string}, 1: ?RunEnding, 2: ?array{text: string, tone: string}} The line, the ending it dealt, and a virus line.
      */
-    private function iceStrikes(Character $character, Run $run): array
+    private function iceStrikes(Character $character, Run $run, ?Ice $sentry = null): array
     {
-        $ice = Ice::query()->find($run->ice_id);
+        // A sentry strikes with its own catalogue row's attack; the core's ICE with the run's (a fortress's own copy).
+        $ice = $sentry ?? Ice::query()->find($run->ice_id);
 
         if ($ice === null) {
             return [$this->line('cyberspace.run.log.ice_silent'), null, null];
@@ -2466,7 +2667,7 @@ final readonly class Simulator
 
         $result = (new DamageResolver($this->resolver))->apply(
             $character,
-            Damage::synapticIntegrity($run->ice_attack ?? $ice->attack, DamageOrigin::Ice),
+            Damage::synapticIntegrity($sentry !== null ? $ice->attack : ($run->ice_attack ?? $ice->attack), DamageOrigin::Ice),
         );
 
         $line = $this->line('cyberspace.run.log.ice_hits', ['damage' => $result->taken], 'crit', $ice->name);
@@ -3008,7 +3209,7 @@ final readonly class Simulator
      *
      * @param  list<array{text: string, tone: string, tag?: string, tag_tone?: string, before?: string}>  $lines
      */
-    private function appendLog(Run $run, array $lines): void
+    public function appendLog(Run $run, array $lines): void
     {
         $stamp = static fn (array $line): array => $line + ['turn' => $run->turn];
 

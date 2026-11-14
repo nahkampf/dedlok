@@ -186,6 +186,7 @@ final class PartyTurns
         }
 
         $this->strike($party);
+        $this->sentries($party);
 
         $party->update(['round_started_at' => now()]);
     }
@@ -264,6 +265,28 @@ final class PartyTurns
 
         $ending = $this->simulator->strikeIce($character, $target->refresh());
         $this->afterTurn($character, $target, $ending);
+    }
+
+    /** The sentries' one turn of the round (docs/RUN_TREE.md): each hunts, moves and strikes, and every runner it hit hears of it. */
+    private function sentries(RunParty $party): void
+    {
+        $live = self::liveRuns($party->getKey())->filter(fn (Run $r): bool => $r->isTreeRun())->values();
+
+        if ($live->isEmpty()) {
+            return;
+        }
+
+        foreach ($this->simulator->sentriesAct($live, $live->first()) as $runId => [$lines, $ending]) {
+            $run = $live->first(fn (Run $r): bool => $r->getKey() === $runId);
+            $character = $run === null ? null : Character::query()->find($run->character_id);
+
+            if ($run === null || $character === null) {
+                continue;
+            }
+
+            $this->simulator->appendLog($run->refresh(), $lines);
+            $this->afterTurn($character, $run, $ending);
+        }
     }
 
     /**

@@ -715,6 +715,104 @@ final class TreeRunTest extends TestCase
         $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Wipe)->refusal, 'once');
     }
 
+    /** A grade 7 tree run on the entry, its sentries replaced by one of ICE I posted at `$post`, standing on `$at`. */
+    private function sentry(int $post, int $at, bool $awake = true, bool $fast = false): Run
+    {
+        System::query()->where('address', 'DEADBEEF')->update(['grade' => 7]);
+        $run = $this->begin();
+        $ice = Ice::query()->where('level', 1)->sole();
+        $run->forceFill(['sentries' => [[
+            'post' => $post, 'node' => $at, 'ice' => $ice->id, 'integrity' => (float) $ice->integrity,
+            'awake' => $awake, 'fast' => $fast, 'target' => null,
+        ]]])->save();
+
+        return $run->fresh();
+    }
+
+    private function grade7(): RunTree
+    {
+        System::query()->where('address', 'DEADBEEF')->update(['grade' => 7]);
+
+        return RunTree::of(System::query()->where('address', 'DEADBEEF')->sole());
+    }
+
+    public function test_a_tree_run_posts_its_sentries_asleep_a_level_below_the_system_s_ice(): void
+    {
+        $tree = $this->grade7();
+        System::query()->where('address', 'DEADBEEF')->update(['ice_id' => Ice::query()->where('level', 3)->value('id')]);
+        $run = $this->begin();
+
+        $this->assertCount(2, $run->sentries, 'two at grade 7');
+        $this->assertSame(array_column($tree->sentries, 'post'), array_column($run->sentries, 'node'));
+        $this->assertSame([false, false], array_column($run->sentries, 'awake'));
+        $this->assertSame(Ice::query()->where('level', 2)->value('id'), $run->sentries[0]['ice']);
+    }
+
+    public function test_an_awake_sentry_hunts_the_runner_and_strikes_on_reaching_them(): void
+    {
+        $tree = $this->grade7();
+        $far = collect($tree->within($tree->entry, 2))->first(fn (int $n): bool => $tree->distance($tree->entry, $n) === 2);
+        $run = $this->sentry($far, $far);
+        $si = (float) $this->character->fresh()->current_synaptic_integrity;
+
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run, RunAction::Hold);
+        $sentry = $run->fresh()->sentries[0];
+        $this->assertSame($run->id, $sentry['target']);
+        $this->assertSame(1, $tree->distance($tree->entry, $sentry['node']), 'a Slow sentry moves one node');
+        $this->assertSame($si, (float) $this->character->fresh()->current_synaptic_integrity);
+
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $this->assertSame($tree->entry, $run->fresh()->sentries[0]['node']);
+        $this->assertLessThan($si, (float) $this->character->fresh()->current_synaptic_integrity, 'it reached them and struck');
+    }
+
+    public function test_a_sentry_with_nobody_near_walks_back_to_its_post(): void
+    {
+        $tree = $this->grade7();
+        $post = collect($tree->neighbours($tree->core))->first();
+        $this->assertGreaterThan(3, $tree->distance($tree->entry, $tree->core));
+        $run = $this->sentry($post, $tree->core);
+
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run, RunAction::Hold);
+
+        $this->assertSame($post, $run->fresh()->sentries[0]['node']);
+        $this->assertNull($run->fresh()->sentries[0]['target']);
+    }
+
+    public function test_stepping_onto_a_sleeping_sentry_can_wake_it_and_the_alert_wakes_them_all(): void
+    {
+        $tree = $this->grade7();
+        $next = collect($tree->neighbours($tree->entry))->first(fn (int $n): bool => $tree->nodes[$n]['kind'] !== NodeKind::Trap);
+        $run = $this->sentry($next, $next, awake: false);
+        $run->forceFill(['opened' => $tree->nodesOf(NodeKind::Firewall)])->save();
+
+        $this->simulator(1.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $next);
+        $this->assertTrue($run->fresh()->sentries[0]['awake'], 'a failed stealth roll against its detection');
+
+        // Asleep again, far away: the alert (a failed step back filling the bar) wakes it all the same.
+        $run = $run->fresh();
+        $run->forceFill(['sentries' => [['awake' => false, 'node' => $tree->core, 'post' => $tree->core] + $run->sentries[0]], 'noise' => 39.9])->save();
+        $this->simulator(1.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $tree->entry);
+        $this->assertTrue($run->fresh()->alerted);
+        $this->assertTrue($run->fresh()->sentries[0]['awake']);
+    }
+
+    public function test_attack_hits_an_awake_sentry_on_the_runner_s_node_and_a_broken_one_stays_broken(): void
+    {
+        $tree = $this->grade7();
+        $breaker = $this->ownedBy($this->character, Item::factory()->program(ProgramKind::Icebreaker, qflops: 0.1, memory: 0.1, storage: 0.1,
+            modifiers: [['op' => 'add', 'amount' => 100, 'target' => ['id' => 'icebreaker_damage']]])->create());
+        $this->assertTrue(app(ProgramRunner::class)->start($this->character->fresh(), $breaker, true)->succeeded());
+        $run = $this->sentry($tree->entry, $tree->entry);
+
+        $this->assertNull($this->simulator(0.0, 1)->take($this->character->fresh(), $run, RunAction::Attack)->refusal);
+        $sentry = $run->fresh()->sentries[0];
+        $this->assertSame(0.0, (float) $sentry['integrity']);
+
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Attack)->refusal, 'nothing left to hit');
+        $this->assertSame($tree->entry, $run->fresh()->sentries[0]['node'], 'a broken sentry goes nowhere');
+    }
+
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void
     {
         // A grade 3 compute tree with a rich path, and so a port.

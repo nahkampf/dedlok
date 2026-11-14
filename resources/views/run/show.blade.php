@@ -111,6 +111,11 @@
                 {{ Text::get($tree->looping ? 'cyberspace.tree.loopback_holding' : 'cyberspace.tree.loopback_chance', ['chance' => (int) round($tree->loopbackChance * 100)]) }}
             </p>
         @endif
+        @foreach ($tree->sentriesHere as $sentry)
+            <p class="micro" style="color:var(--{{ $sentry['awake'] ? 'crit' : 'ink-2' }});margin:0 0 var(--s-2)">
+                {{ Text::get($sentry['awake'] ? 'cyberspace.tree.sentry_awake' : 'cyberspace.tree.sentry_asleep', ['name' => $sentry['name'], 'integrity' => rtrim(rtrim(number_format($sentry['integrity'], 2), '0'), '.')]) }}
+            </p>
+        @endforeach
         @if ($tree->wipeChance !== null)
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
                 {{ Text::get('cyberspace.tree.wipe_chance', ['chance' => (int) round($tree->wipeChance * 100)]) }}
@@ -397,6 +402,12 @@
                     {{ Text::get('cyberspace.run.action.loopback') }}
                 </button>
             @endif
+            {{-- AN AWAKE SENTRY off the core: Attack hits it (on the core, the core's own Attack does, the sentry first). --}}
+            @if ($tree && ! $tree->atCore && collect($tree->sentriesHere)->contains('awake', true))
+                <button type="submit" name="action" value="attack" class="btn cut">
+                    {{ Text::get('cyberspace.run.action.attack') }}
+                </button>
+            @endif
             {{-- A LOG SERVER holding an alert: Wipe is its OS roll. --}}
             @if ($tree && $tree->wipeChance !== null)
                 <button type="submit" name="action" value="wipe" class="btn cut btn--go">
@@ -415,7 +426,7 @@
                 </button>
             @endif
             @if ($atCore)
-            <button type="submit" name="action" value="attack" class="btn cut" @unless ($run->inAFight()) disabled @endunless>
+            <button type="submit" name="action" value="attack" class="btn cut" @unless ($run->inAFight() || ($tree && collect($tree->sentriesHere)->contains('awake', true))) disabled @endunless>
                 {{ Text::get('cyberspace.run.action.attack') }}
             </button>
             {{-- ONLY ON AN EXTRACTION RUN. Purpose decides what a core touch IS, and each of the three has

@@ -318,6 +318,27 @@ the Cordon tag**, each designed and built on its own, traps first.
   the party). The ICE stays awake and traces keep running. The alert stays for the run, so nothing later can cost
   standing again.
 
+### Sentries
+
+- **None at grades 1–3, one at 4–5, two at 6–7, three at 8–9** (`RunTree::$sentries`), posted on vaults first (never a
+  honeypot), then on other path nodes (never a trap, the entry, the core, a port or a log server). Fast one time in
+  three from grade 7, Slow otherwise.
+- **Each is the catalogue's ICE a level below the system's own** (level 1 at least); a system with no ICE posts none.
+  Its stats and attacks are that row's.
+- **State on the run** (`runs.sentries`: post, node, ice, integrity, awake, fast, target), one set for a party, kept the
+  same on every live run of it.
+- **Waking**: stepping onto a sleeping sentry's node rolls stealth against its detection (a failure wakes it, locked on
+  to that runner); the alert wakes every sentry.
+- **Hunting**: an awake sentry keeps its runner while they are within three steps; otherwise it locks on to the closest
+  runner within three (the least stealthy on a tie, then at random), or, with nobody near, walks back to its post. It
+  moves one node a turn (Fast: two) along the edges; nothing blocks it. Standing on its runner's node, it strikes them
+  as the core's ICE does. A solo runner's sentries act after each of their turns; a party's once a round, after the
+  core's ICE.
+- **Fighting**: Attack (with an icebreaker) hits an awake sentry on the runner's node before the core's ICE; leaving a
+  sentry that hunts you costs its parting hit; damage stays for the run, and a broken sentry is out of play. Attacking
+  it is loud.
+- **On the map**: a ▲ on nodes the runner knows, and a line naming the sentry on their own node.
+
 ## To come back to
 
 Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.
@@ -336,4 +357,5 @@ Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next s
 - **ACiD's local nmap stack** reads 2 (granted onto an existing row); reset it to 1 if wanted.
 - **Trap rates at grade 4**: about 28% of compute and relay trees (one path that may carry a trap); planned about half.
 - **Honeypots can't be told from vaults** until Deep Nmap exists.
+- **Sentry speed as a scan fact** (the proposal reads it with the ICE) is not built; neither is a party test of the round's sentry turn.
 - **A review of the whole branch** before the flag is turned on.

@@ -1286,6 +1286,9 @@ return [
             'loopback_chance' => 'Loopback: :chance% to hold each turn.',
             'disarm_chance' => 'Traps: :chance% to disarm.',
             'wipe_chance' => 'Log server: :chance% to wipe the alert from the record.',
+            'sentry' => 'sentry',
+            'sentry_awake' => ':name is awake on this node and hunting (integrity :integrity).',
+            'sentry_asleep' => ':name sleeps at its post here (integrity :integrity).',
             'trap_label' => 'Trap: :effect',
             'trap' => [
                 'alarm' => 'Alarm',
@@ -1905,6 +1908,9 @@ return [
                     'loopback' => 'You wire a Loopback into the relay. The trace starts chasing its own tail.',
                     'loopback_fails' => 'The Loopback collapses. The trace finds its way again.',
                     'loopback_stalls' => 'The trace runs in circles through the Loopback.',
+                    // Tagged with the sentry's ICE name, like the core ICE's lines.
+                    'sentry_wakes' => 'wakes up and locks on to you.',
+                    'sentry_broken' => 'The sentry comes apart under your icebreaker.',
                     'wiped' => 'You scrub the alert out of the logs. As far as the record goes, nobody was ever here.',
                     'wipe_fails' => 'The log server fights back and makes a lot of noise doing it.',
                     'trap' => [

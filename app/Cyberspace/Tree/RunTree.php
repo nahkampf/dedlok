@@ -26,12 +26,14 @@ final readonly class RunTree
     /**
      * @param  list<array{kind: NodeKind, path: ?string, trap?: TrapEffect}>  $nodes  Indexed by node id; a trap carries its effect.
      * @param  list<array{0: int, 1: int}>  $edges
+     * @param  list<array{post: int, fast: bool}>  $sentries  Where each sentry is posted, and whether it is Fast.
      */
     public function __construct(
         public array $nodes,
         public array $edges,
         public int $entry,
         public int $core,
+        public array $sentries = [],
     ) {}
 
     /** Whether runs on this system walk a tree (the flag is on, and it is an entity's silo, compute or relay on the main grid). */
@@ -54,7 +56,7 @@ final readonly class RunTree
 
         $nodes = array_map(static fn (array $n): array => $n['kind'] === NodeKind::Hub ? ['kind' => NodeKind::Conduit, 'path' => $n['path']] : $n, $tree->nodes);
 
-        return new self($nodes, $tree->edges, $tree->entry, $tree->core);
+        return new self($nodes, $tree->edges, $tree->entry, $tree->core, $tree->sentries);
     }
 
     public static function generate(string $address, int $grade, SystemType $type): self
@@ -320,7 +322,25 @@ final readonly class RunTree
             }
         }
 
-        return new self($nodes, $edges, $entry, $core);
+        // Sentries: none at grades 1-3, one at 4-5, two at 6-7, three at 8-9. Posted on vaults first (never a honeypot),
+        // then on other nodes of the paths (never a trap, the entry, the core, a port or a log server). Fast one time in three
+        // from grade 7.
+        $sentries = [];
+        $count = match (true) {
+            $g <= 3 => 0,
+            $g <= 5 => 1,
+            $g <= 7 => 2,
+            default => 3,
+        };
+        $vaults = array_values(array_filter(array_keys($nodes), static fn (int $n): bool => $nodes[$n]['kind'] === NodeKind::Vault && ! isset($nodes[$n]['trap'])));
+        $others = array_values(array_filter(array_keys($nodes), static fn (int $n): bool => $nodes[$n]['path'] !== null && ! in_array($nodes[$n]['kind'], [NodeKind::Vault, NodeKind::Trap], true)));
+        $order = [...$r->shuffleArray($vaults), ...$r->shuffleArray($others)];
+
+        foreach (array_slice($order, 0, $count) as $post) {
+            $sentries[] = ['post' => $post, 'fast' => $g >= 7 && $chance(1 / 3)];
+        }
+
+        return new self($nodes, $edges, $entry, $core, $sentries);
     }
 
     /** A honeypot: a vault that is a trap with bait. */
@@ -336,7 +356,7 @@ final readonly class RunTree
             return $this;
         }
 
-        return new self($this->nodes, array_values(array_filter($this->edges, static fn (array $e): bool => ! in_array($e[0], $cut, true) && ! in_array($e[1], $cut, true))), $this->entry, $this->core);
+        return new self($this->nodes, array_values(array_filter($this->edges, static fn (array $e): bool => ! in_array($e[0], $cut, true) && ! in_array($e[1], $cut, true))), $this->entry, $this->core, $this->sentries);
     }
 
     /** Where a backdoor brings its holder in: the maintenance port, or the core on a tree without one. */

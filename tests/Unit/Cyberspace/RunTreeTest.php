@@ -135,6 +135,20 @@ final class RunTreeTest extends TestCase
             $this->assertContains($from['path'], ['quiet', 'rich'], $why);
         }
 
+        // Sentries: at most 0 / 1 / 2 / 3 by grade band, on distinct path nodes that are no trap or honeypot; Fast only from 7.
+        $this->assertLessThanOrEqual(match (true) {
+            $grade <= 3 => 0, $grade <= 5 => 1, $grade <= 7 => 2, default => 3
+        }, count($tree->sentries), $why);
+        $this->assertSame(count($tree->sentries), count(array_unique(array_column($tree->sentries, 'post'))), $why);
+
+        foreach ($tree->sentries as $sentry) {
+            $node = $tree->nodes[$sentry['post']];
+            $this->assertNotNull($node['path'], $why);
+            $this->assertNotSame(NodeKind::Trap, $node['kind'], $why);
+            $this->assertFalse($tree->isHoneypot($sentry['post']), $why);
+            $this->assertTrue($grade >= 7 || ! $sentry['fast'], $why);
+        }
+
         // Honeypots from grade 5, never a Node Disconnect, never the tree's first vault.
         $vaults = $tree->nodesOf(NodeKind::Vault);
 

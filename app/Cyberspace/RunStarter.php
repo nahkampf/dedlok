@@ -197,6 +197,9 @@ final readonly class RunStarter
                         'mapped' => $read >= 1,
                         // A scan that read the Traps knows every one of them.
                         'traps' => $read >= 3 ? array_fill_keys($tree->nodesOf(NodeKind::Trap), 'found') : null,
+                        // The tree's sentries, as the party already has them (one set for everybody), or fresh at their posts.
+                        'sentries' => ($partyId === null ? null : Run::query()->live()->where('run_party_id', $partyId)->whereNotNull('sentries')->first()?->sentries)
+                            ?? Simulator::postedSentries($system, $tree),
                         'noise' => 0,
                     ]),
                     'character_id' => $character->getKey(),
