@@ -252,7 +252,8 @@ states' job.
 - **Subverted, no alert can go off for the party's run**: the bar still fills, and nothing happens when it is full.
   Kept in `runs.opened`, read across the party as opened firewalls are. If the alert has already gone off, it stays,
   and Subvert is not offered.
-- **The scan's Nodes reading counts hubs.**
+- **The scan's Nodes reading counts hubs.** (Later: it lists the firewalls always and the vaults, ports and hubs only
+  when there are any, so it fits its tag.)
 - **No IDS, no hub**: on such a system the node is a conduit, labelled and played as one (`RunTree::of`).
 
 ### Internal relay and Loopback

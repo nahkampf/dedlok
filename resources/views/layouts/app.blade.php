@@ -578,11 +578,12 @@
                 {{-- The kit's own stat rows, which is what these are: a label on
                      the left and what the machine gave up on the right. --}}
                 <div class="card__stats" style="padding:0;border:0" data-reading-facts>
-                    @foreach ((new \App\Models\SystemScan)->facts() as $fact)
-                        {{-- Only what a scan can find out: a cloak shows up on a finished scan once it has been seen through, never as a blank. --}}
-                        @continue(! $fact['discoverable'])
-                        <div class="card__stat" data-fact="{{ $fact['key'] }}">
-                            <span>{{ $fact['label'] }}</span>
+                    {{-- Every fact a scan can find out, the run tree's too: those start hidden, and the poll shows a row
+                         only when the scan being read has it (a system that walks no tree has no Layout). --}}
+                    @foreach (\App\Cyberspace\ScanFact::discoverable() as $fact)
+                        @php($tree = in_array($fact, [\App\Cyberspace\ScanFact::Layout, \App\Cyberspace\ScanFact::Nodes, \App\Cyberspace\ScanFact::Traps], true))
+                        <div class="card__stat" data-fact="{{ $fact->value }}" @if ($tree) hidden @endif>
+                            <span>{{ $fact->label() }}</span>
                             {{-- BOTH BLANKS WEAR THE SAME BOX. "Nobody can read
                                  this yet" and "you have not read it yet" are
                                  different facts and neither is an answer, so the

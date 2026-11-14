@@ -1423,6 +1423,8 @@ cap-widget {
   font-size: var(--fs-xs);
   color: var(--ink-2);
 }
+/* A long reading (a scan's Nodes, say) wraps inside its tag rather than running out of the row. */
+.card__stat > .tag { white-space: normal; text-align: right; min-width: 0; }
 .card__stat > b {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;

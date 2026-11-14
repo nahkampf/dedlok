@@ -1436,6 +1436,10 @@
          has not stays the same box it started as. The mark on the operating
          system is the one place a fact also says whether the reader can DO
          anything with it — see SystemScan::markFor(). */
+      /* A row shows only when this scan has the fact: the run tree's rows appear on a system that walks a tree. */
+      const keys = (data.facts || []).map((fact) => fact.key);
+      dlg.querySelectorAll("[data-reading-facts] [data-fact]").forEach((row) => { row.hidden = !keys.includes(row.dataset.fact); });
+
       (data.facts || []).forEach((fact) => {
         const value = dlg.querySelector('[data-fact="' + fact.key + '"] [data-fact-value]');
         if (!value || !fact.discoverable) return;

@@ -185,12 +185,16 @@ enum ScanFact: string
             ]);
         }
 
-        return Text::get('cyberspace.reading.nodes', [
-            'firewalls' => Text::plural('cyberspace.reading.firewalls', count($tree->nodesOf(NodeKind::Firewall))),
-            'vaults' => Text::plural('cyberspace.reading.vaults', count($tree->nodesOf(NodeKind::Vault))),
-            'ports' => Text::plural('cyberspace.reading.ports', count($tree->nodesOf(NodeKind::Port))),
-            'hubs' => Text::plural('cyberspace.reading.hubs', count($tree->nodesOf(NodeKind::Hub))),
-        ]);
+        // The firewalls always (none is worth knowing); the rest only when there are any, so the line stays short.
+        $parts = [Text::plural('cyberspace.reading.firewalls', count($tree->nodesOf(NodeKind::Firewall)))];
+
+        foreach (['vaults' => NodeKind::Vault, 'ports' => NodeKind::Port, 'hubs' => NodeKind::Hub] as $key => $kind) {
+            if (($count = count($tree->nodesOf($kind))) > 0) {
+                $parts[] = Text::plural("cyberspace.reading.{$key}", $count);
+            }
+        }
+
+        return implode(', ', $parts);
     }
 
     /**

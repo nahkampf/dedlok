@@ -233,6 +233,8 @@ final class RunBriefingTest extends TestCase
         $this->machine();
 
         $html = $this->visit()->assertOk()->assertSeeText(Text::get('cyberspace.run.setup.known'))->getContent();
+        // The scanner window on every page lists every fact (it shows the tree's when a scan has them): not the overview's.
+        $html = (string) preg_replace('/<div class="card__stats"[^>]*data-reading-facts>.*?<div data-reading-tree/s', '', $html);
 
         foreach (ScanFact::discoverable() as $fact) {
             // The run tree's facts only on a system that walks one, with intrusion_runs_v2 on: not this one.

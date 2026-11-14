@@ -92,7 +92,7 @@ final class ScanTreeTest extends TestCase
         $this->assertSame(3, $scan->tree);
         $this->assertTrue($scan->isComplete());
         $this->assertMatchesRegularExpression('/paths?, \d+ moves? to the core/', (string) ScanFact::Layout->readFrom($scan));
-        $this->assertMatchesRegularExpression('/firewall.*vault/', (string) ScanFact::Nodes->readFrom($scan));
+        $this->assertMatchesRegularExpression('/firewall/', (string) ScanFact::Nodes->readFrom($scan), 'firewalls always; the rest only when there are any');
         $this->assertMatchesRegularExpression('/traps?/', (string) ScanFact::Traps->readFrom($scan));
     }
 
@@ -144,6 +144,9 @@ final class ScanTreeTest extends TestCase
         $this->actingAs($user)->get($url)->assertOk()->assertDontSee('board__node--fog', false)
             ->assertSeeText(Text::get('cyberspace.tree.node.core'));
         $this->actingAs($user)->get(route('cyberspace.index'))->assertOk()->assertSee($url, false);
+        // The scanner window carries the tree's rows (hidden until a poll says this scan has them).
+        $this->actingAs($user)->get(route('cyberspace.index'))->assertOk()
+            ->assertSee('data-fact="layout"', false)->assertSee('data-fact="nodes"', false)->assertSee('data-fact="traps"', false);
     }
 
     public function test_a_scan_file_whose_system_has_moved_on_says_so(): void
