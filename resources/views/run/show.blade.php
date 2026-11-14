@@ -348,6 +348,12 @@
                     {{ Text::get($run->extracting_qb !== null && $run->pull_node === $run->node ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
                 </button>
             @endif
+            {{-- A FIREWALL that still holds: Breach is its OS roll, and moving on through it is the next turn. --}}
+            @if ($tree && $tree->firewallChance !== null)
+                <button type="submit" name="action" value="breach" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.breach') }}
+                </button>
+            @endif
             @if ($tree)
                 <button type="submit" name="action" value="nmap" class="btn cut" @unless ($tree->canNmap) disabled @endunless>
                     {{ Text::get('cyberspace.run.action.nmap') }}
@@ -444,7 +450,7 @@
             <p class="micro" style="color:var(--warn);margin:var(--s-2) 0 0">
                 {{ Text::get('cyberspace.run.core_guarded') }}
             </p>
-        @elseif ($core !== null)
+        @elseif ($core !== null && $atCore)
             <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
                 {{ Text::get('cyberspace.run.core_chance', ['chance' => $core]) }}
                 {{ Text::get('cyberspace.run.core_hint') }}

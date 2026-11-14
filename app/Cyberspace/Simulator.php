@@ -152,7 +152,7 @@ final readonly class Simulator
             // What the noise of this turn depends on, read before the action changes it.
             $locked = (bool) $run->os_locked;
             $iceAwake = $run->ice_id !== null;
-            $moveTier = null;
+            $breachTier = null;
 
             if ($run->isTreeRun()) {
                 $run->acted_at = CarbonImmutable::now();
@@ -304,16 +304,17 @@ final readonly class Simulator
                     }
                 }
 
-                [$lines, $moveTier] = $this->move($character, $run, (int) $node);
-                $log = [...$log, ...$lines];
+                $log = [...$log, ...$this->move($run, (int) $node)];
             } elseif ($action === RunAction::Nmap) {
                 $log[] = $this->nmap($character, $run);
+            } elseif ($action === RunAction::Breach) {
+                [$log[], $breachTier] = $this->breach($character, $run);
             } else {
                 $log[] = $this->line('cyberspace.run.log.hold');
             }
 
             if ($run->isTreeRun()) {
-                $log = [...$log, ...$this->noiseOf($character, $run, $action, $locked, $iceAwake, $moveTier)];
+                $log = [...$log, ...$this->noiseOf($character, $run, $action, $locked, $iceAwake, $breachTier)];
             }
 
             // Broken. Nothing is left to hit back, so the machine's half of the
@@ -393,7 +394,7 @@ final readonly class Simulator
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
         if (! $run->isTreeRun()) {
-            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
+            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
         }
 
         $tree = $this->treeOf($run);
@@ -403,7 +404,13 @@ final readonly class Simulator
         }
 
         return match ($action) {
-            RunAction::Move => $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true) ? RunRefusal::NotANeighbour : null,
+            RunAction::Move => match (true) {
+                $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true) => RunRefusal::NotANeighbour,
+                // On through a firewall only once it is breached; back the way you came is never blocked.
+                in_array([(int) $run->node, $node], $tree->edges, true) && $this->firewallClosed($run) => RunRefusal::FirewallClosed,
+                default => null,
+            },
+            RunAction::Breach => $this->firewallClosed($run) ? null : RunRefusal::NotHere,
             RunAction::Nmap => $this->nmapReach($character) < 1 ? RunRefusal::NoNmapper : null,
             // A data vault takes an Extract too.
             RunAction::Extract => (int) $run->node !== $tree->core && $tree->nodes[(int) $run->node]['kind'] !== NodeKind::Vault ? RunRefusal::NotHere : null,
@@ -536,40 +543,46 @@ final readonly class Simulator
     }
 
     /**
-     * One step along an edge. A FIREWALL blocks the edges leading on from it until its OS roll lands (the core's table):
-     * landed, it stays open for the run and the party and the runner moves on in the same turn, an act's noise; failed,
-     * they stay where they are and it is loud. Going back the way they came is never blocked, and a system that speaks
-     * no OS has nothing for a firewall to ask.
-     *
-     * @return array{0: list<array{text: string, tone: string}>, 1: string} The lines, and the turn's noise tier.
+     * Standing on a firewall that still blocks the way on: it has not been breached by anybody in the party, and the
+     * system speaks an OS for it to ask (one that speaks none has nothing to ask).
      */
-    private function move(Character $character, Run $run, int $node): array
+    public function firewallClosed(Run $run): bool
     {
         $tree = $this->treeOf($run);
-        $from = (int) $run->node;
-        $system = $run->system();
-        $lines = [];
+        $here = (int) $run->node;
 
-        $through = $tree !== null
-            && $tree->nodes[$from]['kind'] === NodeKind::Firewall
-            && in_array([$from, $node], $tree->edges, true)
-            && ! in_array($from, $run->openedFirewalls(), true)
-            && $system?->os_skill_id !== null;
+        return $tree !== null
+            && $tree->nodes[$here]['kind'] === NodeKind::Firewall
+            && ! in_array($here, $run->openedFirewalls(), true)
+            && $run->system()?->os_skill_id !== null;
+    }
 
-        if ($through) {
-            if (! $this->checks->roll($this->osValue($character, $system), $this->osDifficulty($character, $system?->operatingSystem()->first()), 'os')->passed) {
-                return [[$this->line('cyberspace.run.log.tree.firewall_holds', tone: 'warn')], 'loud'];
-            }
-
-            $run->opened = array_values(array_unique([...array_map('intval', $run->opened ?? []), $from]));
-            $lines[] = $this->line('cyberspace.run.log.tree.firewall_opens', tone: 'ok');
-        }
-
+    /** One step along an edge. Through a firewall only once it is breached; back the way you came always. */
+    private function move(Run $run, int $node): array
+    {
         $run->node = $node;
         $this->reveal($run, [$node]);
-        $lines[] = $this->line('cyberspace.run.log.tree.move');
 
-        return [$lines, $through ? 'act' : 'move'];
+        return [$this->line('cyberspace.run.log.tree.move')];
+    }
+
+    /**
+     * BREACH: the firewall's OS roll (the core's table). Landed, it is open for the run and the party, an act's noise;
+     * failed, it holds and that is loud. Either way the runner stays put: moving on is the next turn.
+     *
+     * @return array{0: array{text: string, tone: string}, 1: string} The line, and the turn's noise tier.
+     */
+    private function breach(Character $character, Run $run): array
+    {
+        $system = $run->system();
+
+        if (! $this->checks->roll($this->osValue($character, $system), $this->osDifficulty($character, $system?->operatingSystem()->first()), 'os')->passed) {
+            return [$this->line('cyberspace.run.log.tree.firewall_holds', tone: 'warn'), 'loud'];
+        }
+
+        $run->opened = array_values(array_unique([...array_map('intval', $run->opened ?? []), (int) $run->node]));
+
+        return [$this->line('cyberspace.run.log.tree.firewall_opens', tone: 'ok'), 'act'];
     }
 
     /** @return array{text: string, tone: string} */
@@ -596,14 +609,15 @@ final readonly class Simulator
      *
      * @return list<array{text: string, tone: string}>
      */
-    private function noiseOf(Character $character, Run $run, RunAction $action, bool $locked, bool $iceAwake, ?string $moveTier = null): array
+    private function noiseOf(Character $character, Run $run, RunAction $action, bool $locked, bool $iceAwake, ?string $breachTier = null): array
     {
         // Only the core rolls an OS for these: a vault has no lock.
         $osFailed = $locked && $run->os_locked && ! $run->inAFight() && $this->vaultHere($run) === null
             && in_array($action, [RunAction::Extract, RunAction::Install, RunAction::Burn, RunAction::Leech], true);
 
         $tier = match ($action) {
-            RunAction::Move => $moveTier ?? 'move',
+            RunAction::Move => 'move',
+            RunAction::Breach => $breachTier,
             RunAction::Egress => 'move',
             RunAction::Nmap => 'act',
             RunAction::Flood => 'loud',

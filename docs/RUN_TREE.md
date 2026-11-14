@@ -86,8 +86,10 @@ proposal disagree, this file wins. Decided with the user, 2026-11-13.
 ## Backdoors and firewalls
 
 - **A backdoor run starts at the core** (backdoors are core-only until phase 2). The approach roll stays skipped.
-- **A firewall opens by moving on**: choosing a move past a closed firewall makes the OS roll. Landed, it opens and the
-  runner moves in the same turn (act noise). Failed, they stay, the turn is spent, and it is loud.
+- **A firewall opens with Breach** (`RunAction::Breach`, a button standing on it): the OS roll. Landed, it opens (act
+  noise) and moving on is the next turn; failed, it holds and it is loud. Until then the nodes past it are not move
+  targets (`RunRefusal::FirewallClosed`); back the way you came is always open. (Changed from opening by moving on,
+  which offered no action on the firewall itself.)
 
 ## Crash Jackout
 

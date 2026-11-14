@@ -31,6 +31,8 @@
              live captcha, and CaptchaTest's Http::fake would miss a real URL
              it never expected. Tests that want it on turn it on themselves. -->
         <env name="CAP_ENABLED" value="false"/>
+        <!-- Feature flags off, whatever .env says while somebody plays with one: a test that wants a flag sets it. -->
+        <env name="FEATURE_INTRUSION_RUNS_V2" value="false" force="true"/>
         <env name="CAP_ENDPOINT" value=""/>
         <env name="CAP_VERIFY_ENDPOINT" value=""/>
         <env name="CAP_SECRET" value=""/>

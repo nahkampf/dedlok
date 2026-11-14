@@ -63,6 +63,9 @@ enum RunRefusal: string
     /** A tree run: Nmap with no Nmapper running. */
     case NoNmapper = 'no_nmapper';
 
+    /** A tree run: a Move on through a firewall nobody has breached yet. */
+    case FirewallClosed = 'firewall_closed';
+
     public function message(): string
     {
         return Text::get("cyberspace.run.refused.{$this->value}");

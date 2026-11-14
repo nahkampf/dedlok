@@ -1838,6 +1838,7 @@ return [
                 // Run trees (docs/RUN_TREE.md). Suggestions, for the user to edit.
                 'move' => 'Move',
                 'nmap' => 'Network Map',
+                'breach' => 'Breach',
                 'jackout' => 'Crash Jackout',
                 'jackout_confirm' => 'Pull the plug',
                 'jackout_cancel' => 'Stay in',
@@ -2097,6 +2098,7 @@ return [
                 'not_here' => 'You cannot do that from this node.',
                 'not_a_neighbour' => 'That node is not linked to where you stand.',
                 'no_nmapper' => 'You need an Nmapper running to map the links around you.',
+                'firewall_closed' => 'The firewall still holds. Breach it before you go on.',
                 'hunted' => 'You are currently locked in a confrontation with another entity.',
                 'fighting' => 'You are in a fight.',
                 'program_refused' => 'Something on your loadout would not start.',

@@ -94,6 +94,9 @@ enum RunAction: string
     /** A tree run: reveal the nodes around you, as far as the running Nmapper reaches. */
     case Nmap = 'nmap';
 
+    /** A tree run: breach the firewall you stand on, with its OS roll. Moving on through it is the next turn. */
+    case Breach = 'breach';
+
     /** A tree run: Crash Jackout. Out from anywhere, for certain, at a price in Synaptic Integrity. */
     case Jackout = 'jackout';
 

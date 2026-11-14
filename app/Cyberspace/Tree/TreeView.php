@@ -70,6 +70,11 @@ final readonly class TreeView
             ->whereKeyNot($run->getKey())->pluck('node')->countBy()->all();
         $moves = $tree->neighbours($here);
 
+        // A firewall nobody has breached lets them back the way they came, and no further.
+        if ($simulator->firewallClosed($run)) {
+            $moves = array_values(array_filter($moves, static fn (int $n): bool => ! in_array([$here, $n], $tree->edges, true)));
+        }
+
         $nodes = array_map(static fn (int $n): array => [
             'key' => $n,
             'label' => in_array($n, $known, true) ? Text::get('cyberspace.tree.node.'.$tree->nodes[$n]['kind']->value) : '?',
@@ -97,7 +102,7 @@ final readonly class TreeView
             $simulator->refusal($character, $run, RunAction::Nmap, null) === null,
             $simulator->noiseLevel($run),
             $ids,
-            $tree->nodes[$here]['kind'] === NodeKind::Firewall && ! in_array($here, $run->openedFirewalls(), true) && $system->os_skill_id !== null
+            $simulator->firewallClosed($run)
                 ? $simulator->osChanceFor($character, $system->operatingSystem()->first())
                 : null,
             $tree->nodes[$here]['kind'] === NodeKind::Vault,

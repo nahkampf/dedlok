@@ -363,38 +363,40 @@ final class TreeRunTest extends TestCase
         return [$before, $wall, $after];
     }
 
-    public function test_a_firewall_holds_on_a_failed_os_roll_and_it_is_loud(): void
+    public function test_a_failed_breach_holds_the_firewall_and_it_is_loud(): void
     {
         [, $wall, $after] = $this->firewall();
         $run = $this->begin();
         $run->forceFill(['node' => $wall])->save();
 
-        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $after);
+        $this->assertSame(RunRefusal::FirewallClosed, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $after)->refusal);
+
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Breach);
         $run = $run->fresh();
 
-        $this->assertSame($wall, $run->node, 'turned away');
+        $this->assertSame($wall, $run->node);
         $this->assertSame(20.0, (float) $run->noise, 'the bottom of the loud tier');
         $this->assertSame([], $run->openedFirewalls());
     }
 
-    public function test_a_landed_os_roll_opens_the_firewall_for_the_party_and_moves_in_the_same_turn(): void
+    public function test_a_breach_opens_the_firewall_for_the_party_and_moving_on_is_the_next_turn(): void
     {
         [$before, $wall, $after] = $this->firewall();
         $run = $this->begin();
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Breach)->refusal, 'only on a firewall');
         $run->forceFill(['node' => $wall])->save();
 
-        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $after);
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Breach);
         $run = $run->fresh();
-
-        $this->assertSame($after, $run->node);
+        $this->assertSame($wall, $run->node, 'a breach does not move');
         $this->assertSame([$wall], $run->openedFirewalls());
-        $this->assertSame(1, $run->turn);
 
-        // Going back the way you came is never blocked, and the way on again needs no second roll.
-        $this->simulator(1.0, 0)->take($this->character->fresh(), $run, RunAction::Move, node: $wall);
-        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $after);
+        // Open now: on without a roll, back the way you came, and on again.
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run, RunAction::Move, node: $after);
         $this->assertSame($after, $run->fresh()->node);
-        unset($before);
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $wall);
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $before);
+        $this->assertSame($before, $run->fresh()->node);
     }
 
     public function test_egress_is_only_from_the_entry(): void
