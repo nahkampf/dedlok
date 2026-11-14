@@ -2130,6 +2130,8 @@ return [
             'ice' => 'ICE',
             'tracer' => 'Tracer',
             'cloaked' => 'Cloaked systems',
+            'layout' => 'Layout',
+            'nodes' => 'Nodes',
         ],
 
         /*
@@ -2162,6 +2164,13 @@ return [
             */
             'none' => 'None',
             'tracer' => ':detection, tracing :rate% a turn',
+            // The run tree's two facts (docs/RUN_TREE.md), as counts; the tree itself is drawn elsewhere.
+            'layout' => ':paths, :moves to the core',
+            'paths' => ['one' => '1 path', 'many' => ':count paths'],
+            'moves' => ['one' => '1 move', 'many' => ':count moves'],
+            'nodes' => ':firewalls, :vaults',
+            'firewalls' => ['zero' => 'no firewalls', 'one' => '1 firewall', 'many' => ':count firewalls'],
+            'vaults' => ['zero' => 'no data vaults', 'one' => '1 data vault', 'many' => ':count data vaults'],
 
             /*
             | The guard and the reprisal, read together. A machine whose owner

@@ -94,6 +94,7 @@ final readonly class ScanImporter
                 'tracer_rate' => $file->tracerRate,
                 'ice_level' => $file->iceLevel,
                 'ice_bounty' => $file->iceBounty,
+                'tree' => $file->tree,
                 // ONE, AND NOT THE NUMBER IT TOOK. Nobody here pointed an
                 // instrument at anything; `passes` exists to cap further
                 // rolling, and `chk_system_scans_passes` refuses zero beside a

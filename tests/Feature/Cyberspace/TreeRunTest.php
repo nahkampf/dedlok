@@ -19,6 +19,7 @@ use App\Cyberspace\Simulator;
 use App\Cyberspace\SystemType;
 use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
+use App\Cyberspace\Tree\TreeView;
 use App\Models\Character;
 use App\Models\Ice;
 use App\Models\InventoryItem;
@@ -29,6 +30,7 @@ use App\Models\RunParty;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContent;
+use App\Models\SystemScan;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
@@ -110,6 +112,52 @@ final class TreeRunTest extends TestCase
         $this->assertSame([$this->tree->entry], $run->knownNodes());
         $this->assertSame(0.0, (float) $run->noise);
         $this->assertFalse($run->detected);
+    }
+
+    private function scanned(Character $character, int $tree): void
+    {
+        SystemScan::query()->create([
+            'character_id' => $character->id, 'address' => 'DEADBEEF', 'grid_id' => 1, 'x' => 8, 'y' => 8,
+            'grade' => 3, 'tree' => $tree, 'passes' => 1, 'scanned_at' => now(), 'expires_at' => now()->addHours(48),
+        ]);
+    }
+
+    public function test_a_scan_that_read_the_layout_starts_the_run_with_the_whole_shape_unnamed(): void
+    {
+        $this->scanned($this->character, 1);
+
+        $view = TreeView::for($this->begin(), $this->character->fresh(), $this->simulator(0.0), null);
+
+        $this->assertCount(count($this->tree->nodes), $view->nodes);
+        $this->assertCount(count($this->tree->edges), $view->links);
+        $this->assertSame(1, collect($view->nodes)->where('known', true)->count(), 'only the entry is named');
+    }
+
+    public function test_a_scan_that_read_the_nodes_starts_the_run_knowing_every_node(): void
+    {
+        $this->scanned($this->character, 2);
+
+        $run = $this->begin();
+
+        $this->assertTrue($run->mapped);
+        $this->assertEqualsCanonicalizing(array_keys($this->tree->nodes), $run->knownNodes());
+    }
+
+    public function test_in_a_party_the_best_scan_is_what_everybody_sees(): void
+    {
+        $this->checks(0.0);
+        $mate = $this->runner();
+        $this->scanned($mate, 1);
+        $parties = new Parties;
+        $parties->open($this->character);
+        $this->assertNull($parties->invite($this->character, $mate->handle));
+        $this->assertNull($parties->accept($mate));
+        $this->assertTrue($parties->launch($this->character, RunPurpose::Extraction, null, [], app(RunStarter::class))->succeeded());
+
+        $mine = Run::query()->where('character_id', $this->character->id)->sole();
+
+        $this->assertFalse($mine->mapped, 'their own scan read nothing');
+        $this->assertTrue($mine->mapped(), 'but their mate\'s read the Layout');
     }
 
     public function test_arriving_unseen_by_both_watchers_is_an_act_of_noise_and_a_running_trace(): void

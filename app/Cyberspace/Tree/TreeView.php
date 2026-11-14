@@ -16,7 +16,7 @@ use App\Support\Text;
  * move to; and the noise bar.
  *
  * FOG: a node whose kind is known (stood on or Nmapped, by them or their party) shows it; a node one edge from a known
- * one shows as "?"; the rest is not drawn, and the board is only as wide as the columns that are, so its width gives
+ * one shows as "?" (every node does, once a scan has read the Layout); the rest is not drawn, and the board is only as wide as the columns that are, so its width gives
  * nothing away.
  */
 final readonly class TreeView
@@ -59,7 +59,9 @@ final readonly class TreeView
             $seen = [...$seen, ...$tree->neighbours($node)];
         }
 
-        $seen = array_values(array_unique($seen));
+        // A scan that read the Layout showed the whole shape before the run began.
+        $mapped = $run->mapped();
+        $seen = $mapped ? array_keys($tree->nodes) : array_values(array_unique($seen));
         $layout = $tree->layout();
         $maxCol = max(array_map(static fn (int $n): int => $layout[$n]['col'], $seen));
         $lanes = $tree->lanes();
@@ -80,7 +82,7 @@ final readonly class TreeView
         ], $seen);
 
         // An edge is drawn when the runner knows one of its ends: that is what standing on a node or an Nmap shows.
-        $links = array_values(array_filter($tree->edges, static fn (array $e): bool => in_array($e[0], $known, true) || in_array($e[1], $known, true)));
+        $links = $mapped ? $tree->edges : array_values(array_filter($tree->edges, static fn (array $e): bool => in_array($e[0], $known, true) || in_array($e[1], $known, true)));
 
         $ids = $scan !== null && $scan->ids_detection !== null ? (float) $system->ids_detection : null;
 

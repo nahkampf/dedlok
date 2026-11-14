@@ -235,6 +235,13 @@ final class RunBriefingTest extends TestCase
         $html = $this->visit()->assertOk()->assertSeeText(Text::get('cyberspace.run.setup.known'))->getContent();
 
         foreach (ScanFact::discoverable() as $fact) {
+            // The run tree's facts only on a system that walks one, with intrusion_runs_v2 on: not this one.
+            if (! $fact->appliesTo(new SystemScan)) {
+                $this->assertStringNotContainsString('data-fact="'.$fact->value.'"', $html);
+
+                continue;
+            }
+
             $this->assertStringContainsString('data-fact="'.$fact->value.'"', $html, "{$fact->value} is listed even though nothing is read");
         }
 

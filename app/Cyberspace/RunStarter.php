@@ -15,6 +15,7 @@ use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Run;
 use App\Models\System;
+use App\Models\SystemScan;
 use App\Programs\ProcessRefused;
 use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
@@ -181,8 +182,19 @@ final readonly class RunStarter
                 $start = $tree === null ? null
                     : ((new Backdoors)->heldOn($character, $system) !== null && ! $atEntry ? $tree->core : $tree->entry);
 
+                // What the runner's own scan read of the tree: the Layout shows the whole shape, the Nodes every node.
+                // Their party's runs are read together (Run::knownNodes(), Run::mapped()), so the best scan in a party
+                // is what everybody sees.
+                $read = $tree === null ? 0 : (int) SystemScan::query()->where('character_id', $character->getKey())
+                    ->where('address', $system->address)->live()->value('tree');
+
                 $run = Run::query()->create([
-                    ...($tree === null ? [] : ['node' => $start, 'known' => [$start], 'noise' => 0]),
+                    ...($tree === null ? [] : [
+                        'node' => $start,
+                        'known' => $read >= 2 ? array_keys($tree->nodes) : [$start],
+                        'mapped' => $read >= 1,
+                        'noise' => 0,
+                    ]),
                     'character_id' => $character->getKey(),
                     'run_party_id' => $partyId,
                     'address' => $system->address,

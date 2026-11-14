@@ -46,9 +46,16 @@ proposal disagree, this file wins. Decided with the user, 2026-11-13.
 - **Stepping onto a node** shows what it is and the edges leaving it; neighbours show as "?".
 - **Nmap** (an action: costs a turn, act-tier noise) reveals the neighbours' types and their edges.
 - **Two new scan facts, in order**: *Layout* (the shape: depth, paths, edges, nodes as "?") and then *Nodes* (what
-  every node is). Nodes is only rolled once Layout is known.
+  every node is). **Layout waits for the Grade** (the shape gives the grade away), and Nodes for the Layout, each from
+  the pass after: reading a whole tree takes at least three passes.
+- **Only on systems that walk a tree.** Anywhere else, and everywhere while the flag is off, neither fact is listed or
+  rolled, and a file is complete without them. `system_scans.tree` says how far the read got (0, 1 Layout, 2 Nodes);
+  NULL is "no tree", decided when the file is made, so files from before trees read as complete.
+- **They read as counts**: Layout as paths and moves to the core, Nodes as firewalls and data vaults. The tree itself is
+  drawn from the address, so a file whose system has moved on reads them as unknown.
 - **A run starts with what the live scan knows**: no scan, only the entry and its edges; Layout, the whole shape;
-  Nodes, everything typed.
+  Nodes, everything typed. **In a party, the best scan is what everybody sees** (each run keeps its own, read across
+  the party like Nmap reveals).
 - **The tree only changes when the system relocates.** Raids, lockdowns and restocks leave it alone.
 
 ## Generation

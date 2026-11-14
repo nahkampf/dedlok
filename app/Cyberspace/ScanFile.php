@@ -60,6 +60,8 @@ final readonly class ScanFile
          * it and it is already here. See `scans:stale`.
          */
         public bool $staleAnnounced = false,
+        // How far into the run tree the read got: system_scans.tree, NULL included.
+        public ?int $tree = null,
     ) {}
 
     public static function fromScan(SystemScan $scan, ?string $name): self
@@ -76,6 +78,7 @@ final readonly class ScanFile
             iceBounty: (bool) $scan->ice_bounty,
             madeAt: now()->toDateTimeImmutable(),
             expiresAt: $scan->expires_at?->toDateTimeImmutable(),
+            tree: $scan->tree,
         );
     }
 
@@ -95,6 +98,7 @@ final readonly class ScanFile
             'made_at' => $this->madeAt?->format(DATE_ATOM),
             'expires_at' => $this->expiresAt?->format(DATE_ATOM),
             'stale_announced' => $this->staleAnnounced,
+            'tree' => $this->tree,
         ];
     }
 
@@ -120,6 +124,7 @@ final readonly class ScanFile
             madeAt: self::moment($stored['made_at'] ?? null),
             expiresAt: self::moment($stored['expires_at'] ?? null),
             staleAnnounced: (bool) ($stored['stale_announced'] ?? false),
+            tree: $int('tree'),
         );
     }
 
@@ -143,6 +148,7 @@ final readonly class ScanFile
             'tracer_rate' => $this->tracerRate,
             'ice_level' => $this->iceLevel,
             'ice_bounty' => $this->iceBounty,
+            'tree' => $this->tree,
         ]);
     }
 
@@ -180,6 +186,7 @@ final readonly class ScanFile
             madeAt: $this->madeAt,
             expiresAt: $this->expiresAt,
             staleAnnounced: true,
+            tree: $this->tree,
         );
     }
 

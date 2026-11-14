@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written only by App\Cyberspace\Probe.
  */
-#[Fillable(['character_id', 'address', 'grid_id', 'x', 'y', 'grade', 'os_skill_id', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_level', 'ice_bounty', 'cloak_broken', 'passes', 'pass_started_at', 'pass_ready_at', 'reading_process_id', 'scanned_at', 'expires_at'])]
+#[Fillable(['character_id', 'address', 'grid_id', 'x', 'y', 'grade', 'os_skill_id', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_level', 'ice_bounty', 'cloak_broken', 'tree', 'passes', 'pass_started_at', 'pass_ready_at', 'reading_process_id', 'scanned_at', 'expires_at'])]
 class SystemScan extends Model
 {
     public $timestamps = false;
@@ -47,6 +47,7 @@ class SystemScan extends Model
             'ice_level' => 'integer',
             'ice_bounty' => 'boolean',
             'cloak_broken' => 'boolean',
+            'tree' => 'integer',
             'passes' => 'integer',
             'pass_started_at' => 'immutable_datetime',
             'pass_ready_at' => 'immutable_datetime',
@@ -104,7 +105,7 @@ class SystemScan extends Model
             static fn (ScanFact $fact): string => $fact->value,
             array_filter(
                 ScanFact::discoverable(),
-                fn (ScanFact $fact): bool => ! $fact->isKnownOn($this),
+                fn (ScanFact $fact): bool => $fact->appliesTo($this) && $fact->isReadyOn($this) && ! $fact->isKnownOn($this),
             ),
         ));
     }
@@ -120,13 +121,13 @@ class SystemScan extends Model
      */
     public function facts(?Character $for = null): array
     {
-        return array_map(fn (ScanFact $fact): array => [
+        return array_values(array_map(fn (ScanFact $fact): array => [
             'key' => $fact->value,
             'label' => $fact->label(),
             'value' => $fact->readFrom($this),
             'discoverable' => $fact->isDiscoverable(),
             'mark' => $for === null ? null : $this->markFor($fact, $for),
-        ], ScanFact::cases());
+        ], array_filter(ScanFact::cases(), fn (ScanFact $fact): bool => $fact->appliesTo($this))));
     }
 
     /**
