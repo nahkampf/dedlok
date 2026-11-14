@@ -13,6 +13,7 @@ use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemScan;
 use App\Support\Text;
+use Illuminate\Support\Collection;
 
 /**
  * What the run screen draws of a tree run (docs/RUN_TREE.md): the nodes this runner can see, where, and which they can
@@ -145,7 +146,7 @@ final readonly class TreeView
             ->whereKeyNot($run->getKey())->pluck('node')->countBy()->all();
         $moves = $tree->neighbours($here);
         // Sentries are seen where the runner can see: a node they know.
-        /** @var \Illuminate\Support\Collection<int, array<string, mixed>> $standing */
+        /** @var Collection<int, array<string, mixed>> $standing */
         $standing = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0);
         $guards = $standing->reject(static fn (array $s): bool => (bool) ($s['barrier'] ?? false))->countBy('node')->all();
         $barriers = $standing->filter(static fn (array $s): bool => (bool) ($s['barrier'] ?? false))->countBy('node')->all();
@@ -159,7 +160,8 @@ final readonly class TreeView
             NodeKind::Controller => $controllerUp,
             NodeKind::Core => $coreIce,
             default => false,
-        } || ($guards[$n] ?? 0) > 0 || ($barriers[$n] ?? 0) > 0;
+            // A vault keeps its violet: a sentry posted on one shows by its ▲ alone (decided 2026-11-14).
+        } || ((($guards[$n] ?? 0) > 0 || ($barriers[$n] ?? 0) > 0) && $tree->nodes[$n]['kind'] !== NodeKind::Vault);
         $shown = static fn (int $n): bool => in_array($traps[$n] ?? null, ['found', 'sprung'], true);
         // A Cordon cutting a node shows its countdown wherever the runner can see the node: that is the warning.
         $cutting = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0 && ($s['countdown'] ?? null) !== null)

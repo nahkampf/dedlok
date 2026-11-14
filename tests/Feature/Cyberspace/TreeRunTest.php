@@ -1330,6 +1330,65 @@ final class TreeRunTest extends TestCase
             ->assertSee('name="action" value="extract"', false);
     }
 
+    /** @return array{0: Run, 1: Run} The owner's run and the mate's, launched together. */
+    private function partyRuns(): array
+    {
+        $this->checks(0.0);
+        $mate = $this->runner();
+        $parties = new Parties;
+        $parties->open($this->character);
+        $this->assertNull($parties->invite($this->character, $mate->handle));
+        $this->assertNull($parties->accept($mate));
+        $this->assertTrue($parties->launch($this->character, RunPurpose::Extraction, null, [], app(RunStarter::class))->succeeded());
+        $runs = Run::query()->where('run_party_id', RunParty::query()->sole()->id)->orderBy('id')->get();
+
+        return [$runs->firstWhere('character_id', $this->character->id), $runs->firstWhere('character_id', $mate->id)];
+    }
+
+    public function test_one_runner_s_loopback_stalls_an_ally_s_trace_in_a_party(): void
+    {
+        System::query()->where('address', 'DEADBEEF')->update(['type' => SystemType::Relay->value]);
+        $relay = RunTree::of(System::query()->where('address', 'DEADBEEF')->sole())->nodesOf(NodeKind::Relay)[0];
+        $item = Item::factory()->program(ProgramKind::Script, qflops: 0.1, memory: 0.1, storage: 0.1, background: false, lifetime: 3600)->create();
+        $item->program->forceFill(['loopback_strength' => 20])->save();
+        InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1]);
+        [$a, $b] = $this->partyRuns();
+        $a->forceFill(['node' => $relay])->save();
+        $b->forceFill(['detected' => true, 'trace' => 0])->save();
+
+        $this->app->instance(Simulator::class, Simulator::fromConfig(static fn (int $min, int $max): int => $min, app(Resolver::class)));
+        $turns = app(PartyTurns::class);
+        $turns->submit($a->fresh(), RunAction::Loopback);
+        $turns->submit($b->fresh(), RunAction::Hold);
+        $this->assertNotNull($a->fresh()->loopback);
+
+        $turns->submit($a->fresh(), RunAction::Hold);
+        $turns->submit($b->fresh(), RunAction::Hold);
+
+        $this->assertSame(0, (int) $b->fresh()->trace, "the ally's trace stalls while the Loopback holds");
+        $this->assertNotNull($a->fresh()->loopback, 'and it held');
+    }
+
+    public function test_a_party_s_sentries_take_one_turn_a_round(): void
+    {
+        $tree = $this->grade7();
+        [$a, $b] = $this->partyRuns();
+        $far = collect($tree->within($tree->entry, 3))->first(fn (int $n): bool => $tree->distance($tree->entry, $n) === 3);
+        $ice = Ice::query()->where('level', 1)->sole();
+        $sentries = [['post' => $far, 'node' => $far, 'ice' => $ice->id, 'integrity' => (float) $ice->integrity, 'awake' => true,
+            'fast' => false, 'target' => null, 'cordon' => false, 'countdown' => null]];
+        $a->forceFill(['sentries' => $sentries])->save();
+        $b->forceFill(['sentries' => $sentries])->save();
+
+        $this->app->instance(Simulator::class, Simulator::fromConfig(static fn (int $min, int $max): int => $max, app(Resolver::class)));
+        $turns = app(PartyTurns::class);
+        $turns->submit($a->fresh(), RunAction::Hold);
+        $turns->submit($b->fresh(), RunAction::Hold);
+
+        $this->assertSame(2, $tree->distance($tree->entry, $a->fresh()->sentries[0]['node']), 'one Slow step for the round, not one per runner');
+        $this->assertSame($a->fresh()->sentries, $b->fresh()->sentries, 'one set of sentries for the party');
+    }
+
     public function test_a_party_shares_one_bar_and_the_alert_but_not_the_trace(): void
     {
         $this->checks(0.0);

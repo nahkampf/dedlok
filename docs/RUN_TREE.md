@@ -432,24 +432,22 @@ purpose works unchanged: an Install makes it a Backdoor run of that kind (`backd
 Burn that lands a Burn run, the first Flood a Denial run (`runs.flood_turn`: the node's patience counts from it).
 Extract works on any tree run. Old single-room runs keep their purposes.
 
+## Decided at the end of phase 3 (2026-11-14)
+
+- **The nmap migration stays**: it grants nmap to every Deck Jockey and stocks the shelves at deploy.
+- **Vaults keep their violet border** with a sentry on them; the ▲ says the sentry is there.
+- **No safe path.**
+- **Only Deep Nmap reads whether a sentry is Fast** (and a Cordon); no scan fact for it.
+- **Trap rates stand** as measured (about 28–45% of trees at grades 4–6).
+
 ## To come back to
 
-Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.
+Kept up to date as the branch grows. All of it blocks the merge.
 
 - **Strings**: every player-facing line added on this branch is a suggestion for the user to rewrite (`config/strings.php`,
   the `cyberspace.tree`, `cyberspace.run.action`, `cyberspace.run.log.tree`, `cyberspace.run.refused`,
-  `cyberspace.reading` and `programs.spec` keys).
-- **The Loopback skill** (`loopback_routing`): placeholder title and description, off the market; the user rewrites it
-  and decides its price and when it goes on sale.
-- **Loopback items**: none exist yet. Create them in the item admin (Script, Loopback strength 1–20) and decide where
-  they are sold. The hold roll is flat (spread 8): strength 10 with no skill holds about 47% at grade 5.
-- **The safe path** (an internal relay and a maintenance port on a path of its own) is not built.
-- **A party test for the Loopback**: an ally's trace stalling while another runner's Loopback holds is untested.
-- **The nmap migration grants items at deploy** (to every Deck Jockey, and shop shelves): decide before merging.
+  `cyberspace.reading`, `cyberspace.run.setup.start` and `programs.spec` keys).
+- **Loopback and Egress Tunnel items**: none exist yet (Scripts with a strength, 1–20); the user creates and prices them.
+  The Loopback's hold roll is flat (spread 8): strength 10 with no skill holds about 47% at grade 5.
+- **The Loopback Routing and Egress Tunneling skills** (and their imprints): placeholder text, off the market.
 - **The nmap item in the Deck Jockey loadout**: added in the archetype editor at release.
-- **ACiD's local nmap stack** reads 2 (granted onto an existing row); reset it to 1 if wanted.
-- **Trap rates at grade 4**: about 28% of compute and relay trees (one path that may carry a trap); planned about half.
-- **Deep Nmappers**: none exist yet; create them in the item admin (an Nmapper with Deep ticked).
-- **Sentry speed as a scan fact** (the proposal reads it with the ICE) is not built; neither is a party test of the round's sentry turn.
-- **Egress Tunnel items and the Egress Tunneling skill**: none exist yet / placeholder text; create and price them.
-- **A review of the whole branch** before the flag is turned on.
