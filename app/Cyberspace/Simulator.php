@@ -405,7 +405,9 @@ final readonly class Simulator
         return match ($action) {
             RunAction::Move => $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true) ? RunRefusal::NotANeighbour : null,
             RunAction::Nmap => $this->nmapReach($character) < 1 ? RunRefusal::NoNmapper : null,
-            RunAction::Extract, RunAction::Install, RunAction::Burn, RunAction::Leech, RunAction::Attack => (int) $run->node !== $tree->core ? RunRefusal::NotHere : null,
+            // A data vault takes an Extract too.
+            RunAction::Extract => (int) $run->node !== $tree->core && $tree->nodes[(int) $run->node]['kind'] !== NodeKind::Vault ? RunRefusal::NotHere : null,
+            RunAction::Install, RunAction::Burn, RunAction::Leech, RunAction::Attack => (int) $run->node !== $tree->core ? RunRefusal::NotHere : null,
             RunAction::Flood, RunAction::Egress => (int) $run->node !== $tree->entry ? RunRefusal::NotHere : null,
             default => null,
         };
@@ -476,6 +478,48 @@ final readonly class Simulator
 
             return true;
         });
+    }
+
+    /** The data vault a tree runner stands on, or null (the core, or anywhere else). */
+    private function vaultHere(Run $run): ?int
+    {
+        $tree = $run->isTreeRun() ? $this->treeOf($run) : null;
+
+        return $tree !== null && $tree->nodes[(int) $run->node]['kind'] === NodeKind::Vault ? (int) $run->node : null;
+    }
+
+    /**
+     * A PULL FROM A DATA VAULT (docs/RUN_TREE.md): no lock, no ICE, any purpose. Creds and items come at once, files
+     * cost turns as at the core. A side haul: it counts as no raid, costs no standing, and does not finish the run.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function pullFromAVault(Character $character, Run $run, int $vault): array
+    {
+        $instant = $this->extractor->takeCredsAndItems($character, $run->address, $vault);
+        $fileQb = $this->extractor->totalFileQb($run->address, $character, $vault);
+        $log = [];
+
+        if ($instant->tookNothing() && $fileQb <= 0 && ! $instant->leftBehind) {
+            return [$this->line('cyberspace.run.log.tree.vault_empty')];
+        }
+
+        if (! $instant->tookNothing()) {
+            $log[] = $this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($instant)], 'ok');
+        }
+
+        $filesFit = $fileQb <= 0 || $this->extractor->filesFit($character, $run->address, $vault);
+
+        if ($instant->leftBehind || ! $filesFit) {
+            $log[] = $this->line('cyberspace.run.log.no_room', tone: 'warn');
+        }
+
+        if ($fileQb > 0 && $filesFit) {
+            $run->pull_node = $vault;
+            $log = [...$log, ...$this->beginTransfer($character, $run, $fileQb)];
+        }
+
+        return $log;
     }
 
     /** How many edges out the best running Nmapper reveals; 0 with none running. */
@@ -554,7 +598,8 @@ final readonly class Simulator
      */
     private function noiseOf(Character $character, Run $run, RunAction $action, bool $locked, bool $iceAwake, ?string $moveTier = null): array
     {
-        $osFailed = $locked && $run->os_locked && ! $run->inAFight()
+        // Only the core rolls an OS for these: a vault has no lock.
+        $osFailed = $locked && $run->os_locked && ! $run->inAFight() && $this->vaultHere($run) === null
             && in_array($action, [RunAction::Extract, RunAction::Install, RunAction::Burn, RunAction::Leech], true);
 
         $tier = match ($action) {
@@ -1050,6 +1095,14 @@ final readonly class Simulator
      */
     private function extract(Character $character, Run $run): array
     {
+        // A TREE RUN'S PULL BELONGS TO ITS NODE (`runs.pull_node`, null the core): Extract anywhere else drops it, its
+        // files left where they were, and begins afresh there.
+        $here = $this->vaultHere($run);
+
+        if ($run->isTreeRun() && $run->extracting_qb !== null && $run->pull_node !== $here) {
+            $run->forceFill(['extracting_qb' => null, 'pull_node' => null]);
+        }
+
         // CONTINUING. Spends this turn's bandwidth against what is already
         // owed. The core is not touched again, but the IDS watches every turn
         // a pull runs — so a long file is a gamble as well as slow. ICE it
@@ -1057,11 +1110,15 @@ final readonly class Simulator
         if ($run->extracting_qb !== null) {
             $log = $this->idsWatchesThePull($character, $run);
 
-            if ($run->inAFight()) {
+            if ($run->inAFight() && $run->iceReachesHere()) {
                 return [...$log, $this->iceGuardsTheCore()];
             }
 
             return [...$log, ...$this->continueTransfer($character, $run)];
+        }
+
+        if ($here !== null) {
+            return $this->pullFromAVault($character, $run, $here);
         }
 
         $system = System::query()->where('address', $run->address)->first();
@@ -1176,8 +1233,10 @@ final readonly class Simulator
     private function completeTransfer(Character $character, Run $run): array
     {
         $run->extracting_qb = null;
+        $vault = $run->pull_node;
+        $run->pull_node = null;
 
-        $result = $this->extractor->takeFiles($character, $run->address);
+        $result = $this->extractor->takeFiles($character, $run->address, $vault);
 
         if ($result->leftBehind) {
             return [$this->line('cyberspace.run.log.no_room', tone: 'warn')];
@@ -1187,7 +1246,10 @@ final readonly class Simulator
             return [$this->line('cyberspace.run.log.transfer_gone')];
         }
 
-        $this->recordTake($character, $run);
+        // A vault's haul is a side haul: no raid, and the run is not done for it.
+        if ($vault === null) {
+            $this->recordTake($character, $run);
+        }
 
         return [$this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($result)], 'ok')];
     }

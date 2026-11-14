@@ -200,3 +200,13 @@ Decided 2026-11-13, replacing the per-action detection chances.
 - **In a party a Crash Jackout is chosen like any action** and happens when the round resolves, as Egress does.
 - **A Crash Jackout's neural damage claims nothing from injury insurance** (unlike a Flatline's): it is the price of
   pulling the plug.
+
+## Step 5
+
+- **The run tree stays a whole-game switch** (`FEATURE_INTRUSION_RUNS_V2`, per server), not per player.
+- **Vault loot is `system_contents.node`** (NULL is the core). The restock fills the core when the core is empty and each
+  vault when that vault is empty, in the same pass, and vaults only for systems whose runs walk a tree.
+- **About a third of a core's roll**: a third of the creds, and each file or item kept one time in three.
+- **A vault's haul does not finish the run**: no `extracted`, no raid, no standing lost, no mission credit. Only the core.
+- **One pull at a time, belonging to its node** (`runs.pull_node`): Extract at another node drops the paused pull, its
+  files staying where they were, and starts there.

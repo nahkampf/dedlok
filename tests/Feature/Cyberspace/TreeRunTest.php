@@ -28,6 +28,7 @@ use App\Models\Run;
 use App\Models\RunParty;
 use App\Models\Skill;
 use App\Models\System;
+use App\Models\SystemContent;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
@@ -496,6 +497,92 @@ final class TreeRunTest extends TestCase
         $this->assertSame('jackout', $run->fresh()->ending);
         $this->assertSame($si, (float) $this->character->fresh()->current_synaptic_integrity);
         $this->assertSame(1, Notification::query()->where('user_id', $this->character->user_id)->count());
+    }
+
+    /** The system as a silo, which always keeps a vault from grade 2; the tree that gives it. */
+    private function asSilo(): RunTree
+    {
+        System::query()->where('address', 'DEADBEEF')->update(['type' => SystemType::Silo->value]);
+
+        return $this->tree = RunTree::of(System::query()->where('address', 'DEADBEEF')->sole());
+    }
+
+    private function loot(array $row): SystemContent
+    {
+        return SystemContent::query()->create($row + ['system_id' => System::query()->where('address', 'DEADBEEF')->value('id')]);
+    }
+
+    public function test_the_restock_fills_each_vault_while_the_flag_is_on_and_vault_loot_never_blocks_the_core(): void
+    {
+        $tree = $this->asSilo();
+        $vaults = $tree->nodesOf(NodeKind::Vault);
+        $this->assertNotEmpty($vaults);
+
+        $this->artisan('cyberspace:restock')->assertSuccessful();
+        $rows = SystemContent::query()->get();
+
+        $this->assertNotEmpty($rows->whereNull('node'), 'the core');
+        $this->assertEqualsCanonicalizing($vaults, $rows->whereNotNull('node')->pluck('node')->unique()->values()->all(), 'every vault');
+
+        // The core emptied, the vaults full: the core still restocks.
+        SystemContent::query()->whereNull('node')->delete();
+        $this->artisan('cyberspace:restock')->assertSuccessful();
+        $this->assertNotEmpty(SystemContent::query()->whereNull('node')->get());
+    }
+
+    public function test_with_the_flag_off_no_vault_is_stocked(): void
+    {
+        $this->asSilo();
+        Config::set('features.intrusion_runs_v2', false);
+
+        $this->artisan('cyberspace:restock')->assertSuccessful();
+
+        $this->assertSame(0, SystemContent::query()->whereNotNull('node')->count());
+    }
+
+    public function test_a_vault_pulls_on_any_purpose_with_no_lock_and_is_no_raid(): void
+    {
+        $tree = $this->asSilo();
+        $vault = $tree->nodesOf(NodeKind::Vault)[0];
+        $this->loot(['node' => $vault, 'kind' => 'creds', 'amount' => 300]);
+        $this->loot(['kind' => 'creds', 'amount' => 999]);
+        $this->checks(0.0);
+        $run = app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Burn)->run;
+        $run->forceFill(['node' => $vault, 'os_locked' => true])->save();
+        $creds = (int) $this->character->fresh()->creds;
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+        $run = $run->fresh();
+
+        $this->assertSame($creds + 300, (int) $this->character->fresh()->creds, 'the vault\'s creds, not the core\'s');
+        $this->assertFalse($run->extracted, 'a side haul does not finish the run');
+        $this->assertTrue($run->os_locked, 'no OS was asked');
+        $this->assertSame(0, (int) System::query()->where('address', 'DEADBEEF')->value('raids'));
+        $this->assertSame(999, (int) SystemContent::query()->whereNull('node')->value('amount'), 'the core keeps its own');
+    }
+
+    public function test_extracting_at_another_node_drops_the_paused_pull(): void
+    {
+        $tree = $this->asSilo();
+        $vault = $tree->nodesOf(NodeKind::Vault)[0];
+        $run = $this->begin();
+        $run->forceFill(['node' => $tree->core, 'os_locked' => false, 'extracting_qb' => 40, 'pull_node' => $vault])->save();
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+        $run = $run->fresh();
+
+        $this->assertNull($run->pull_node, 'whatever runs now is the core\'s');
+        $this->assertNotEquals(40.0, (float) $run->extracting_qb);
+    }
+
+    public function test_the_run_screen_offers_extract_on_a_vault(): void
+    {
+        $tree = $this->asSilo();
+        $run = $this->begin();
+        $run->forceFill(['node' => $tree->nodesOf(NodeKind::Vault)[0]])->save();
+
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
+            ->assertSee('name="action" value="extract"', false);
     }
 
     public function test_a_party_shares_one_bar_and_the_alert_but_not_the_trace(): void

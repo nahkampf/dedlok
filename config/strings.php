@@ -1875,6 +1875,7 @@ return [
                     'jackout' => 'You rip the jack out. The system is gone, and so is :damage of your synaptic integrity.',
                     'jackout_neural' => 'Your mind does not come back whole: :damage of neural damage.',
                     'idle_jackout' => 'You stopped answering, and your deck pulled you out cleanly.',
+                    'vault_empty' => 'The vault is empty. Somebody got here first.',
                 ],
                 'egress' => 'You egress.',
                 // HELD, and one line for both reasons — the machine out-rolled

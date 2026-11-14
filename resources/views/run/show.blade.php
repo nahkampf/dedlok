@@ -342,6 +342,12 @@
         <div class="row row--wrap" style="--gap:var(--s-2)">
             {{-- A TREE RUN: the core's actions are offered on the core, a Flood on the entry, and Nmap anywhere. --}}
             @php($atCore = ! $tree || $tree->atCore)
+            {{-- A DATA VAULT takes an Extract on any purpose: no lock, no ICE. Continuing names the pull that is here. --}}
+            @if ($tree && $tree->atVault)
+                <button type="submit" name="action" value="extract" class="btn cut btn--go">
+                    {{ Text::get($run->extracting_qb !== null && $run->pull_node === $run->node ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
+                </button>
+            @endif
             @if ($tree)
                 <button type="submit" name="action" value="nmap" class="btn cut" @unless ($tree->canNmap) disabled @endunless>
                     {{ Text::get('cyberspace.run.action.nmap') }}

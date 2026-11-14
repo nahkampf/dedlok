@@ -38,6 +38,8 @@ final readonly class TreeView
         public ?float $ids,
         // Standing on a firewall that is still closed: the chance its OS roll lands (the core's own figure). Null otherwise.
         public ?float $firewallChance = null,
+        // Standing on a data vault: it takes an Extract on any purpose.
+        public bool $atVault = false,
     ) {}
 
     public static function for(Run $run, Character $character, Simulator $simulator, ?SystemScan $scan): ?self
@@ -95,6 +97,7 @@ final readonly class TreeView
             $tree->nodes[$here]['kind'] === NodeKind::Firewall && ! in_array($here, $run->openedFirewalls(), true) && $system->os_skill_id !== null
                 ? $simulator->osChanceFor($character, $system->operatingSystem()->first())
                 : null,
+            $tree->nodes[$here]['kind'] === NodeKind::Vault,
         );
     }
 }
