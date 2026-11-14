@@ -86,6 +86,26 @@ final readonly class TreeView
         return Text::get('cyberspace.tree.node.'.($kind === NodeKind::Trap ? NodeKind::Conduit : $kind)->value);
     }
 
+    /**
+     * How many nodes of each kind a scan's Nodes read, by the kinds' names, in the enum's order: a trap counted as a
+     * conduit and a honeypot as a vault, as the reading shows them.
+     *
+     * @return array<string, int>
+     */
+    public static function kindCounts(RunTree $tree): array
+    {
+        $counts = array_count_values(array_map(static fn (int $n): string => self::kindShown($tree, $n, false), array_keys($tree->nodes)));
+        $out = [];
+
+        foreach (NodeKind::cases() as $kind) {
+            if (($counts[$kind->value] ?? 0) > 0) {
+                $out[Text::get('cyberspace.tree.node.'.$kind->value)] = $counts[$kind->value];
+            }
+        }
+
+        return $out;
+    }
+
     /** The kind the map colours a named node by: what its label says (a hidden trap is a conduit, a honeypot a vault). */
     private static function kindShown(RunTree $tree, int $node, bool $found): string
     {

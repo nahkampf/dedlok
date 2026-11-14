@@ -185,16 +185,8 @@ enum ScanFact: string
             ]);
         }
 
-        // The firewalls always (none is worth knowing); the rest only when there are any, so the line stays short.
-        $parts = [Text::plural('cyberspace.reading.firewalls', count($tree->nodesOf(NodeKind::Firewall)))];
-
-        foreach (['vaults' => NodeKind::Vault, 'ports' => NodeKind::Port, 'hubs' => NodeKind::Hub] as $key => $kind) {
-            if (($count = count($tree->nodesOf($kind))) > 0) {
-                $parts[] = Text::plural("cyberspace.reading.{$key}", $count);
-            }
-        }
-
-        return implode(', ', $parts);
+        // A count; the tag opens the breakdown by kind (TreeView::kindCounts(), the #nodes-view modal).
+        return Text::plural('cyberspace.reading.node_count', count($tree->nodes));
     }
 
     /**

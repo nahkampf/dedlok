@@ -665,6 +665,14 @@
         </div>
         <div class="panel__bd" data-listing-body></div>
     </dialog>
+    {{-- A scan's Nodes by kind (`cyberspace.tree` with nodes=1), opened from the Nodes tag. --}}
+    <dialog id="nodes-view" class="modal">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('cyberspace.facts.nodes') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
+        </div>
+        <div class="panel__bd" data-listing-body></div>
+    </dialog>
     {{-- A text file an encounter left (`inventory.text`), drawn by App\Support\Ansi in the DOS font; filled by the same handler. --}}
     <dialog id="text-reader" class="modal modal--wide">
         <div class="panel__hd">

@@ -1454,6 +1454,14 @@
           : "";
 
         value.innerHTML = mark + esc(known ? fact.value : dlg.dataset.readingUnread);
+        // The Nodes: a count that opens the breakdown by kind (the [data-listing] handler fetches it).
+        if (known && fact.more) {
+          value.dataset.listing = fact.more;
+          value.dataset.dialog = "#nodes-view";
+          value.setAttribute("role", "button");
+          value.tabIndex = 0;
+          value.style.cursor = "pointer";
+        }
       });
 
       // The tree, once the read has the Layout: the button fetches from where the poll says.

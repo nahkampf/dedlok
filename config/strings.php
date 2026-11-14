@@ -2250,10 +2250,7 @@ return [
             'layout' => ':paths, :moves to the core',
             'paths' => ['one' => '1 path', 'many' => ':count paths'],
             'moves' => ['one' => '1 move', 'many' => ':count moves'],
-            'firewalls' => ['zero' => 'no firewalls', 'one' => '1 firewall', 'many' => ':count firewalls'],
-            'vaults' => ['zero' => 'no data vaults', 'one' => '1 data vault', 'many' => ':count data vaults'],
-            'ports' => ['zero' => 'no maintenance ports', 'one' => '1 maintenance port', 'many' => ':count maintenance ports'],
-            'hubs' => ['zero' => 'no security hubs', 'one' => '1 security hub', 'many' => ':count security hubs'],
+            'node_count' => ['one' => '1 node', 'many' => ':count nodes'],
             'traps' => ['zero' => 'no traps', 'one' => '1 trap: :effects', 'many' => ':count traps: :effects'],
 
             /*

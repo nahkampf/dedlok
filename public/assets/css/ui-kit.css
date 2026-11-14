@@ -1424,6 +1424,9 @@ cap-widget {
   color: var(--ink-2);
 }
 /* A long reading (a scan's Nodes, say) wraps inside its tag rather than running out of the row. */
+/* A tag that opens more (a scan's Nodes): a button wearing the tag, with the kit's hover step. */
+button.tag { cursor: pointer; }
+button.tag:hover, button.tag:focus-visible { border-color: var(--crit); }
 .card__stat > .tag { white-space: normal; text-align: right; justify-content: flex-end; min-width: 0; height: auto; min-height: 20px; padding-block: 3px; line-height: 1.35; }
 .card__stat > b {
   font-family: var(--font-mono);

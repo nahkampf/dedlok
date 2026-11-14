@@ -92,7 +92,7 @@ final class ScanTreeTest extends TestCase
         $this->assertSame(3, $scan->tree);
         $this->assertTrue($scan->isComplete());
         $this->assertMatchesRegularExpression('/paths?, \d+ moves? to the core/', (string) ScanFact::Layout->readFrom($scan));
-        $this->assertMatchesRegularExpression('/firewall/', (string) ScanFact::Nodes->readFrom($scan), 'firewalls always; the rest only when there are any');
+        $this->assertMatchesRegularExpression('/^\d+ nodes$/', (string) ScanFact::Nodes->readFrom($scan));
         $this->assertMatchesRegularExpression('/traps?/', (string) ScanFact::Traps->readFrom($scan));
     }
 
@@ -144,6 +144,11 @@ final class ScanTreeTest extends TestCase
         $this->actingAs($user)->get($url)->assertOk()->assertDontSee('board__node--fog', false)
             ->assertSeeText(Text::get('cyberspace.tree.node.core'));
         $this->actingAs($user)->get(route('cyberspace.index'))->assertOk()->assertSee($url, false);
+        // The Nodes tag opens the breakdown by kind: the kinds' names and their counts.
+        $nodes = route('cyberspace.tree', ['address' => 'DEADBEEF', 'nodes' => 1]);
+        $this->assertSame($nodes, collect($this->actingAs($user)->getJson(route('cyberspace.reading', ['address' => 'DEADBEEF']))->json('facts'))->firstWhere('key', 'nodes')['more']);
+        $this->actingAs($user)->get($nodes)->assertOk()->assertSeeText(Text::get('cyberspace.tree.node.entry'))->assertSeeText(Text::get('cyberspace.tree.node.core'));
+
         // The scanner window carries the tree's rows (hidden until a poll says this scan has them).
         $this->actingAs($user)->get(route('cyberspace.index'))->assertOk()
             ->assertSee('data-fact="layout"', false)->assertSee('data-fact="nodes"', false)->assertSee('data-fact="traps"', false);

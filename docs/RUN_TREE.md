@@ -256,8 +256,9 @@ states' job.
 - **Subverted, no alert can go off for the party's run**: the bar still fills, and nothing happens when it is full.
   Kept in `runs.opened`, read across the party as opened firewalls are. If the alert has already gone off, it stays,
   and Subvert is not offered.
-- **The scan's Nodes reading counts hubs.** (Later: it lists the firewalls always and the vaults, ports and hubs only
-  when there are any, so it fits its tag.)
+- **The scan's Nodes reading is a count** ("19 nodes"): the tag opens a modal (`#nodes-view`, `cyberspace.tree` with
+  `nodes=1`) listing each kind and how many, a trap counted as a conduit and a honeypot as a vault (decided
+  2026-11-14, replacing the list of firewalls, vaults, ports and hubs).
 - **No IDS, no hub**: on such a system the node is a conduit, labelled and played as one (`RunTree::of`).
 
 ### Internal relay and Loopback

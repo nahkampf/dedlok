@@ -127,6 +127,9 @@ class SystemScan extends Model
             'value' => $fact->readFrom($this),
             'discoverable' => $fact->isDiscoverable(),
             'mark' => $for === null ? null : $this->markFor($fact, $for),
+            // Where the Nodes' breakdown by kind is fetched from, once they are read.
+            'more' => $fact === ScanFact::Nodes && $fact->isKnownOn($this) && $this->address !== null
+                ? route('cyberspace.tree', ['address' => $this->address, 'nodes' => 1]) : null,
         ], array_filter(ScanFact::cases(), fn (ScanFact $fact): bool => $fact->appliesTo($this))));
     }
 

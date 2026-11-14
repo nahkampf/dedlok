@@ -15,7 +15,10 @@
         @continue(! $fact['discoverable'] && ! $known)
         <div class="card__stat" data-fact="{{ $fact['key'] }}">
             <span>{{ $fact['label'] }}</span>
-            @if ($fact['discoverable'])
+            @if ($known && ($fact['more'] ?? null))
+                {{-- The Nodes: a count that opens the breakdown by kind. --}}
+                <button type="button" class="tag tag--ember" data-listing="{{ $fact['more'] }}" data-dialog="#nodes-view">{{ $fact['value'] }}</button>
+            @elseif ($fact['discoverable'])
                 <span class="tag @if ($known) tag--ember @endif">
                     @if ($known && ($fact['mark'] ?? null))
                         <span class="{{ $fact['mark'] === 'ok' ? 'mark--ok' : 'mark--no' }}" title="{{ Text::get($fact['mark'] === 'ok' ? 'cyberspace.reading.os_known' : 'cyberspace.reading.os_unknown') }}">{{ $fact['mark'] === 'ok' ? "\u{2713}" : "\u{2717}" }}</span>

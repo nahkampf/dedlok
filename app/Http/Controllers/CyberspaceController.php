@@ -31,6 +31,7 @@ use App\Cyberspace\Terrain;
 use App\Cyberspace\Tracker;
 use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
+use App\Cyberspace\Tree\RunTree;
 use App\Cyberspace\Tree\TreeView;
 use App\Cyberspace\ViewShape;
 use App\Missions\MissionLedger;
@@ -710,7 +711,7 @@ class CyberspaceController extends Controller
     public function tree(Request $request, Parties $parties): View
     {
         $character = $this->character($request);
-        $data = $request->validate(['address' => ['required', 'string', 'max:32'], 'party' => ['sometimes', 'boolean']]);
+        $data = $request->validate(['address' => ['required', 'string', 'max:32'], 'party' => ['sometimes', 'boolean'], 'nodes' => ['sometimes', 'boolean']]);
         $address = strtoupper($data['address']);
 
         $readers = [$character->id];
@@ -720,8 +721,15 @@ class CyberspaceController extends Controller
         }
 
         $read = SystemScan::query()->whereIn('character_id', $readers)->where('address', $address)->live()->max('tree');
-        abort_unless($read !== null && (int) $read >= 1, 404);
+        abort_unless($read !== null && (int) $read >= ($request->boolean('nodes') ? 2 : 1), 404);
         $system = System::query()->where('address', $address)->first();
+
+        // The Nodes tag's breakdown by kind, once the scan has read the Nodes.
+        if ($request->boolean('nodes')) {
+            return view('cyberspace._nodes', [
+                'counts' => $system === null || ! RunTree::appliesTo($system) ? null : TreeView::kindCounts(RunTree::of($system)),
+            ]);
+        }
 
         return view('cyberspace._tree', [
             'view' => TreeView::ofScan($system, (int) $read),
