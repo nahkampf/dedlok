@@ -264,13 +264,19 @@
          That is the moment the run's own action stops being a gamble, and its button says so by turning green. --}}
     @php($coreOpen = ! $run->inAFight() && $core === null)
 
+    {{-- WAITING ON THE CREW: the whole screen dims behind the line and the round's timer. --}}
     @if ($waiting)
-        <p class="micro" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.waiting') }}</p>
+        <div class="wait-overlay" role="status">
+            <p class="h3" style="margin:0">{{ Text::get('cyberspace.run.waiting') }}</p>
+            @if ($roundSeconds !== null)
+                <p class="micro num" style="margin:0">{{ Text::get('cyberspace.run.round_timer') }} <span data-countdown="{{ $roundSeconds }}">{{ $roundSeconds }}</span></p>
+            @endif
+        </div>
     @endif
     @if ($alone)
         <p class="micro" style="margin:0 0 var(--s-2);color:var(--warn)">{{ Text::get('cyberspace.run.alone') }}</p>
     @endif
-    @if ($roundSeconds !== null)
+    @if ($roundSeconds !== null && ! $waiting)
         <p class="micro num" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.round_timer') }} <span data-countdown="{{ $roundSeconds }}">{{ $roundSeconds }}</span></p>
     @endif
 

@@ -2539,6 +2539,18 @@ details.panel > summary.panel__hd:focus-visible {
 }
 .floor-overlay ~ .panel { position: relative; z-index: calc(var(--z-popover) + 1); }
 
+/* A crew run waiting on the others: the page dimmed behind a line of bone, centred both ways, and the round's timer
+   under it. Under popovers like the floor, so a toast still shows. Used by the run screen alone. */
+.wait-overlay {
+  position: fixed; inset: 0;
+  z-index: var(--z-popover);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-2);
+  padding: var(--s-4);
+  background: rgba(5,6,8,.72);
+  color: var(--ink-0);
+  text-align: center;
+}
+
 /* Framed viewport — minimap, portrait, camera feed */
 .frame {
   position: relative;

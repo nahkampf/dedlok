@@ -1841,7 +1841,7 @@ return [
             'evasion_snare' => 'Ensnare :level',
             'evasion_snare_cost' => ':points points of chance',
             'evasion_result' => 'Evasion chance for egress',
-            'waiting' => 'Waiting for all runners to take action',
+            'waiting' => 'Waiting for crew...',
             'round_timer' => 'Default action in',
             'alone' => 'Only you remain in the run. Be careful!',
             // A party's log, told in the third person for everybody (same keys as `log`); a key missing here falls back to
