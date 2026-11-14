@@ -1934,8 +1934,9 @@ return [
                     'tunnel' => 'You punch an Egress Tunnel out through this node. It is a way out for as long as you hold it.',
                     'shut_down' => 'You shut the ICE controller down. Nothing more comes out of it.',
                     'shutdown_fails' => 'The ICE controller refuses the command, loudly.',
-                    'cordon_starts' => 'A Cordon settles on a node and starts cutting it out of the system.',
-                    'cordon_cuts' => 'The Cordon finishes its cut. A node is gone, and every link through it.',
+                    // :node is the kind of node (a switch, an internal relay, a maintenance port); :turns the countdown.
+                    'cordon_starts' => 'A Cordon settles on a :node and starts cutting it out of the system. :turns turns until it is gone.',
+                    'cordon_cuts' => 'The Cordon finishes its cut. The :node is gone, and every link through it.',
                     'wiped' => 'You scrub the alert out of the logs. As far as the record goes, nobody was ever here.',
                     'wipe_fails' => 'The log server fights back and makes a lot of noise doing it.',
                     'trap' => [

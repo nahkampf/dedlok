@@ -868,6 +868,10 @@ final class TreeRunTest extends TestCase
         $this->assertCount(1, $cut);
         $this->assertContains($tree->nodes[$cut[0]]['kind'], [NodeKind::Relay, NodeKind::Switch, NodeKind::Port]);
         $this->assertSame($tree->core, $run->fresh()->node, 'the runner never moved');
+        // The log names what it cut.
+        $named = Text::get('cyberspace.tree.node.'.$tree->nodes[$cut[0]]['kind']->value);
+        $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_cuts', ['node' => $named]), array_column($run->fresh()->log, 'text'));
+        $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_starts', ['node' => $named, 'turns' => 2]), array_column($run->fresh()->log, 'text'));
     }
 
     public function test_a_deep_nmap_reaches_further_finds_traps_and_reads_sentries(): void

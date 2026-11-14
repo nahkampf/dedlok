@@ -893,7 +893,7 @@ final readonly class Simulator
             // It steps off the node it tore out, back the way it came.
             $sentry['node'] = $tree->neighbours($node)[0] ?? $node;
 
-            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_cuts', tone: 'crit')];
+            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_cuts', ['node' => Text::get('cyberspace.tree.node.'.$tree->nodes[$node]['kind']->value)], 'crit')];
         }
 
         $runs = $live->filter(fn (Run $r): bool => $r->isLive() && $tree->distance($node, (int) $r->node) !== null);
@@ -937,7 +937,7 @@ final readonly class Simulator
         if ((int) $sentry['node'] === $goal) {
             $sentry['countdown'] = 2;
 
-            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_starts', tone: 'crit')];
+            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_starts', ['node' => Text::get('cyberspace.tree.node.'.$tree->nodes[$goal]['kind']->value), 'turns' => 2], 'crit')];
         }
 
         return [$sentry, null];

@@ -3105,6 +3105,10 @@ button.board__node[name="node"]:focus-visible .board__box { border-color: var(--
 .board--tree .board__node[data-kind="hub"] .board__box { border-color: var(--crit); border-style: dashed; }
 .board--tree .board__node--sprung .board__box { border-color: var(--crit); border-style: dashed; animation: sprung-blink 1s steps(1) infinite; }
 @keyframes sprung-blink { 50% { border-color: transparent; } }
+/* A node a Cordon is cutting: its border blinks dashed ember (faster than a sprung trap's: this one is still coming)
+   and the scissors under it count down the turns left. */
+.board--tree .board__node.board__node--cutting .board__box { border-color: var(--crit); border-style: dashed; animation: sprung-blink .6s steps(1) infinite; }
+.board__label--cut { color: var(--crit); font-family: var(--font-mono); }
 /* A threat's ember wins over its kind's colour (a vault with a sentry on it is a threat first). */
 .board--tree .board__node.board__node--threat .board__box { border-color: var(--crit); }
 

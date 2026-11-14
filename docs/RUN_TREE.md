@@ -361,8 +361,9 @@ the Cordon tag**, each designed and built on its own, traps first.
 - **From grade 5, a sentry carries the Cordon tag one time in three** (`RunTree::$sentries[i]['cordon']`). Awake, it
   cuts the way out instead of hunting: it takes the runner nearest it, their nearest exit (the entry or a maintenance
   port), and on the shortest way there the internal relay, switch or maintenance port whose loss lengthens the way out
-  most, or closes it. It walks there (at its speed), then counts down two of its turns, shown on the map (✖ and the
-  turns left) and in a warning line; at zero the node and its edges are gone for the party's run, as a Node Disconnect.
+  most, or closes it. It walks there (at its speed), then counts down two of its turns, shown on the map (the node's
+  border blinks dashed ember, and ✂ with the turns left sits under it), in a warning line, and in the log naming the
+  kind of node; at zero the node and its edges are gone for the party's run, as a Node Disconnect.
   With no such node it hunts like any sentry. It never strikes.
 - **Two Cordons can cut at once.** A cut costs no standing.
 - **Only breaking it with Attack stops a cut, for now**; the Egress Tunnel script comes later.
