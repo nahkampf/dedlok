@@ -70,7 +70,7 @@ final class AlphaTestingTest extends TestCase
     {
         $this->on();
 
-        $this->get(route('register'))->assertOk()->assertSee('name="code"', false)->assertSee('Beta key');
+        $this->get(route('register'))->assertOk()->assertSee('name="code"', false)->assertSee('Alpha key');
     }
 
     public function test_no_key_or_a_wrong_one_means_no_account(): void
