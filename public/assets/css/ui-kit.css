@@ -1496,6 +1496,9 @@ button.tag:hover, button.tag:focus-visible { border-color: var(--crit); }
 .tag--crit  { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 40%, transparent); background: var(--crit-a); }
 /* A tag that is live (a run's Alert): it breathes, at the pace of the you-are-here diamond. */
 .tag--pulse { animation: here-mark 1.6s ease-in-out infinite; }
+/* Tags in a chain (a routing network's hops): joined by a hairline wire, and wrapping as a whole hop at a time. */
+.tag-chain { display: inline-flex; flex-wrap: wrap; align-items: center; row-gap: var(--s-1); }
+.tag-chain__wire { width: var(--s-3); height: var(--hair); background: var(--line-2); }
 .tag--info  { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
 /* A tag whose text may be longer than the room it has (a system's name, a scan's reading): it wraps and grows
    rather than running out of its box. After .tag, which it overrides at the same weight. */

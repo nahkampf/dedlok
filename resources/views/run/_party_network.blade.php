@@ -8,18 +8,31 @@
 @php($system = \App\Models\System::query()->where('address', $party->address)->first())
 @if ($system !== null && \App\Cyberspace\Tree\RunTree::appliesTo($system))
     @if ($party->owner_character_id === $character->id)
-        <form method="POST" action="{{ route('run.party.network') }}" class="row row--wrap" style="--gap:var(--s-2);align-items:flex-end;margin-top:var(--s-3)">
+        <form method="POST" action="{{ route('run.party.network') }}" class="stack" style="--gap:var(--s-2);margin-top:var(--s-3)">
             @csrf
-            <label class="field" style="min-width:min(18rem,100%)">
-                <span class="field__label">{{ Text::get('cyberspace.party.network') }}</span>
-                <select class="input" name="network">
-                    @foreach ($networks as $network)
-                        <option value="{{ $network['character']->id }}" @selected($picked === $network)>{{ $label($network) }}</option>
-                    @endforeach
-                    <option value="" @selected($picked === null)>{{ Text::get('cyberspace.party.network_none') }}</option>
-                </select>
-            </label>
-            <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('cyberspace.party.network_set') }}</button>
+            <fieldset class="stack" style="--gap:var(--s-2);border:0;padding:0;margin:0">
+                <legend class="micro" style="color:var(--ink-2);margin-bottom:var(--s-2)">{{ Text::get('cyberspace.party.network') }}</legend>
+                @foreach ($networks as $network)
+                    <label class="check check--radio">
+                        <input type="radio" name="network" value="{{ $network['character']->id }}" @checked($picked === $network)>
+                        <span class="check__box"></span>
+                        <span>{{ $network['character']->handle }} &ndash;
+                            <span class="tag-chain">
+                                @foreach ($network['chain'] as $hop)
+                                    @unless ($loop->first)<span class="tag-chain__wire" aria-hidden="true"></span>@endunless
+                                    <span class="tag" title="{{ $hop->displayName() }}">{{ Text::get('cyberspace.run.setup.hop', ['grade' => $hop->grade]) }}</span>
+                                @endforeach
+                            </span>
+                        </span>
+                    </label>
+                @endforeach
+                <label class="check check--radio">
+                    <input type="radio" name="network" value="" @checked($picked === null)>
+                    <span class="check__box"></span>
+                    <span>{{ Text::get('cyberspace.party.network_none') }}</span>
+                </label>
+            </fieldset>
+            <div><button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('cyberspace.party.network_set') }}</button></div>
         </form>
     @else
         <p class="micro" style="margin:var(--s-3) 0 0;color:var(--ink-3)">
