@@ -2,9 +2,6 @@
 
 ## [Unreleased]
 
-### Added
-- **Run trees: what a runner's runs saw fills the Layout, Nodes and Traps facts a scan has not read (behind `intrusion_runs_v2`)**, in the Interact box, the scanner window and the briefing (`App\Cyberspace\Tree\Explored`, merged in `SystemScan::facts`), the paths seen and the moves once the core was reached, the nodes seen (the tag opens them by kind) and the traps found. A partial reading is brass instead of ember.
-
 ## [0.96.4] — 2026-11-12
 
 ### Added
