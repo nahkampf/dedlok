@@ -1,3 +1,9 @@
+## 0.97.0 (2026-11-15)
+
+- Huge update to how intrusion runs are done. See full documentation at https://dedlok.online/docs/intrusion_runs.md
+- Markdown reader for /docs
+- The Darknet gateway has a new address, should have autoupdated for everyone
+
 ## 0.96.4 (2026-11-12)
 
 - Two new achievements
