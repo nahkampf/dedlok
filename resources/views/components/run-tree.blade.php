@@ -46,6 +46,7 @@
                     data-node="{{ $node['key'] }}" @if (($node['kind'] ?? null) !== null) data-kind="{{ $node['kind'] }}" @endif
                     @if ($node['move']) type="submit" name="node" value="{{ $node['key'] }}" aria-label="{{ Text::get('cyberspace.run.action.move') }}: {{ $node['label'] }}" @endif
                     @if ($node['here']) aria-current="location" @endif
+                    @if ($node['blocked'] ?? false) data-blocked @endif
                     style="left:{{ $node['x'] }}%;top:{{ $node['y'] }}%">
                     <span class="board__box">
                         <span class="board__name">@if ($node['here'])<span class="here-mark" aria-hidden="true">&#9670;</span> @endif{{ $node['label'] }}@if ($node['allies'] > 0) <span class="board__count" title="{{ Text::get('cyberspace.tree.allies') }}">&#9671;{{ $node['allies'] > 1 ? $node['allies'] : '' }}</span>@endif @if ($node['barrier'] ?? false) <span class="board__count board__count--crit" title="{{ Text::get('cyberspace.tree.barrier') }}">&#9688;</span>@endif @if ($node['ice'] ?? false) <span class="board__count board__count--crit" title="{{ Text::get('cyberspace.tree.ice') }}">&#9632;</span>@endif @if (($node['sentries'] ?? 0) > 0) <span class="board__count board__count--crit" title="{{ Text::get('cyberspace.tree.sentry') }}">&#9650;{{ $node['sentries'] > 1 ? $node['sentries'] : '' }}</span>@endif</span>

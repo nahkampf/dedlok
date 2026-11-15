@@ -647,6 +647,11 @@ final class TreeRunTest extends TestCase
         $this->assertSame('cyberspace.run.log.tree.trap.held', collect($run->fresh()->log)->last()['key']);
         $this->assertSame(4, collect($run->fresh()->log)->last()['replace']['turns']);
 
+        // The map agrees: no way on, and the wire back is marked closed.
+        $nodes = collect(TreeView::for($run->fresh(), $this->character->fresh(), $this->simulator(0.0), null)->nodes)->keyBy('key');
+        $this->assertFalse($nodes[$from]['move']);
+        $this->assertTrue($nodes[$from]['blocked']);
+
         foreach ([3, 2, 1, 0] as $left) {
             $this->assertSame(RunRefusal::Ensnared, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from)->refusal);
             $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
@@ -654,6 +659,9 @@ final class TreeRunTest extends TestCase
             $this->assertSame($left ?: null, $held['replace']['turns'] ?? null);
         }
 
+        $nodes = collect(TreeView::for($run->fresh(), $this->character->fresh(), $this->simulator(0.0), null)->nodes)->keyBy('key');
+        $this->assertTrue($nodes[$from]['move']);
+        $this->assertFalse($nodes[$from]['blocked']);
         $this->assertNull($this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from)->refusal);
     }
 

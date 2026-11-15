@@ -1862,6 +1862,35 @@
         wrap.scrollLeft += box.left + box.width / 2 - (view.left + view.width / 2);
       }
 
+      // THE WAYS ON: an arrow (or a red X where the way is closed) at the edge of the box they stand in, over each wire.
+      const exits = () => {
+        board.querySelectorAll(".board__exit").forEach((e) => e.remove());
+        const at = here && here.querySelector(".board__box");
+        if (!at) return;
+        const frame = board.getBoundingClientRect();
+        const box = at.getBoundingClientRect();
+        const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+        board.querySelectorAll('button.board__node[name="node"] .board__box, .board__node[data-blocked] .board__box').forEach((to) => {
+          const r = to.getBoundingClientRect();
+          const dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy;
+          const len = Math.hypot(dx, dy);
+          if (!len) return;
+          // Where the wire leaves the box: the mark sits on its border.
+          const t = Math.min(dx ? box.width / 2 / Math.abs(dx) : Infinity, dy ? box.height / 2 / Math.abs(dy) : Infinity);
+          const blocked = to.parentElement.hasAttribute("data-blocked");
+          const mark = document.createElement("span");
+          mark.className = "board__exit" + (blocked ? " board__exit--blocked" : "");
+          mark.setAttribute("aria-hidden", "true");
+          mark.textContent = blocked ? "\u2716" : "\u25BA";
+          mark.style.setProperty("--exit-x", (cx + dx * t - frame.left) + "px");
+          mark.style.setProperty("--exit-y", (cy + dy * t - frame.top) + "px");
+          mark.style.setProperty("--exit-turn", Math.atan2(dy, dx) + "rad");
+          board.appendChild(mark);
+        });
+      };
+      exits();
+      if (window.ResizeObserver) new ResizeObserver(exits).observe(board);
+
       const key = "tree:" + board.dataset.treeRun;
       const nodes = [...board.querySelectorAll(".board__node[data-node]")];
       const now = { here: board.dataset.treeHere, nodes: nodes.map((n) => n.dataset.node) };
