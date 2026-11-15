@@ -33,8 +33,10 @@ use App\Models\Exchange;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Leech;
 use App\Models\Mission;
 use App\Models\Notification;
+use App\Models\Program;
 use App\Models\Run;
 use App\Models\RunParty;
 use App\Models\Skill;
@@ -260,6 +262,25 @@ final class TreeRunTest extends TestCase
 
         $this->assertSame(RunRefusal::NoNmapper, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Nmap)->refusal);
         $this->assertSame(0, $run->fresh()->turn);
+    }
+
+    public function test_a_leecher_is_hung_on_a_tree_s_core_and_nowhere_else(): void
+    {
+        $fortress = System::factory()->at(30, 30)->create(['type' => SystemType::Fortress, 'owner_character_id' => $this->character->id]);
+        $item = Item::query()->create(['slug' => 'storage-leecher', 'name' => 'Storage Leecher', 'container' => 'data', 'stackable' => true]);
+        Program::query()->create(['item_id' => $item->id, 'kind' => ProgramKind::Leecher, 'storage_size' => 0.4, 'leech_resource' => 'storage', 'leech_amount' => 4.5, 'qflops_cost' => 0, 'memory_cost' => 0, 'background_process' => false]);
+        InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1]);
+        $run = $this->begin();
+
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Leech)->refusal, 'not off the core');
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()->assertDontSee('value="leech"', false);
+
+        $run->fresh()->forceFill(['node' => $this->tree->core, 'os_locked' => false])->save();
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('value="leech"', false);
+        $this->assertNull($this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Leech, fortressId: $fortress->id)->refusal);
+
+        $this->assertTrue(Leech::query()->where('character_id', $this->character->id)->where('host_system_id', System::query()->where('address', 'DEADBEEF')->value('id'))->exists(), 'hung on the core');
+        $this->assertSame(0, (int) InventoryItem::query()->where('character_id', $this->character->id)->where('item_id', $item->id)->sum('quantity'), 'the Leecher is spent');
     }
 
     public function test_on_the_core_a_core_touch_lets_the_sleeping_ice_look_and_a_failed_os_roll_is_loud(): void
