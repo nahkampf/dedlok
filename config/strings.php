@@ -1946,6 +1946,7 @@ return [
                     // :node is the kind of node (a switch, an internal relay, a maintenance port); :turns the countdown.
                     'cordon_starts' => 'A Cordon settles on a :node and starts cutting it out of the system. :turns turns until it is gone.',
                     'cordon_cuts' => 'The Cordon finishes its cut. The :node is gone, and every link through it.',
+                    'cordon_paused' => 'Under attack, the Cordon stops cutting for a moment.',
                     'cordon_thrown' => 'The node goes out from under you. You land hard on the :node.',
                     'wiped' => 'You scrub the alert out of the logs. As far as the record goes, nobody was ever here.',
                     'wipe_fails' => 'The log server fights back and makes a lot of noise doing it.',

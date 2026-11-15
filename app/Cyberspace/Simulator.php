@@ -925,6 +925,13 @@ final readonly class Simulator
         $node = (int) $sentry['node'];
 
         if ($sentry['countdown'] !== null) {
+            // Hit since its last turn: the cut holds where it is. However many hit it, the pause is one turn.
+            if ($sentry['hit'] ?? false) {
+                unset($sentry['hit']);
+
+                return [$sentry, $this->line('cyberspace.run.log.tree.cordon_paused', tone: 'ok')];
+            }
+
             $sentry['countdown']--;
 
             // An Egress Tunnel went up on it meanwhile: the cut is stopped, and it looks again.
@@ -1944,6 +1951,12 @@ final readonly class Simulator
             $i = array_key_first($sentries);
             $all = $this->sentriesOf($run);
             $all[$i]['integrity'] = max(0, Points::of((float) $all[$i]['integrity'] - $damage));
+
+            // A Cordon under attack while it cuts holds its countdown for its next turn (cordonTurn).
+            if (($all[$i]['countdown'] ?? null) !== null) {
+                $all[$i]['hit'] = true;
+            }
+
             $this->writeSentries($run, $all);
 
             if ($all[$i]['integrity'] <= 0) {

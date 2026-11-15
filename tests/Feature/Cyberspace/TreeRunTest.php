@@ -914,6 +914,26 @@ final class TreeRunTest extends TestCase
         $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_starts', ['node' => $named, 'turns' => 2]), array_column($run->fresh()->log, 'text'));
     }
 
+    public function test_attacking_a_cordon_while_it_cuts_holds_its_countdown_for_a_turn(): void
+    {
+        $tree = $this->grade7();
+        $breaker = $this->ownedBy($this->character, Item::factory()->program(ProgramKind::Icebreaker, qflops: 0.1, memory: 0.1, storage: 0.1,
+            modifiers: [['op' => 'add', 'amount' => 1, 'target' => ['id' => 'icebreaker_damage']]])->create());
+        $this->assertTrue(app(ProgramRunner::class)->start($this->character->fresh(), $breaker, true)->succeeded());
+        $node = $tree->neighbours($tree->entry)[0];
+        $run = $this->sentry($node, $node);
+        $run->forceFill(['node' => $node, 'sentries' => [['cordon' => true, 'countdown' => 2] + $run->sentries[0]]])->save();
+
+        $this->assertNull($this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Attack)->refusal);
+        $cordon = $run->fresh()->sentries[0];
+        $this->assertSame(2, $cordon['countdown'], 'hit, it held its cut');
+        $this->assertArrayNotHasKey('hit', $cordon, 'for that one turn');
+        $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_paused'), array_column($run->fresh()->log, 'text'));
+
+        $this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $this->assertSame(1, $run->fresh()->sentries[0]['countdown'], 'left alone, it cuts on');
+    }
+
     public function test_a_deep_nmap_reaches_further_finds_traps_and_reads_sentries(): void
     {
         [$run, $trap, $from] = $this->trap(TrapEffect::Alarm);

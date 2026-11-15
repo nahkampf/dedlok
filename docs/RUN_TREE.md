@@ -388,7 +388,10 @@ Decided 2026-11-14.
 - **Whoever stands on the node when the cut lands is thrown clear** (decided 2026-11-14): onto its neighbour nearest an
   exit (the entry, a maintenance port, an Egress Tunnel) as the tree is without it, told where they landed in the log.
 - **Two Cordons can cut at once.** A cut costs no standing.
-- **Only breaking it with Attack stops a cut, for now**; the Egress Tunnel script comes later.
+- **Breaking it with Attack stops a cut**, and so does an Egress Tunnel going up on the node.
+- **Attacked while it cuts, its countdown holds** (decided 2026-11-15): a hit marks it (`sentries[i]['hit']`), and its
+  next sentry turn holds the countdown instead of counting down, with a line in the log. One turn's pause however many
+  hit it that turn or round; it cuts on once left alone.
 
 ### Deep Nmap
 
