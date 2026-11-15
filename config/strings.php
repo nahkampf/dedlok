@@ -4712,6 +4712,11 @@ return [
     | Merged over the framework's own validation messages by the validator, so
     | only the custom rules belong here.
     */
+    // The Markdown reader for public/docs (DocsController).
+    'docs' => [
+        'download' => 'Download :file',
+    ],
+
     'validation' => [
         'modifier_target' => 'nothing in the game is called [:target], so this effect would change nothing.',
         'handle_characters' => 'Handles may use letters and digits from any alphabet, plus: :symbols',

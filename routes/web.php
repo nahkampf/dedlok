@@ -30,6 +30,7 @@ use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DecryptionController;
 use App\Http\Controllers\DiscordInviteController;
+use App\Http\Controllers\DocsController;
 use App\Http\Controllers\EncounterController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExchangeController;
@@ -73,6 +74,9 @@ Route::get('/', HomeController::class)->name('home');
 Route::post('/kofi_webhook', KofiWebhookController::class)->name('kofi.webhook');
 
 Route::get('/supporters', [SupportersController::class, 'index'])->name('supporters.index');
+
+// The Markdown reader: /docs/<name>.md is rewritten here (public/.htaccess). Only plain names directly in public/docs.
+Route::get('/docs/{file}', [DocsController::class, 'show'])->where('file', DocsController::NAME)->name('docs.show');
 
 // The whole pool in one response; the client randomises locally so repeated
 // presses cost no requests at all. Read-only, so GET and no CSRF. Still
