@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.97.1] — 2026-11-15
+
+### Changed
+- **Run trees: Ensnare (behind `intrusion_runs_v2`).** An Ensnare trap now holds the runner for a random 1 up to the grade's most: 2 turns at grades 1–4, 3 at 5–6, 4 from 7 (was 1, or 2 from grade 7). Every held turn logs the turns left (`cyberspace.run.log.tree.trap.held`).
+- **Run trees: the ways on, on the map (same flag).** The box the runner stands in carries a green arrow over each wire they can move along, and a red ✖ over each one that is closed (an unbreached firewall, a barrier, a snare). Placed by `ui-kit.js` from `TreeView`'s new `blocked` flag.
+
+### Fixed
+- **Run trees: a snared runner's map no longer offers moves (same flag).** `TreeView` drew the neighbours as move buttons while `Simulator::refusal()` refused the move, so a tap did nothing.
+
+
 ## [0.97.0] — 2026-11-15
 
 ### Added
@@ -4310,7 +4320,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.97.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.97.1...HEAD
+[0.97.1]: https://github.com/nahkampf/dedlok/compare/v0.97.0...v0.97.1
 [0.97.0]: https://github.com/nahkampf/dedlok/compare/v0.96.4...v0.97.0
 [0.96.4]: https://github.com/nahkampf/dedlok/compare/v0.96.3...v0.96.4
 [0.96.3]: https://github.com/nahkampf/dedlok/compare/v0.96.2...v0.96.3
