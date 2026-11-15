@@ -1955,6 +1955,10 @@ return [
                         'alarm' => 'A trap goes off and the IDS hears every bit of it.',
                         'trace' => 'A trap throws your signal straight at the tracer.',
                         'ensnare' => 'A trap closes around you. You are not going anywhere for now.',
+                        'held' => [
+                            'one' => 'The trap still holds you. (:turns turn left)',
+                            'many' => 'The trap still holds you. (:turns turns left)',
+                        ],
                         'disconnect' => 'The node ahead tears itself out of the system. The way through it is gone.',
                         'honeypot' => 'The vault was bait. There is nothing in it, and something knows you reached for it.',
                         'disarmed' => 'You take the trap apart.',

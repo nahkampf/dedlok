@@ -1,3 +1,8 @@
+## 0.97.1 (2026-11-15)
+
+- Lock Ensnare traps to 1-3 turns.
+- Some UI polish for the System map
+
 ## 0.97.0 (2026-11-15)
 
 - Huge update to how intrusion runs are done. See full documentation at https://dedlok.online/docs/intrusion_runs.md

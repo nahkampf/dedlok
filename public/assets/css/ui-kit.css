@@ -3162,6 +3162,14 @@ button.board__node[name="node"]:focus-visible .board__box { border-color: var(--
   color: var(--ember); font-size: var(--fs-sm); pointer-events: none;
   transition: left 520ms cubic-bezier(.5, 0, .2, 1), top 520ms cubic-bezier(.5, 0, .2, 1), opacity 200ms 520ms;
 }
+/* THE WAYS ON, at the edge of the box the runner stands in, over each wire: a green arrow where they can move, a stubby
+   red X where they cannot, on the box's border. Placed and turned by ui-kit.js (--exit-x/y in px of the board, --exit-turn the wire's angle). */
+.board__exit {
+  position: absolute; z-index: 2; left: var(--exit-x); top: var(--exit-y);
+  transform: translate(-50%, -50%) rotate(var(--exit-turn, 0deg));
+  color: var(--ok); background: var(--bg-2); padding: 1px; font-size: var(--fs-xs); line-height: 1; pointer-events: none;
+}
+.board__exit--blocked { color: var(--crit); font-weight: 700; transform: translate(-50%, -50%); }
 .board__node--arrive .board__box { animation: node-arrive 600ms ease-out; }
 @keyframes node-arrive {
   from { background: var(--crit-a); border-color: var(--ember); }

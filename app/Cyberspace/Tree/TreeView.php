@@ -159,7 +159,9 @@ final readonly class TreeView
         $lanes = $tree->lanes();
         $allies = $run->run_party_id === null ? [] : Run::query()->live()->where('run_party_id', $run->run_party_id)
             ->whereKeyNot($run->getKey())->pluck('node')->countBy()->all();
-        $moves = $tree->neighbours($here);
+        $neighbours = $tree->neighbours($here);
+        // A snare still holding (Simulator::refusal reads the same): no way on at all this turn.
+        $moves = $run->snared_until !== null && (int) $run->turn < (int) $run->snared_until ? [] : $neighbours;
         // Sentries are seen where the runner can see: a node they know.
         /** @var Collection<int, array<string, mixed>> $standing */
         $standing = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0);
@@ -200,6 +202,8 @@ final readonly class TreeView
             'barrier' => in_array($n, $known, true) && ($barriers[$n] ?? 0) > 0,
             'cutting' => $cutting[$n] ?? null,
             'move' => in_array($n, $moves, true),
+            // One edge away and closed to them: the map draws a red X on the wire where they stand.
+            'blocked' => $n !== $here && in_array($n, $neighbours, true) && ! in_array($n, $moves, true),
             'known' => in_array($n, $known, true) || $shown($n),
             'threat' => in_array($n, $known, true) && $threat($n),
             'kind' => in_array($n, $known, true) || $shown($n) ? self::kindShown($tree, $n, $shown($n)) : null,
@@ -303,6 +307,7 @@ final readonly class TreeView
                 'sentries' => 0,
                 'cutting' => null,
                 'move' => false,
+                'blocked' => false,
                 'known' => $named,
             ];
         }, $shown);

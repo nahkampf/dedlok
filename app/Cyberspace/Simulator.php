@@ -387,6 +387,11 @@ final readonly class Simulator
                 return TurnResult::resolved($run, $log);
             }
 
+            // A snare still holding: how many more turns it keeps them where they are.
+            if ($run->snared_until !== null && ($left = (int) $run->snared_until - (int) $run->turn) > 0) {
+                $log[] = ['text' => Text::plural('cyberspace.run.log.tree.trap.held', $left, ['turns' => $left]), 'tone' => 'warn', 'key' => 'cyberspace.run.log.tree.trap.held', 'replace' => ['turns' => $left]];
+            }
+
             // --- and then the machine does ------------------------------------
 
             if ($run->isTreeRun() && $action !== RunAction::Loopback) {
@@ -1126,7 +1131,7 @@ final readonly class Simulator
 
     /**
      * A TRAP GOES OFF. Alarm: loud noise with no stealth roll. Trace: the trace starts, or moves on a turn's worth (two
-     * from grade 7). Ensnare: no moving on for a turn (two from grade 7). Node Disconnect: the node is torn out first,
+     * from grade 7). Ensnare: no moving on for 1 to 2 turns (3 from grade 5, 4 from grade 7). Node Disconnect: the node is torn out first,
      * for the party, and the runner stays where they were. It is spent (or gone) for the party afterwards.
      *
      * @return array{0: list<array{text: string, tone: string}>, 1: bool} The lines, and whether the runner stays put.
@@ -1172,7 +1177,13 @@ final readonly class Simulator
                 }
             }
         } elseif ($effect === TrapEffect::Ensnare) {
-            $run->snared_until = $run->turn + $turns;
+            // Held for 1 to the grade's most: 2 at grades 1-4, 3 at 5-6, 4 from 7 (decided 2026-11-15).
+            $most = match (true) {
+                (int) $system?->grade >= 7 => 4,
+                (int) $system?->grade >= 5 => 3,
+                default => 2,
+            };
+            $run->snared_until = $run->turn + ($this->roll)(1, $most);
             $log[] = $this->line('cyberspace.run.log.tree.trap.ensnare', tone: 'warn');
         }
 
