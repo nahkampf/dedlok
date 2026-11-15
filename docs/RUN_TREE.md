@@ -463,3 +463,4 @@ Kept up to date as the work grows. Released in 0.97.0 with the flag off; all of 
 - **Loopback and Egress Tunnel items**: none exist yet (Scripts with a strength, 1–20); the user creates and prices them.
   The Loopback's hold roll is flat (spread 8): strength 10 with no skill holds about 47% at grade 5.
 - **The nmap item in the Deck Jockey loadout**: added in the archetype editor at release.
+- **Firewall keys** (C6 in the proposal): crafted one-off items that pass a firewall without its OS roll, consumed on use. To design and build.
