@@ -302,8 +302,8 @@ the Cordon tag**, each designed and built on its own, traps first.
   Nodes (`system_scans.tree` 3), names every trap and its effect; a run started with it knows them all. Stepping on one
   finds it the hard way. (Deep Nmap, later, will find them too.)
 - **Effects**: **Alarm**, loud noise (20–30) with no stealth roll (nothing on a system with no IDS); **Trace jump**, the
-  trace starts, or moves on a turn's worth of the tracer's rate (two from grade 7); **Ensnare**, no moving on for a turn
-  (two from grade 7; other actions are fine); **Node Disconnect**, the trap node is torn out before the runner arrives:
+  trace starts, or moves on a turn's worth of the tracer's rate (two from grade 7); **Ensnare**, no moving on for a random
+  1 to 2 turns (1 to 3 at grades 5-6, 1 to 4 from grade 7; other actions are fine), each held turn logging the turns left; **Node Disconnect**, the trap node is torn out before the runner arrives:
   they stay where they were, the move costs the turn, and the node and its edges are gone for the party's run.
 - **Done with once tripped**: `sprung` (it went off, and the map shows it) or `spent` (disarmed, a conduit), for the
   party (`runs.traps`, {node: found|sprung|spent|cut}, read across the party).

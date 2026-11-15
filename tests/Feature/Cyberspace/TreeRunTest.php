@@ -638,15 +638,22 @@ final class TreeRunTest extends TestCase
         $this->assertSame(min(100, 3 * $rate), (int) $run->fresh()->trace);
     }
 
-    public function test_an_ensnare_trap_holds_the_runner_for_two_turns_from_grade_7(): void
+    public function test_an_ensnare_trap_holds_the_runner_up_to_four_turns_from_grade_7_and_logs_the_turns_left(): void
     {
         [$run, $trap, $from] = $this->trap(TrapEffect::Ensnare);
 
-        $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Move, node: $trap);
-        $this->assertSame(RunRefusal::Ensnared, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from)->refusal);
-        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
-        $this->assertSame(RunRefusal::Ensnared, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from)->refusal);
-        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        // The die at its top: the grade's most, four turns.
+        $this->simulator(0.0, 1)->take($this->character->fresh(), $run, RunAction::Move, node: $trap);
+        $this->assertSame('cyberspace.run.log.tree.trap.held', collect($run->fresh()->log)->last()['key']);
+        $this->assertSame(4, collect($run->fresh()->log)->last()['replace']['turns']);
+
+        foreach ([3, 2, 1, 0] as $left) {
+            $this->assertSame(RunRefusal::Ensnared, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from)->refusal);
+            $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+            $held = collect($run->fresh()->log)->where('turn', $run->fresh()->turn)->firstWhere('key', 'cyberspace.run.log.tree.trap.held');
+            $this->assertSame($left ?: null, $held['replace']['turns'] ?? null);
+        }
+
         $this->assertNull($this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from)->refusal);
     }
 
