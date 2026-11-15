@@ -18,6 +18,7 @@ use App\Cyberspace\RunRefusal;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
 use App\Cyberspace\SystemType;
+use App\Cyberspace\Tree\Explored;
 use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
 use App\Cyberspace\Tree\TrapEffect;
@@ -1403,6 +1404,19 @@ final class TreeRunTest extends TestCase
         $this->assertTrue($facts(new SystemScan(['address' => 'DEADBEEF', 'tree' => 0]))['nodes']['partial']);
         $this->actingAs($this->character->fresh()->user)->get(route('cyberspace.tree', ['address' => 'DEADBEEF', 'nodes' => 1]))->assertOk()
             ->assertSee(Text::get('cyberspace.tree.node.entry'));
+
+        // View tree: no scan, so only what the run saw, named, and the nodes next to it as "?".
+        $view = TreeView::ofScan(System::query()->where('address', 'DEADBEEF')->sole(), 0, Explored::of($this->character->fresh(), 'DEADBEEF'));
+        $shown = collect($view->nodes)->keyBy('key');
+        foreach ($path as $n) {
+            $this->assertTrue($shown[$n]['known'], 'a node the run stood on is named');
+        }
+        $unseen = collect($tree->neighbours($path[1]))->first(fn (int $n): bool => ! in_array($n, $path, true));
+        if ($unseen !== null) {
+            $this->assertSame('?', $shown[$unseen]['label'], 'its neighbours show as unknown');
+        }
+        $this->assertLessThan(count($tree->nodes), $shown->count(), 'the rest of the shape stays hidden without the Layout');
+        $this->actingAs($this->character->fresh()->user)->get(route('cyberspace.tree', ['address' => 'DEADBEEF']))->assertOk();
     }
 
     /** A grade-$grade routing backdoor for $runner, and the skill to route through it. */

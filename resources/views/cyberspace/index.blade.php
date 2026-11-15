@@ -427,8 +427,9 @@
                             <div style="margin-top:var(--s-3)">
                                 <x-scan-facts :facts="($scan ?? new \App\Models\SystemScan(['address' => $target->address, 'tree' => \App\Cyberspace\Tree\RunTree::appliesTo($target) ? 0 : null]))->facts($character)" />
                             </div>
-                            {{-- The run tree, once the read has its Layout (docs/RUN_TREE.md). --}}
-                            @if ($scan && \App\Cyberspace\ScanFact::Layout->appliesTo($scan) && \App\Cyberspace\ScanFact::Layout->isKnownOn($scan))
+                            {{-- The run tree, once the read has its Layout or their runs have seen some of it (docs/RUN_TREE.md). --}}
+                            @if (($scan && \App\Cyberspace\ScanFact::Layout->appliesTo($scan) && \App\Cyberspace\ScanFact::Layout->isKnownOn($scan))
+                                || \App\Cyberspace\Tree\Explored::of($character, $target->address) !== null)
                                 <div style="margin-top:var(--s-3)">
                                     <button type="button" class="btn btn--sm btn--ghost cut" data-listing="{{ route('cyberspace.tree', ['address' => $target->address]) }}" data-dialog="#tree-view">{{ Text::get('cyberspace.tree.view') }}</button>
                                 </div>

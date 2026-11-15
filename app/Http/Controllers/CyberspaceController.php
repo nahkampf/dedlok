@@ -700,7 +700,7 @@ class CyberspaceController extends Controller
             // operate it — a fact that is also a gate.
             'facts' => $scan->facts($character),
             // The tree modal, once the read has the Layout (docs/RUN_TREE.md).
-            'tree' => ScanFact::Layout->appliesTo($scan) && ScanFact::Layout->isKnownOn($scan)
+            'tree' => ScanFact::Layout->appliesTo($scan) && (ScanFact::Layout->isKnownOn($scan) || Explored::of($character, (string) $scan->address) !== null)
                 ? route('cyberspace.tree', ['address' => $scan->address]) : null,
         ]);
     }
@@ -734,10 +734,13 @@ class CyberspaceController extends Controller
             ]);
         }
 
-        abort_unless($read !== null && (int) $read >= 1, 404);
+        // The tree as the scan read it, with what their own runs saw added (not on the briefing's party view, which is what
+        // the run starts with).
+        $seen = $request->boolean('party') ? null : Explored::of($character, $address);
+        abort_unless((int) $read >= 1 || $seen !== null, 404);
 
         return view('cyberspace._tree', [
-            'view' => TreeView::ofScan($system, (int) $read),
+            'view' => TreeView::ofScan($system, (int) $read, $seen),
             'label' => $system?->displayName() ?? $address,
         ]);
     }

@@ -453,6 +453,9 @@ Extract works on any tree run. Old single-room runs keep their purposes.
   once the core was seen; Nodes: how many were seen (the tag opens the seen ones by kind); Traps: the ones found.
 - **Partial readings are brass** (`tag--warn`) instead of ember: Layout and Nodes until every node was seen, Traps
   always (only a scan says there are no more).
+- **View tree adds what runs saw** (`TreeView::ofScan` with `Explored`), in the Interact box and the scanner window: the
+  nodes seen are named, a found trap as a trap, and without the Layout the tree shows only those and their neighbours
+  as "?". The button shows once either is there. The briefing's view stays the party's best scan: what the run starts with.
 
 ## Decided at the end of phase 3 (2026-11-14)
 

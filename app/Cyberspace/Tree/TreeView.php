@@ -268,9 +268,11 @@ final readonly class TreeView
      * every node named once it read the Nodes (2), and the traps once it read the Traps (3; until then they read as
      * conduits). Null when there is nothing to draw: no tree here, or not read.
      */
-    public static function ofScan(?System $system, ?int $read): ?self
+    public static function ofScan(?System $system, ?int $read, ?Explored $seen = null): ?self
     {
-        if ($system === null || $read === null || $read < 1 || ! RunTree::appliesTo($system)) {
+        $read = (int) $read;
+
+        if ($system === null || ($read < 1 && $seen === null) || ! RunTree::appliesTo($system)) {
             return null;
         }
 
@@ -278,22 +280,34 @@ final readonly class TreeView
         $layout = $tree->layout();
         $maxCol = max(array_column($layout, 'col'));
         $lanes = $tree->lanes();
+        $explored = $seen?->nodes ?? [];
+        $foundTraps = $seen?->traps ?? [];
+        // What runs saw adds to the scan: a node stood on or Nmapped is named, and the ones next to it show as "?", as
+        // in the run itself. Without the Layout, the rest of the shape stays unknown.
+        $shown = $read >= 1 ? array_keys($tree->nodes)
+            : array_values(array_unique([...$explored, ...array_merge(...array_map(static fn (int $n): array => $tree->neighbours($n), $explored ?: [$tree->entry]))]));
 
-        $nodes = array_map(static fn (int $n): array => [
-            'key' => $n,
-            // The Traps read names traps; a honeypot stays a vault to every scan (only Deep Nmap tells).
-            'label' => $read >= 2 ? self::label($tree, $n, $read >= 3 && $tree->nodes[$n]['kind'] === NodeKind::Trap) : '?',
-            'kind' => $read >= 2 ? self::kindShown($tree, $n, $read >= 3 && $tree->nodes[$n]['kind'] === NodeKind::Trap) : null,
-            'x' => round(($layout[$n]['col'] + .5) / ($maxCol + 1) * 100, 2),
-            'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
-            'here' => false,
-            'allies' => 0,
-            'sentries' => 0,
-            'cutting' => null,
-            'move' => false,
-            'known' => $read >= 2,
-        ], array_keys($tree->nodes));
+        $nodes = array_map(static function (int $n) use ($tree, $layout, $maxCol, $lanes, $read, $explored, $foundTraps): array {
+            $named = $read >= 2 || in_array($n, $explored, true);
+            // The Traps read names traps, and so does having found one; a honeypot stays a vault to every scan.
+            $found = $tree->nodes[$n]['kind'] === NodeKind::Trap && ($read >= 3 || in_array($n, $foundTraps, true));
 
-        return new self($nodes, $tree->edges, $maxCol + 1, $lanes, false, false, false, 0.0, null);
+            return [
+                'key' => $n,
+                'label' => $named ? self::label($tree, $n, $found) : '?',
+                'kind' => $named ? self::kindShown($tree, $n, $found) : null,
+                'x' => round(($layout[$n]['col'] + .5) / ($maxCol + 1) * 100, 2),
+                'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
+                'here' => false,
+                'allies' => 0,
+                'sentries' => 0,
+                'cutting' => null,
+                'move' => false,
+                'known' => $named,
+            ];
+        }, $shown);
+        $edges = array_values(array_filter($tree->edges, static fn (array $e): bool => in_array($e[0], $shown, true) && in_array($e[1], $shown, true)));
+
+        return new self($nodes, $edges, $maxCol + 1, $lanes, false, false, false, 0.0, null);
     }
 }
