@@ -17,9 +17,10 @@
             <span>{{ $fact['label'] }}</span>
             @if ($known && ($fact['more'] ?? null))
                 {{-- The Nodes: a count that opens the breakdown by kind. --}}
-                <button type="button" class="tag tag--ember" data-listing="{{ $fact['more'] }}" data-dialog="#nodes-view">{{ $fact['value'] }}</button>
+                <button type="button" class="tag {{ ($fact['partial'] ?? false) ? 'tag--warn' : 'tag--ember' }}" data-listing="{{ $fact['more'] }}" data-dialog="#nodes-view" @if ($fact['partial'] ?? false) title="{{ Text::get('cyberspace.reading.partial') }}" @endif>{{ $fact['value'] }}</button>
             @elseif ($fact['discoverable'])
-                <span class="tag @if ($known) tag--ember @endif">
+                {{-- Brass: what the reader's runs saw of the tree, short of the whole of it. --}}
+                <span class="tag @if ($known) {{ ($fact['partial'] ?? false) ? 'tag--warn' : 'tag--ember' }} @endif" @if ($fact['partial'] ?? false) title="{{ Text::get('cyberspace.reading.partial') }}" @endif>
                     @if ($known && ($fact['mark'] ?? null))
                         <span class="{{ $fact['mark'] === 'ok' ? 'mark--ok' : 'mark--no' }}" title="{{ Text::get($fact['mark'] === 'ok' ? 'cyberspace.reading.os_known' : 'cyberspace.reading.os_unknown') }}">{{ $fact['mark'] === 'ok' ? "\u{2713}" : "\u{2717}" }}</span>
                     @endif

@@ -445,6 +445,15 @@ Extract works on any tree run. Old single-room runs keep their purposes.
   trap or honeypot and an unread sentry count as unrevealed too.
 - **Nothing left in reach greys the button out**, and a press is refused (`RunRefusal::NothingToMap`).
 
+## What runs saw fills the scan facts (decided 2026-11-15)
+
+- **Layout, Nodes and Traps read from the runner's own runs** at the address (and their parties' runs) where a scan has
+  not read them (`App\Cyberspace\Tree\Explored`, merged in `SystemScan::facts`), everywhere the facts show: the
+  Interact box, the scanner window, the briefing. Layout: the paths the seen nodes lie on, and the moves to the core
+  once the core was seen; Nodes: how many were seen (the tag opens the seen ones by kind); Traps: the ones found.
+- **Partial readings are brass** (`tag--warn`) instead of ember: Layout and Nodes until every node was seen, Traps
+  always (only a scan says there are no more).
+
 ## Decided at the end of phase 3 (2026-11-14)
 
 - **The nmap migration stays**: it grants nmap to every Deck Jockey and stocks the shelves at deploy.

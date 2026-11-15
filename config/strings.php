@@ -2262,6 +2262,9 @@ return [
             'tracer' => ':detection, tracing :rate% a turn',
             // The run tree's two facts (docs/RUN_TREE.md), as counts; the tree itself is drawn elsewhere.
             'layout' => ':paths, :moves to the core',
+            'layout_seen' => ':paths seen, the core not reached',
+            'traps_none_found' => 'none found yet',
+            'partial' => 'What your runs have seen, not the whole system.',
             'paths' => ['one' => '1 path', 'many' => ':count paths'],
             'moves' => ['one' => '1 move', 'many' => ':count moves'],
             'node_count' => ['one' => '1 node', 'many' => ':count nodes'],

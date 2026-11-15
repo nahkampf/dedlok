@@ -1376,6 +1376,35 @@ final class TreeRunTest extends TestCase
     }
 
     /** @return array{0: Run, 1: Run} The owner's run and the mate's, launched together. */
+    public function test_what_runs_saw_fills_the_tree_facts_a_scan_has_not_read_in_brass(): void
+    {
+        $tree = $this->grade7();
+        $run = $this->begin();
+        $path = $tree->path($tree->entry, $tree->core);
+        $run->forceFill(['known' => array_slice($path, 0, 3)])->save();
+        $facts = fn (SystemScan $scan): array => collect($scan->facts($this->character->fresh()))->keyBy('key')->all();
+
+        $none = $facts(new SystemScan(['address' => 'DEADBEEF', 'tree' => 0]));
+        $this->assertSame(Text::plural('cyberspace.reading.node_count', 3), $none['nodes']['value'], 'the nodes seen');
+        $this->assertTrue($none['nodes']['partial']);
+        $this->assertNotNull($none['nodes']['more'], 'the count still opens what was seen');
+        $this->assertStringContainsString(Text::get('cyberspace.reading.layout_seen', ['paths' => '']), ' '.$none['layout']['value'].' ');
+        $this->assertSame(Text::get('cyberspace.reading.traps_none_found'), $none['traps']['value']);
+
+        // Seen as far as the core: the moves are known too. A scan that read the Layout is whole, in ember.
+        $run->forceFill(['known' => $path])->save();
+        $read = $facts(new SystemScan(['address' => 'DEADBEEF', 'tree' => 1]));
+        $this->assertFalse($read['layout']['partial']);
+        $this->assertTrue($read['nodes']['partial'], 'the Nodes still come from the runs');
+        $this->assertStringContainsString(Text::plural('cyberspace.reading.moves', $tree->distance($tree->entry, $tree->core)), $facts(new SystemScan(['address' => 'DEADBEEF', 'tree' => 0]))['layout']['value']);
+
+        // Over, as runs that explored a system usually are: what they saw still counts.
+        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Jackout);
+        $this->assertTrue($facts(new SystemScan(['address' => 'DEADBEEF', 'tree' => 0]))['nodes']['partial']);
+        $this->actingAs($this->character->fresh()->user)->get(route('cyberspace.tree', ['address' => 'DEADBEEF', 'nodes' => 1]))->assertOk()
+            ->assertSee(Text::get('cyberspace.tree.node.entry'));
+    }
+
     /** A grade-$grade routing backdoor for $runner, and the skill to route through it. */
     private function routeFor(Character $runner, int $n, int $grade): System
     {

@@ -1458,7 +1458,9 @@
         if (!value || !fact.discoverable) return;
 
         const known = fact.value != null;
-        value.classList.toggle("tag--ember", known);
+        // Brass: what the reader's runs saw of the tree, short of the whole of it.
+        value.classList.toggle("tag--ember", known && !fact.partial);
+        value.classList.toggle("tag--warn", known && !!fact.partial);
 
         const mark = known && fact.mark
           ? '<span class="' + (fact.mark === "ok" ? "mark--ok" : "mark--no") + '" title="' +

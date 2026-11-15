@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Cyberspace\Position;
 use App\Cyberspace\ScanFact;
+use App\Cyberspace\Tree\Explored;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -117,20 +118,39 @@ class SystemScan extends Model
      * A screen that listed only what is implemented would grow rows as features
      * land, which is a screen nobody learns.
      *
-     * @return list<array{key: string, label: string, value: ?string, discoverable: bool}>
+     * @return list<array{key: string, label: string, value: ?string, partial: bool, discoverable: bool, mark: ?string, more: ?string}>
      */
     public function facts(?Character $for = null): array
     {
-        return array_values(array_map(fn (ScanFact $fact): array => [
-            'key' => $fact->value,
-            'label' => $fact->label(),
-            'value' => $fact->readFrom($this),
-            'discoverable' => $fact->isDiscoverable(),
-            'mark' => $for === null ? null : $this->markFor($fact, $for),
-            // Where the Nodes' breakdown by kind is fetched from, once they are read.
-            'more' => $fact === ScanFact::Nodes && $fact->isKnownOn($this) && $this->address !== null
-                ? route('cyberspace.tree', ['address' => $this->address, 'nodes' => 1]) : null,
-        ], array_filter(ScanFact::cases(), fn (ScanFact $fact): bool => $fact->appliesTo($this))));
+        // What the reader's own runs saw of the tree fills in the tree facts the scan has not read (Explored).
+        $explored = $for !== null && $this->address !== null && $this->tree !== null ? Explored::of($for, $this->address) : null;
+
+        return array_values(array_map(function (ScanFact $fact) use ($for, $explored): array {
+            $value = $fact->readFrom($this);
+            // From the runs alone, and short of the whole tree: shown in brass rather than ember.
+            $partial = false;
+
+            if ($value === null && $explored !== null && in_array($fact, [ScanFact::Layout, ScanFact::Nodes, ScanFact::Traps], true)) {
+                $value = match ($fact) {
+                    ScanFact::Layout => $explored->layout(),
+                    ScanFact::Nodes => $explored->nodeCount(),
+                    default => $explored->trapsFound(),
+                };
+                $partial = $fact === ScanFact::Traps || ! $explored->complete();
+            }
+
+            return [
+                'key' => $fact->value,
+                'label' => $fact->label(),
+                'value' => $value,
+                'partial' => $partial,
+                'discoverable' => $fact->isDiscoverable(),
+                'mark' => $for === null ? null : $this->markFor($fact, $for),
+                // Where the Nodes' breakdown by kind is fetched from, once they are read or seen.
+                'more' => $fact === ScanFact::Nodes && $value !== null && $this->address !== null
+                    ? route('cyberspace.tree', ['address' => $this->address, 'nodes' => 1]) : null,
+            ];
+        }, array_filter(ScanFact::cases(), fn (ScanFact $fact): bool => $fact->appliesTo($this))));
     }
 
     /**

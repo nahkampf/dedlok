@@ -95,9 +95,11 @@ final readonly class TreeView
      *
      * @return array<string, int>
      */
-    public static function kindCounts(RunTree $tree): array
+    public static function kindCounts(RunTree $tree, ?Explored $seen = null): array
     {
-        $counts = array_count_values(array_map(static fn (int $n): string => self::kindShown($tree, $n, false), array_keys($tree->nodes)));
+        // What a scan's Nodes read: every node, a trap as a conduit. What runs saw: the nodes seen, a found trap as a trap.
+        $nodes = $seen === null ? array_keys($tree->nodes) : $seen->nodes;
+        $counts = array_count_values(array_map(static fn (int $n): string => self::kindShown($tree, $n, $seen !== null && in_array($n, $seen->traps, true)), $nodes));
         $out = [];
 
         foreach (NodeKind::cases() as $kind) {

@@ -179,7 +179,7 @@ class RunController extends Controller
             'scan' => $scan,
             // The same rows the scanner window shows, every fact either way: an unread one says so.
             // No scan yet: a tree system still lists its tree facts, unread.
-            'overview' => ($scan ?? new SystemScan(['tree' => RunTree::appliesTo($target) ? 0 : null]))->facts($character),
+            'overview' => ($scan ?? new SystemScan(['address' => $target->address, 'tree' => RunTree::appliesTo($target) ? 0 : null]))->facts($character),
             'chain' => $chain,
             // The party forming at this door, if the character owns or is in one; and how many they may call.
             'party' => $partyHere,
