@@ -1368,6 +1368,13 @@ cap-widget {
   margin: var(--s-5) 0 var(--s-4);
 }
 .rule::after { content: ""; flex: 1; height: var(--hair); background: var(--line-1); }
+/* The label in the middle, a line either side: a run log's turn. */
+.rule--center::before { content: ""; flex: 1; height: var(--hair); background: var(--line-1); }
+.rule--center {
+  margin: var(--s-3) 0 var(--s-2);
+  font-family: var(--font-label); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-2);
+}
 
 .divider { height: var(--hair); background: var(--line-1); margin: var(--s-4) 0; }
 
@@ -1423,6 +1430,10 @@ cap-widget {
   font-size: var(--fs-xs);
   color: var(--ink-2);
 }
+/* A long reading (a scan's Nodes, say) wraps inside its tag rather than running out of the row. */
+/* A tag that opens more (a scan's Nodes): a button wearing the tag, with the kit's hover step. */
+button.tag { cursor: pointer; }
+button.tag:hover, button.tag:focus-visible { border-color: var(--crit); }
 .card__stat > b {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -1483,7 +1494,16 @@ cap-widget {
 .tag--ok    { color: var(--ok);  border-color: color-mix(in srgb, var(--ok) 35%, transparent);  background: var(--ok-a); }
 .tag--warn  { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); background: var(--warn-a); }
 .tag--crit  { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 40%, transparent); background: var(--crit-a); }
+/* A tag that is live (a run's Alert): it breathes, at the pace of the you-are-here diamond. */
+.tag--pulse { animation: here-mark 1.6s ease-in-out infinite; }
+/* Tags in a chain (a routing network's hops): joined by a hairline wire, and wrapping as a whole hop at a time. */
+.tag-chain { display: inline-flex; flex-wrap: wrap; align-items: center; row-gap: var(--s-1); }
+.tag-chain__wire { width: var(--s-3); height: var(--hair); background: var(--line-2); }
 .tag--info  { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
+/* A tag whose text may be longer than the room it has (a system's name, a scan's reading): it wraps and grows
+   rather than running out of its box. After .tag, which it overrides at the same weight. */
+.tag--wrap, .card__stat > .tag { white-space: normal; max-width: 100%; min-width: 0; height: auto; min-height: 20px; padding-block: 3px; line-height: 1.35; }
+.card__stat > .tag { text-align: right; justify-content: flex-end; }
 .strike { text-decoration: line-through; color: var(--ink-3); }
 .tag--quiet { background: transparent; border-color: var(--line-0); color: var(--ink-3); }
 .tag--solid { background: var(--ink-0); border-color: var(--ink-0); color: var(--ink-on-bone); }
@@ -2524,6 +2544,18 @@ details.panel > summary.panel__hd:focus-visible {
 }
 .floor-overlay ~ .panel { position: relative; z-index: calc(var(--z-popover) + 1); }
 
+/* A crew run waiting on the others: the page dimmed behind a line of bone, centred both ways, and the round's timer
+   under it. Under popovers like the floor, so a toast still shows. Used by the run screen alone. */
+.wait-overlay {
+  position: fixed; inset: 0;
+  z-index: var(--z-popover);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-2);
+  padding: var(--s-4);
+  background: rgba(5,6,8,.72);
+  color: var(--ink-0);
+  text-align: center;
+}
+
 /* Framed viewport — minimap, portrait, camera feed */
 .frame {
   position: relative;
@@ -3005,8 +3037,8 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 @keyframes here-pulse {
   50% { border-color: var(--ink-0); }
 }
-/* The diamond that says "you are here": ember and live, so it pulses. */
-.here-mark { color: var(--ember); animation: here-mark 1.6s ease-in-out infinite; }
+/* The diamond that says "you are here": green and live, so it pulses. */
+.here-mark { color: var(--ok); animation: here-mark 1.6s ease-in-out infinite; }
 @keyframes here-mark { 50% { opacity: .3; } }
 .here-legend { margin-top: var(--s-2); letter-spacing: .08em; }
 /* A map's node is a NAME in the box, wrapping rather than overflowing: the
@@ -3058,7 +3090,82 @@ button.board__node[data-inspect]:focus-visible .board__box { border-color: var(-
    only thing you can do to one and a pointer is not the only way to do it. */
 .board[data-board-edit] .board__node { cursor: grab; touch-action: none; }
 .board[data-board-edit] .board__node:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; }
+
+/* A RUN TREE (x-run-tree, docs/RUN_TREE.md): drawn left to right and as wide as
+   the columns the runner can see, so a deep tree scrolls sideways inside
+   .board-wrap rather than crowding its names together. --tree-cols and
+   --tree-lanes come from App\Cyberspace\Tree\TreeView. */
+.board--tree {
+  max-width: none;
+  aspect-ratio: auto;
+  width: max(100%, calc(var(--tree-cols, 2) * 136px));
+  height: calc(var(--tree-lanes, 1) * var(--s-8) + var(--s-8));
+}
+/* Known only to be there: the kind is a question mark until it is stood on or
+   Nmapped. */
+.board__node--fog .board__box { border-style: dashed; }
+.board__node--fog .board__name { color: var(--ink-3); }
+/* One edge away: a button that moves there. A brighter hairline at rest, since
+   a phone has no hover to find it with. */
+button.board__node[name="node"] .board__box { border-color: var(--ink-3); }
+button.board__node[name="node"]:hover .board__box,
+button.board__node[name="node"]:focus-visible .board__box { border-color: var(--ink-1); background: var(--bg-3); }
 .board__node[data-dragging] { cursor: grabbing; z-index: 2; }
+
+/* THREATS on a run tree: ICE (the core while its ICE stands, a node with a sentry, a running ICE controller) and a
+   security hub nobody has subverted. Ember, because they are live. Once the alert has gone off they pulse, the fill
+   and the ink trading places: ember on black, then black on ember. */
+.board__node--threat .board__name { color: var(--crit); }
+.board--alert .board__node--threat .board__box { animation: threat-alarm-box 1.4s ease-in-out infinite alternate; }
+.board--alert .board__node--threat .board__name { animation: threat-alarm-ink 1.4s ease-in-out infinite alternate; }
+/* The ember marks after a name (ICE, barrier, sentry): ember, and while the alert pulses they follow the name's ink,
+   or they would vanish into the ember fill. */
+.board__count--crit { color: var(--crit); }
+.board--alert .board__node--threat .board__count--crit { color: inherit; }
+@keyframes threat-alarm-box { from { background: var(--bg-0); } to { background: var(--crit); } }
+@keyframes threat-alarm-ink { from { color: var(--crit); } to { color: var(--bg-0); } }
+
+/* Each prefixed .board--tree so it outranks a move target's brighter hairline (button.board__node[name="node"]).
+   WHAT A NAMED NODE IS, in its border: the ways in and out in brass, the vaults in violet, the gates (a firewall,
+   a security hub) in dashed ember. A threat's solid ember (above) and the alert's pulse still win where both apply,
+   and a sprung trap blinks its dashed ember. */
+.board--tree .board__node[data-kind="entry"] .board__box,
+.board--tree .board__node[data-kind="port"] .board__box { border-color: var(--brass); }
+.board--tree .board__node[data-kind="vault"] .board__box { border-color: var(--violet); }
+.board--tree .board__node[data-kind="firewall"] .board__box,
+.board--tree .board__node[data-kind="hub"] .board__box,
+.board--tree .board__node[data-kind="trap"] .board__box { border-color: var(--crit); border-style: dashed; }
+.board--tree .board__node--sprung .board__box { border-color: var(--crit); border-style: dashed; animation: sprung-blink 1s steps(1) infinite; }
+@keyframes sprung-blink { 50% { border-color: transparent; } }
+/* A node a Cordon is cutting: its border blinks dashed ember (faster than a sprung trap's: this one is still coming)
+   and the scissors under it count down the turns left. */
+.board--tree .board__node.board__node--cutting .board__box { border-color: var(--crit); border-style: dashed; animation: sprung-blink .6s steps(1) infinite; }
+.board__label--cut { color: var(--crit); font-family: var(--font-mono); }
+/* A threat's ember wins over its kind's colour (a vault with a sentry on it is a threat first). */
+.board--tree .board__node.board__node--threat .board__box { border-color: var(--crit); }
+
+/* A NODE JUST REVEALED dissolves in: stepped, so it resolves the way a signal does rather than fading like a slide.
+   Its wires follow. Set by ui-kit.js against what the page last showed of this run. */
+.board__node--reveal { animation: node-dissolve 900ms steps(9) both; }
+.board__wire--reveal { animation: wire-dissolve 900ms steps(9) both; }
+@keyframes node-dissolve {
+  from { opacity: 0; filter: blur(3px) contrast(3); }
+  60% { opacity: .7; filter: blur(1px) contrast(1.6); }
+}
+@keyframes wire-dissolve { from { opacity: 0; } }
+
+/* A MOVE: a mark runs along the wire from where the runner stood to where they stand, and the box they arrive at
+   takes the hit. The mark is placed and moved by ui-kit.js; --trail-x/y are percentages of the board. */
+.board__trail {
+  position: absolute; z-index: 2; left: var(--trail-x); top: var(--trail-y);
+  transform: translate(-50%, -50%);
+  color: var(--ember); font-size: var(--fs-sm); pointer-events: none;
+  transition: left 520ms cubic-bezier(.5, 0, .2, 1), top 520ms cubic-bezier(.5, 0, .2, 1), opacity 200ms 520ms;
+}
+.board__node--arrive .board__box { animation: node-arrive 600ms ease-out; }
+@keyframes node-arrive {
+  from { background: var(--crit-a); border-color: var(--ember); }
+}
 
 /* ── UTILITIES ─────────────────────────────────────────────────────────── */
 

@@ -21,3 +21,4 @@
             <li class="muted">{{ Text::get('cyberspace.party.nobody') }}</li>
         @endforelse
     </ul>
+@include('run._party_network')

@@ -48,7 +48,7 @@
     <div class="panel__hd">
         <h2>{{ Text::get('cyberspace.run.setup.known') }}</h2>
         <div class="spacer"></div>
-        <span class="tag">{{ $target->displayName() }}</span>
+        <span class="tag tag--wrap">{{ $target->displayName() }}</span>
         <span class="micro"><x-address :address="$target->address" /></span>
 
         {{-- Who answers for it, and what they already make of you. The briefing is where a run is
@@ -76,6 +76,13 @@
         @endif
 
         <x-scan-facts :facts="$overview" />
+
+        {{-- The run tree, as the party's best scan read it: what the run starts with (docs/RUN_TREE.md). --}}
+        @if ($treeRead >= 1)
+            <div style="margin-top:var(--s-3)">
+                <button type="button" class="btn btn--sm btn--ghost cut" data-listing="{{ route('cyberspace.tree', ['address' => $target->address, 'party' => 1]) }}" data-dialog="#tree-view">{{ Text::get('cyberspace.tree.view') }}</button>
+            </div>
+        @endif
 
         {{-- THE ASSESSOR'S OVERALL, while one runs on the deck. The figure for the loadout as ticked, worked out by the
              server on every tick (`run.assess`); the briefing's script only shows what comes back. --}}
@@ -431,6 +438,30 @@
     </div>
 </div>
 
+{{-- WHERE A BACKDOOR TAKES YOU on a tree run (docs/RUN_TREE.md): in at the maintenance port (the core on a tree without
+     one), or at the entry like everybody else. The value stays `core` for either.
+     Only for somebody holding a backdoor on this system. Part of the run form, so a party member's choice is saved with
+     their loadout. --}}
+@if ($chooseStart)
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.tree.start_heading') }}</h2>
+    </div>
+    <fieldset class="stack" style="--gap:var(--s-2);border:0;padding:var(--s-3) 0;margin:0">
+        <label class="check check--radio">
+            <input type="radio" name="start_at" value="core" form="run-form" @checked(! $startAtEntry)>
+            <span class="check__box"></span>
+            <span>{{ Text::get($startAtPort ? 'cyberspace.tree.start_port' : 'cyberspace.tree.start_core') }}</span>
+        </label>
+        <label class="check check--radio">
+            <input type="radio" name="start_at" value="entry" form="run-form" @checked($startAtEntry)>
+            <span class="check__box"></span>
+            <span>{{ Text::get('cyberspace.tree.start_entry') }}</span>
+        </label>
+    </fieldset>
+</div>
+@endif
+
 @if ($asMember)
 <div class="panel panel--snug" style="margin-top:var(--s-4);margin-bottom:var(--s-6)">
     <div class="panel__bd">
@@ -456,7 +487,19 @@
             @elseif ($party && $party->owner_character_id === $character->id && $party->started_at === null)
                 <p class="micro" style="color:var(--warn);margin:0" data-party-hint hidden>{{ \App\Cyberspace\RunRefusal::NobodyReady->message() }}</p>
             @endif
-            @foreach ([
+            {{-- A TREE RUN chooses nothing at the door: one Start, and every action is offered inside (docs/RUN_TREE.md). --}}
+            @if ($treeRun)
+                <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                    <button type="submit" class="btn btn--go cut" style="min-width:min(200px,100%)"
+                            name="purpose" value="{{ RunPurpose::Extraction->value }}"
+                            @if ($ready && $party && $party->owner_character_id === $character->id && $party->started_at === null) data-party-gate @endif
+                            @if (! $ready || $holdStart) disabled @endif>
+                        {{ Text::get('cyberspace.run.setup.start') }}
+                    </button>
+                    <span class="micro" style="color:var(--ink-2);flex:1;min-width:min(240px,100%)">{{ Text::get('cyberspace.run.setup.start_hint') }}</span>
+                </div>
+            @endif
+            @foreach ($treeRun ? [] : [
                 ['intent' => 'extraction', 'purpose' => RunPurpose::Extraction, 'kind' => null],
                 ['intent' => 'siphon', 'purpose' => RunPurpose::Backdoor, 'kind' => BackdoorKind::Siphon],
                 ['intent' => 'routing', 'purpose' => RunPurpose::Backdoor, 'kind' => BackdoorKind::Routing],

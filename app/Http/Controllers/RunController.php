@@ -18,6 +18,8 @@ use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
+use App\Cyberspace\Tree\RunTree;
+use App\Cyberspace\Tree\TreeView;
 use App\Cyberspace\TurnResult;
 use App\Decks\DeckTotals;
 use App\Decks\ThermalExposure;
@@ -25,7 +27,9 @@ use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\InventoryItem;
+use App\Models\Mission;
 use App\Models\Run;
+use App\Models\RunPartyMember;
 use App\Models\System;
 use App\Models\SystemScan;
 use App\Programs\ProgramKind;
@@ -147,6 +151,15 @@ class RunController extends Controller
         $parties = app(Parties::class);
         $partyHere = $parties->partyOf($character)?->load('members.character', 'owner');
 
+        // A party on a tree run comes in over the network the owner picked (none, if none): the route shown is that one.
+        $chainCap = $chains->hopsAllowed($character);
+
+        if ($partyHere !== null && RunTree::appliesTo($target)) {
+            $picked = Character::query()->find($partyHere->chain_character_id);
+            $chain = $picked === null ? collect() : $chains->for($picked, $target);
+            $chainCap = $picked === null ? $chainCap : $chains->hopsAllowed($picked);
+        }
+
         // What the owner's form shows ticked is what the others are told is coming, until they change it.
         if ($partyHere !== null && $partyHere->owner_character_id === $character->id && $partyHere->started_at === null) {
             $partyHere->forceFill(['owner_loadout' => $ticked->pluck('id')->all()])->save();
@@ -165,10 +178,15 @@ class RunController extends Controller
             'placement' => app(MissionLedger::class)->hasOpenAgainst($character, $target, MissionAction::Plant),
             'scan' => $scan,
             // The same rows the scanner window shows, every fact either way: an unread one says so.
-            'overview' => ($scan ?? new SystemScan)->facts($character),
+            // No scan yet: a tree system still lists its tree facts, unread.
+            'overview' => ($scan ?? new SystemScan(['address' => $target->address, 'tree' => RunTree::appliesTo($target) ? 0 : null]))->facts($character),
             'chain' => $chain,
             // The party forming at this door, if the character owns or is in one; and how many they may call.
             'party' => $partyHere,
+            // How far the best scan in the party (or theirs alone) read the run tree: what the run will start with.
+            'treeRead' => RunTree::appliesTo($target) ? (int) SystemScan::query()
+                ->whereIn('character_id', [$character->id, ...($partyHere?->crew() ?? [])])
+                ->where('address', $target->address)->live()->max('tree') : 0,
             'coopSlots' => $character->coopSlots(),
             // Who of the party could go in if the owner pressed Start now, and what stops the rest: {character id: reason}.
             'obstacles' => $partyHere === null ? [] : $parties->obstacles($partyHere, $this->runs),
@@ -182,7 +200,7 @@ class RunController extends Controller
                 ->keyBy('address'),
             // What the running programs are spending, against what the deck resolves.
             'spent' => $deck === null ? ['qflops' => 0.0, 'memory' => 0.0] : app(ProgramRunner::class)->spentOn($character, (int) $deck->id),
-            'chainCap' => $chains->hopsAllowed($character),
+            'chainCap' => $chainCap,
             // What is running, with what each thing IS — an icebreaker and a
             // decryptor are both "a program" until the moment one of them is
             // the only thing standing between you and an ICE.
@@ -228,7 +246,14 @@ class RunController extends Controller
                 $resolver,
             ),
             'lockedDown' => $target->isLockedDown(),
-            'backdoor' => (new Backdoors)->heldOn($character, $target),
+            'backdoor' => $held = (new Backdoors)->heldOn($character, $target),
+            // A backdoor holder on a tree run's system chooses where to start (docs/RUN_TREE.md): the maintenance port (the
+            // core without one) unless they say.
+            'chooseStart' => $chooseStart = $held !== null && RunTree::appliesTo($target),
+            // A tree run is not given a purpose at the door: one Start, and every action inside (docs/RUN_TREE.md).
+            'treeRun' => RunTree::appliesTo($target),
+            'startAtPort' => $chooseStart && RunTree::of($target)->backdoorStart() !== RunTree::of($target)->core,
+            'startAtEntry' => (bool) RunPartyMember::query()->where('character_id', $character->id)->whereNull('dropped_at')->value('start_at_entry'),
         ]);
     }
 
@@ -315,6 +340,8 @@ class RunController extends Controller
             // Running background processes to switch off for the run; the runner takes only what it offers.
             'suspend' => ['nullable', 'array', 'max:50'],
             'suspend.*' => ['integer', 'distinct'],
+            // A backdoor holder on a tree run's system: start at the core (the default) or the entry.
+            'start_at' => ['nullable', Rule::in(['core', 'entry'])],
         ]);
 
         $ids = array_values(array_filter([$data['icebreaker'] ?? null, ...($data['programs'] ?? [])]));
@@ -356,6 +383,7 @@ class RunController extends Controller
             $rows->concat($scriptRows)->all(),
             $this->runs,
             array_map('intval', $data['suspend'] ?? []),
+            ($data['start_at'] ?? null) === 'entry',
         );
 
         if (! $result->succeeded()) {
@@ -424,6 +452,11 @@ class RunController extends Controller
         $system = $run->system();
 
         $response = response()->view('run.show', [
+            // The runner's open missions against this system: named on the run screen, so they know what they came for.
+            'missions' => $system === null ? collect() : Mission::query()->accepted()->with('entity')
+                ->where('character_id', $character->id)
+                ->whereHas('targets', fn ($q) => $q->whereNull('satisfied_at')->where('system_id', $system->getKey())->where('address', $system->address))
+                ->get(),
             'assess' => $this->assessment($character, $run),
             'character' => $character,
             'run' => $run,
@@ -437,6 +470,8 @@ class RunController extends Controller
                 ? System::query()->where('owner_character_id', $character->id)->orderBy('id')->get()
                 : collect(),
             'system' => $system,
+            // A tree run's map and noise bar (docs/RUN_TREE.md); null on any other run.
+            'tree' => TreeView::for($run, $character, $simulator, SystemScan::query()->where('character_id', $character->id)->where('address', $run->address)->live()->first()),
             // Worked out here rather than in the template: it is the number the
             // egress decision is made on, and a player should not have to do
             // the division while something is hitting them.
@@ -519,11 +554,30 @@ class RunController extends Controller
             'action' => ['required', Rule::in(RunAction::values())],
             // Which of your fortresses a Leecher feeds; blank is the first you own.
             'fortress' => ['nullable', 'integer'],
+            // Where a Move goes, on a tree run.
+            'node' => ['nullable', 'integer', 'min:0'],
+            // Which backdoor an Install leaves, on a tree run (chosen at the button, not at the door).
+            'backdoor_kind' => ['nullable', Rule::in(BackdoorKind::values())],
         ]);
 
-        // A party round: the choice is stored, and the round resolves when all have chosen or the clock runs out.
+        $action = RunAction::from($data['action']);
+        $node = isset($data['node']) ? (int) $data['node'] : null;
+
+        // A TREE RUN chose nothing at the door: an Install says which backdoor, and the run becomes a backdoor run.
+        // Only once the turn would be taken: a refused Install (off the core, say) leaves the run as it was.
+        if ($run->isTreeRun() && $action === RunAction::Install && ! $run->backdoored && isset($data['backdoor_kind'])
+            && $simulator->refusal($character, $run, $action, $node) === null) {
+            $run->forceFill(['purpose' => RunPurpose::Backdoor, 'backdoor_kind' => $data['backdoor_kind']])->save();
+        }
+
+        // A party round: the choice is stored, and the round resolves when all have chosen or the clock runs out. What a
+        // tree run cannot do is refused now, while the runner can still choose again.
         if (PartyTurns::shared($run)) {
-            app(PartyTurns::class)->submit($run, RunAction::from($data['action']));
+            if (($refusal = $simulator->refusal($character, $run, $action, $node)) !== null) {
+                return back()->with('error', $refusal->message());
+            }
+
+            app(PartyTurns::class)->submit($run, $action, $node);
 
             $run->refresh();
 
@@ -550,7 +604,7 @@ class RunController extends Controller
             $character,
             $run,
             $run->system(),
-            $simulator->take($character, $run, RunAction::from($data['action']), fortressId: isset($data['fortress']) ? (int) $data['fortress'] : null),
+            $simulator->take($character, $run, $action, fortressId: isset($data['fortress']) ? (int) $data['fortress'] : null, node: $node),
             $simulator,
         );
     }

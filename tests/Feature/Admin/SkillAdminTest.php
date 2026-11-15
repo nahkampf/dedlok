@@ -59,7 +59,8 @@ class SkillAdminTest extends TestCase
         $this->actingAs($this->admin)->post(route('admin.skills.store'), $this->payload(['base_cost' => 12500]));
 
         $this->actingAs($this->admin)
-            ->get(route('admin.skills.index'))
+            // Searched for, so the skills migrations add can never push it onto the next page.
+            ->get(route('admin.skills.index', ['q' => 'cryptography']))
             ->assertOk()
             ->assertSee('Price')
             ->assertSee('12,500');

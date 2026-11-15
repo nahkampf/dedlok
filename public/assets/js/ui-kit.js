@@ -686,6 +686,19 @@
     });
   });
 
+  /* A fold that remembers: <details data-remember="key"> keeps its open state in this browser across page loads (the
+     run screen reloads after every turn). Storage that fails leaves the markup's own default. */
+  document.querySelectorAll("details[data-remember]").forEach((d) => {
+    const key = "fold:" + d.dataset.remember;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved !== null) d.open = saved === "1";
+    } catch (e) { /* the default stands */ }
+    d.addEventListener("toggle", () => {
+      try { localStorage.setItem(key, d.open ? "1" : "0"); } catch (e) { /* not remembered */ }
+    });
+  });
+
   /* Unfolding an inbox message reads it: <details data-mark-read="URL">. Once, on the first
      open, with keepalive like the patch notes. The row quietens and the rail's count comes
      down, so the page agrees with the server without a reload. */
@@ -1436,12 +1449,18 @@
          has not stays the same box it started as. The mark on the operating
          system is the one place a fact also says whether the reader can DO
          anything with it — see SystemScan::markFor(). */
+      /* A row shows only when this scan has the fact: the run tree's rows appear on a system that walks a tree. */
+      const keys = (data.facts || []).map((fact) => fact.key);
+      dlg.querySelectorAll("[data-reading-facts] [data-fact]").forEach((row) => { row.hidden = !keys.includes(row.dataset.fact); });
+
       (data.facts || []).forEach((fact) => {
         const value = dlg.querySelector('[data-fact="' + fact.key + '"] [data-fact-value]');
         if (!value || !fact.discoverable) return;
 
         const known = fact.value != null;
-        value.classList.toggle("tag--ember", known);
+        // Brass: what the reader's runs saw of the tree, short of the whole of it.
+        value.classList.toggle("tag--ember", known && !fact.partial);
+        value.classList.toggle("tag--warn", known && !!fact.partial);
 
         const mark = known && fact.mark
           ? '<span class="' + (fact.mark === "ok" ? "mark--ok" : "mark--no") + '" title="' +
@@ -1450,6 +1469,21 @@
           : "";
 
         value.innerHTML = mark + esc(known ? fact.value : dlg.dataset.readingUnread);
+        // The Nodes: a count that opens the breakdown by kind (the [data-listing] handler fetches it).
+        if (known && fact.more) {
+          value.dataset.listing = fact.more;
+          value.dataset.dialog = "#nodes-view";
+          value.setAttribute("role", "button");
+          value.tabIndex = 0;
+          value.style.cursor = "pointer";
+        }
+      });
+
+      // The tree, once the read has the Layout: the button fetches from where the poll says.
+      dlg.querySelectorAll("[data-reading-tree]").forEach((box) => {
+        box.hidden = !data.tree;
+        const btn = box.querySelector("[data-listing]");
+        if (btn && data.tree) btn.dataset.listing = data.tree;
       });
 
       /* A read goes round by itself until the file is whole or the file goes
@@ -1780,7 +1814,8 @@
      form[data-turn-form] holds a run's action buttons. While the choice is waiting on the other runners
      (`data-waiting` names the action that was pressed, rendered by the server) every button is disabled and the
      pressed one carries a spinner. Pressing one shows the same at once, before the page answers: the others
-     are disabled a tick later, since a disabled submitter would not be sent. */
+     are disabled a tick later, since a disabled submitter would not be sent. `data-turn-field` names the field the
+     buttons carry when it is not `action` (a run tree's nodes are `node`). */
   function turnForms() {
     const spin = (btn) => {
       if (btn.querySelector(".spinner")) return;
@@ -1792,14 +1827,15 @@
     document.querySelectorAll("form[data-turn-form]").forEach((form) => {
       if (form.dataset.bound) return;
       form.dataset.bound = "1";
-      const buttons = () => form.querySelectorAll("button[name=action]");
+      const field = form.dataset.turnField || "action";
+      const buttons = () => form.querySelectorAll(`button[name=${field}]`);
       const pending = form.dataset.waiting;
       if (pending) {
         buttons().forEach((b) => { b.disabled = true; if (b.value === pending) spin(b); });
       }
       form.addEventListener("submit", (e) => {
         const pressed = e.submitter;
-        if (!pressed || pressed.name !== "action") return;
+        if (!pressed || pressed.name !== field) return;
         spin(pressed);
         setTimeout(() => buttons().forEach((b) => { if (b !== pressed) b.disabled = true; }), 0);
       });
@@ -1807,6 +1843,62 @@
   }
   turnForms();
   document.addEventListener("DOMContentLoaded", turnForms);
+
+  /* --- A run tree, alive ------------------------------------------------------
+     .board[data-tree-run] remembers, per run and for this tab only, which nodes it showed and where the runner stood.
+     On the next page a node it had not shown dissolves in (with its wires), and a changed position sends a mark along
+     the wire from the old node to the new. Storage that fails, a first look, or reduced motion: nothing animates. */
+  function treeLife() {
+    const still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelectorAll(".board[data-tree-run]").forEach((board) => {
+      if (board.dataset.alive) return;
+      board.dataset.alive = "1";
+      // The map scrolls sideways on a narrow screen: put where they stand in the middle of what shows.
+      const wrap = board.closest(".board-wrap");
+      const here = board.querySelector(".board__node--here");
+      if (wrap && here && wrap.scrollWidth > wrap.clientWidth) {
+        const box = here.getBoundingClientRect();
+        const view = wrap.getBoundingClientRect();
+        wrap.scrollLeft += box.left + box.width / 2 - (view.left + view.width / 2);
+      }
+
+      const key = "tree:" + board.dataset.treeRun;
+      const nodes = [...board.querySelectorAll(".board__node[data-node]")];
+      const now = { here: board.dataset.treeHere, nodes: nodes.map((n) => n.dataset.node) };
+      let before = null;
+      try { before = JSON.parse(sessionStorage.getItem(key) || "null"); } catch (e) { before = null; }
+      try { sessionStorage.setItem(key, JSON.stringify(now)); } catch (e) { /* the page works without it */ }
+      if (!before || still) return;
+
+      const fresh = new Set(now.nodes.filter((n) => !before.nodes.includes(n)));
+      nodes.forEach((n) => { if (fresh.has(n.dataset.node)) n.classList.add("board__node--reveal"); });
+      board.querySelectorAll(".board__wire").forEach((w) => {
+        if (fresh.has(w.dataset.from) || fresh.has(w.dataset.to)) w.classList.add("board__wire--reveal");
+      });
+
+      const from = board.querySelector(`.board__node[data-node="${before.here}"]`);
+      const to = board.querySelector(`.board__node[data-node="${now.here}"]`);
+      if (!from || !to || before.here === now.here) return;
+      const mark = document.createElement("span");
+      mark.className = "board__trail";
+      mark.setAttribute("aria-hidden", "true");
+      mark.textContent = "\u25C6";
+      mark.style.setProperty("--trail-x", from.style.left);
+      mark.style.setProperty("--trail-y", from.style.top);
+      board.appendChild(mark);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        mark.style.setProperty("--trail-x", to.style.left);
+        mark.style.setProperty("--trail-y", to.style.top);
+        mark.style.opacity = "0";
+      }));
+      // The flash replaces the you-are-here breathing while it runs, so it is taken off again afterwards.
+      setTimeout(() => { to.classList.add("board__node--arrive"); }, 480);
+      setTimeout(() => { to.classList.remove("board__node--arrive"); }, 1150);
+      setTimeout(() => mark.remove(), 900);
+    });
+  }
+  treeLife();
+  document.addEventListener("DOMContentLoaded", treeLife);
 
   /* --- The party panel, kept current ---------------------------------------
      [data-party-poll="url"] asks the server every five seconds who is in, and swaps the HTML of each

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Cyberspace\Party;
 
 use App\Cyberspace\BackdoorKind;
+use App\Cyberspace\ChainBuilder;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunRefusal;
 use App\Cyberspace\RunResult;
 use App\Cyberspace\RunStarter;
+use App\Cyberspace\Tree\RunTree;
 use App\Models\Character;
 use App\Models\Chat;
 use App\Models\InventoryItem;
@@ -74,7 +76,66 @@ final class Parties
             'y' => $at->y,
             'share_credits' => $credits,
             'share_extraction' => $extraction,
+            // A tree run's trace network: the owner's own, until they pick another runner's.
+            'chain_character_id' => $owner->getKey(),
         ]);
+    }
+
+    /**
+     * The owner picks whose trace network the party comes in over on a tree run: theirs, a joined member's, or none
+     * (null). Asked of the party as it stands, so a runner who is not in it cannot be named.
+     */
+    public function network(Character $owner, ?int $characterId): ?PartyRefusal
+    {
+        return DB::transaction(function () use ($owner, $characterId): ?PartyRefusal {
+            $party = RunParty::query()->where('owner_character_id', $owner->getKey())->lockForUpdate()->first();
+
+            if ($party === null) {
+                return PartyRefusal::NoParty;
+            }
+
+            if ($party->started_at !== null) {
+                return PartyRefusal::Started;
+            }
+
+            if ($characterId !== null && $characterId !== (int) $owner->getKey()
+                && ! $party->members()->where('character_id', $characterId)->whereNotNull('joined_at')->exists()) {
+                return PartyRefusal::NoSuchRunner;
+            }
+
+            $party->update(['chain_character_id' => $characterId]);
+
+            return null;
+        });
+    }
+
+    /**
+     * The trace networks a party could come in over on a tree run, the owner's first: each runner (the owner and every
+     * joined member) holding a chain here, with it. Empty when the system walks no tree.
+     *
+     * @return list<array{character: Character, chain: Collection<int, System>}>
+     */
+    public function networks(RunParty $party): array
+    {
+        $system = System::query()->where('address', $party->address)->first();
+
+        if ($system === null || ! RunTree::appliesTo($system)) {
+            return [];
+        }
+
+        $runners = [$party->owner, ...$party->members()->whereNotNull('joined_at')->with('character')->get()->pluck('character')];
+        $chains = ChainBuilder::fromConfig();
+        $networks = [];
+
+        foreach (array_filter($runners) as $runner) {
+            $chain = $chains->for($runner, $system);
+
+            if ($chain->isNotEmpty()) {
+                $networks[] = ['character' => $runner, 'chain' => $chain];
+            }
+        }
+
+        return $networks;
     }
 
     public function options(Character $owner, ShareMode $credits, ShareMode $extraction): ?PartyRefusal
@@ -142,9 +203,9 @@ final class Parties
     }
 
     /** Accepting needs standing at the same door: the party forms where it is going. */
-    public function accept(Character $character, ?array $loadout = null, ?array $suspend = null): ?PartyRefusal
+    public function accept(Character $character, ?array $loadout = null, ?array $suspend = null, ?bool $atEntry = null): ?PartyRefusal
     {
-        return DB::transaction(function () use ($character, $loadout, $suspend): ?PartyRefusal {
+        return DB::transaction(function () use ($character, $loadout, $suspend, $atEntry): ?PartyRefusal {
             $member = RunPartyMember::query()->where('character_id', $character->getKey())->lockForUpdate()->first();
 
             if ($member === null) {
@@ -170,7 +231,9 @@ final class Parties
             $mine = $loadout === null ? ($member->loadout ?? []) : $this->oneIcebreaker(InventoryItem::query()
                 ->where('character_id', $character->getKey())->whereIn('id', $loadout)->with('item.program')->get());
 
-            $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine] + ($suspend === null ? [] : ['suspend' => $suspend]));
+            $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine]
+                + ($suspend === null ? [] : ['suspend' => $suspend])
+                + ($atEntry === null ? [] : ['start_at_entry' => $atEntry]));
 
             return null;
         });
@@ -278,6 +341,9 @@ final class Parties
             ->whereNotIn('id', Run::query()->live()->whereNotNull('run_party_id')->select('run_party_id'))->delete();
         // A member the launch left out stays until the party is over, so they cannot start a run of their own beside it.
         RunPartyMember::query()->where('character_id', $character->getKey())->whereNull('dropped_at')->delete();
+        // A party still at the door whose trace network was theirs falls back to the owner's.
+        RunParty::query()->where('chain_character_id', $character->getKey())->whereNull('started_at')
+            ->update(['chain_character_id' => DB::raw('owner_character_id')]);
     }
 
     /** The owner left cyberspace: a party still forming at the door goes with them, invitations and all. */
@@ -348,12 +414,12 @@ final class Parties
      * The owner's run starts first and decides it: a refusal there starts nobody. A member who cannot start (deck not
      * ready, moved off the door, a program that will not start) is dropped from the party, told, and the rest go.
      */
-    public function launch(Character $owner, RunPurpose $purpose, ?BackdoorKind $kind, array $ownerLoadout, RunStarter $starter, array $ownerSuspend = []): RunResult
+    public function launch(Character $owner, RunPurpose $purpose, ?BackdoorKind $kind, array $ownerLoadout, RunStarter $starter, array $ownerSuspend = [], bool $ownerAtEntry = false): RunResult
     {
         $party = RunParty::query()->where('owner_character_id', $owner->getKey())->first();
 
         if ($party === null || $party->started_at !== null) {
-            return $starter->start($owner, $purpose, $kind, $ownerLoadout, null, $ownerSuspend);
+            return $starter->start($owner, $purpose, $kind, $ownerLoadout, null, $ownerSuspend, $ownerAtEntry);
         }
 
         // The party forms at the door: an owner who walked off does not take it with them.
@@ -368,7 +434,16 @@ final class Parties
             return RunResult::refused(RunRefusal::NobodyReady);
         }
 
-        $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey(), $ownerSuspend);
+        // A picked network whose runner cannot go in is not one the crew can come in over: it is the owner's again.
+        $picked = $party->chain_character_id === null || (int) $party->chain_character_id === (int) $owner->getKey() ? null
+            : $party->members()->whereNotNull('joined_at')->where('character_id', $party->chain_character_id)->first()?->character;
+
+        if ($party->chain_character_id !== null && (int) $party->chain_character_id !== (int) $owner->getKey()
+            && ($picked === null || $this->obstacle($picked, $party, $starter) !== null)) {
+            $party->update(['chain_character_id' => $owner->getKey()]);
+        }
+
+        $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey(), $ownerSuspend, $ownerAtEntry);
 
         if (! $result->succeeded()) {
             return $result;
@@ -386,7 +461,7 @@ final class Parties
             if ($runner !== null && $why === null) {
                 $rows = InventoryItem::query()->whereIn('id', $member->loadout ?? [])
                     ->where('character_id', $runner->getKey())->with('item.program')->get()->all();
-                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey(), $member->suspend ?? []);
+                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey(), $member->suspend ?? [], (bool) $member->start_at_entry);
                 $why = $started->succeeded() ? null : $started->message();
             }
 

@@ -6,139 +6,118 @@
 
 @section('content')
 
-{{-- THE ONLY SCREEN A PLAYER IN A RUN CAN REACH.
-
-     EnsureRunIsFinished sends every other request here, which is what replaces
-     atomicity: signing out does not end a run, it postpones a turn. So this
-     page has to be able to stand alone — there is no rail out of it, and the
-     only way off it is to finish what was started. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
-    <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.heading') }}</h2>
-        <div class="spacer"></div>
-        {{-- Where the run has got to, and the one number to watch: large, and green because it is
-             progress rather than danger (the trace below is the danger). --}}
-        <span class="num" style="font-size:var(--fs-xl);line-height:1;color:var(--ok)">{{ Text::get('cyberspace.run.turn', ['turn' => $run->turn]) }}</span>
-    </div>
-
-    {{-- The target, drawn from the RUN and not from the system: the row carries the address and the
-         position it went in at, so a system that has since moved does not change what this run was
-         against. --}}
-    <div style="padding:var(--s-3) 0">
-        <div class="card__stats" style="padding:0;border:0">
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.coordinates') }}</span>
-                <b class="num">{{ $run->position() }}</b>
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.address') }}</span>
-                <b><x-address :address="$run->address" /></b>
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.type') }}</span>
-                <b>{{ $system?->type->label() ?? '—' }}</b>
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.name') }}</span>
-                @if ($system)
-                    <b>{{ $system->displayName() }}</b>
-                @else
-                    {{-- Burned or relocated out from under them. Nothing here cancels the run — that is
-                         the simulator's, and it is why the row carries an address rather than a foreign key. --}}
-                    <span class="tag tag--warn">{{ Text::get('cyberspace.run.ended.cancelled') }}</span>
-                @endif
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.run_type') }}</span>
-                <b>{{ $run->purpose->label() }}@if ($run->backdoorKind()) · {{ $run->backdoorKind()->label() }}@endif</b>
-            </div>
-            {{-- THIS CHARACTER'S STANDING INSTRUCTIONS, set once from the map. Zero is off. --}}
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.threshold_trace') }}</span>
-                <b class="num">{{ $character->egress_trace_at > 0 ? $character->egress_trace_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
-            </div>
-            <div class="card__stat">
-                <span>{{ Text::get('cyberspace.run.overview.threshold_si') }}</span>
-                <b class="num">{{ $character->egress_si_at > 0 ? $character->egress_si_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
-            </div>
+{{-- THE MAP ON TOP, the whole width: it is the run. Then two columns when there is room (the kit's .map-split): what
+     the runner does on the left (mission, actions) and what is watching it on the right, narrower (the overview, folded
+     as they leave it, the trace, the ICE, the log). One column below that. --}}
+{{-- A TREE RUN (docs/RUN_TREE.md): where you stand in the system, what you have found of it, and the noise bar. The bar
+     is a meter against the IDS when the runner's scan read it, and only a count of points when it did not: how loud
+     they have been, not how close the alarm is. --}}
+@if ($tree)
+    <div class="panel panel--snug" style="margin-top:var(--s-4)">
+        <div class="panel__hd">
+            <h2>{{ Text::get('cyberspace.tree.heading') }}</h2>
+            <div class="spacer"></div>
+            @if ($run->alerted)
+                <span class="tag tag--crit tag--pulse">{{ Text::get('cyberspace.tree.alerted') }}</span>
+            @endif
         </div>
-    </div>
-</div>
 
-{{-- THE TRACE, AND THE ONE QUESTION IT ANSWERS: is it time to leave.
+        <div style="padding:var(--s-3) 0 var(--s-2)">
+            <span class="micro" style="display:block;color:var(--ink-2);margin-bottom:var(--s-2)">
+                {{ Text::get('cyberspace.tree.noise') }}:
+                @if ($tree->ids === null)
+                    <span class="num" style="color:var(--ink-0)">{{ $tree->noise }}</span>
+                @elseif ($tree->ids <= 0)
+                    {{ Text::get('cyberspace.tree.no_ids') }}
+                @else
+                    <span class="num" style="color:var(--ink-0)">{{ $tree->noise }} / {{ $tree->ids }}</span>
+                @endif
+            </span>
+            @if ($tree->ids !== null && $tree->ids > 0)
+                {{-- Green to 70%, brass to 90%, then ember: how close the alarm is, at a glance. --}}
+                @php($share = min(1, $tree->noise / $tree->ids))
+                <div class="meter meter--lg" style="--v:{{ round($share, 3) }};--fill:var(--{{ $share < .7 ? 'ok' : ($share < .9 ? 'warn' : 'crit') }})">
+                    <div class="meter__fill"></div>
+                </div>
+            @endif
+        </div>
 
-     Drawn as the chain it actually is — the machine at one end, you at the
-     other, and every backdoored relay routed through in between. Routing is not
-     built, so today that chain is two nodes; the widget draws a chain rather
-     than a pair precisely so it will not have to change when hops arrive. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
-    <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.trace') }}</h2>
-        <div class="spacer"></div>
-        @if ($run->trace >= 100)
-            <span class="tag tag--crit">{{ Text::get('cyberspace.run.trace_done') }}</span>
-        @elseif ($turnsLeft !== null)
-            <span class="micro num">{{ Text::plural('cyberspace.run.trace_turns', $turnsLeft, ['count' => $turnsLeft]) }}</span>
+        @if ($tree->firewallChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.firewall_chance', ['chance' => (int) round($tree->firewallChance * 100)]) }}
+            </p>
         @endif
-    </div>
-
-    <div style="padding:0 var(--s-2)">
-        @if ($run->traceRate() > 0 || $run->trace > 0)
-            @php($chain = $run->traceChain())
-
-            <div class="trace" style="--v:{{ round($run->trace / 100, 3) }}">
-                @foreach ($chain as $node)
-                    <span class="trace__node trace__node--{{ $node['kind'] }} @if ($node['passed']) trace__node--passed @endif"
-                          @if ($node['label']) title="{{ $node['label'] }}" @endif>
-                        {{ $node['kind'] === 'you' ? '◉' : ($node['gone'] ? '◌' : '◇') }}
-                    </span>
+        @if ($tree->hubChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.hub_chance', ['chance' => (int) round($tree->hubChance * 100)]) }}
+            </p>
+        @endif
+        @if ($tree->loopbackChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get($tree->looping ? 'cyberspace.tree.loopback_holding' : 'cyberspace.tree.loopback_chance', ['chance' => (int) round($tree->loopbackChance * 100)]) }}
+            </p>
+        @endif
+        @foreach ($tree->sentriesHere as $sentry)
+            <p class="micro" style="color:var(--{{ $sentry['awake'] ? 'crit' : 'ink-2' }});margin:0 0 var(--s-2)">
+                {{ Text::get(($sentry['barrier'] ?? false) ? 'cyberspace.tree.barrier_here' : ($sentry['awake'] ? 'cyberspace.tree.sentry_awake' : 'cyberspace.tree.sentry_asleep'), ['name' => $sentry['name'], 'integrity' => rtrim(rtrim(number_format($sentry['integrity'], 2), '0'), '.')]) }}
+            </p>
+        @endforeach
+        @if ($tree->tunnelling)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">{{ Text::get('cyberspace.tree.tunnel_holding') }}</p>
+        @endif
+        @if ($tree->shutdownChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.shutdown_chance', ['chance' => (int) round($tree->shutdownChance * 100)]) }}
+            </p>
+        @endif
+        @if (collect($tree->nodes)->contains(fn (array $n): bool => ($n['cutting'] ?? null) !== null))
+            <p class="micro" style="color:var(--crit);margin:0 0 var(--s-2)">{{ Text::get('cyberspace.tree.cordon_warning') }}</p>
+        @endif
+        @if ($tree->wipeChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.wipe_chance', ['chance' => (int) round($tree->wipeChance * 100)]) }}
+            </p>
+        @elseif ($tree->logQuiet)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">{{ Text::get('cyberspace.tree.wipe_quiet') }}</p>
+        @endif
+        {{-- FOUND TRAPS next door: a Disarm each (the OS roll), its own form since it names a node. --}}
+        @if ($tree->disarm !== [])
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.disarm_chance', ['chance' => (int) round(($tree->disarmChance ?? 0) * 100)]) }}
+            </p>
+            <div class="row row--wrap" style="--gap:var(--s-2);margin:0 0 var(--s-2)">
+                @foreach ($tree->disarm as [$trapNode, $trapLabel])
+                    <form method="POST" action="{{ route('run.act') }}" data-turn-form data-turn-field="node" data-waiting="">
+                        @csrf
+                        <input type="hidden" name="action" value="disarm">
+                        <button type="submit" name="node" value="{{ $trapNode }}" class="btn cut">
+                            {{ Text::get('cyberspace.run.action.disarm', ['trap' => $trapLabel]) }}
+                        </button>
+                    </form>
                 @endforeach
             </div>
-
-            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-3)">
-                <span class="num">{{ $run->trace }}%</span>
-                @if ($run->traceRate() > 0) · +{{ $run->traceRate() }}% a turn @endif
-            </p>
-        @else
-            <p class="micro" style="color:var(--ink-2);padding:var(--s-3) 0;margin:0">
-                {{ Text::get('cyberspace.run.trace_none') }}
+        @endif
+        @if ($tree->subverted && ! $run->alerted)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.subverted') }}
             </p>
         @endif
-    </div>
-</div>
 
-{{-- WHAT IS FIGHTING, drawn from the RUN and not from the system: integrity is being ground down, and
-     the catalogue says what an ICE is rather than what this fight has left of it. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
-    <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.ice') }}</h2>
+        <x-run-tree :view="$tree" :label="Text::get('cyberspace.tree.heading')" :run="$run->id" :alert="(bool) $run->alerted"
+                    :waiting="$waiting ? ($run->pending_action === 'move' ? (string) $run->pending_node : '-') : ''" />
     </div>
+@endif
 
-    <div style="padding:var(--s-3) 0">
-        @if ($run->inAFight())
-            @php($ice = $run->ice)
-            <div class="card__stats" style="padding:0;border:0">
-                <div class="card__stat">
-                    <span>{{ Text::get('cyberspace.run.ice_grade') }}</span>
-                    <span class="tag tag--crit">{{ \App\Cyberspace\FortressCloak::iceNameFor($run) }}</span>
-                </div>
-                <div class="card__stat">
-                    <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>
-                    <b class="num">{{ $run->ice_integrity }} / {{ $ice->integrity }}</b>
-                </div>
-            </div>
-
-            {{-- The kit's own meter, driven by --v the way every other one is. It is the ICE's health and
-                 not the player's, so it empties as things go WELL — `--fill` says which way to read it.
-                 A <div>, like every other fill: an inline <span> has no height and draws nothing. --}}
-            <div class="meter meter--lg" style="--v:{{ round($run->ice_integrity / max(1, $ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
-                <div class="meter__fill"></div>
-            </div>
-        @else
-            <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.ice_none') }}</p>
-        @endif
+<div class="map-split" style="margin-top:0">
+<div class="map-split__body">
+<div style="min-width:0">
+{{-- WHAT THEY CAME FOR: every open mission of theirs against this system, by job and client. --}}
+@foreach ($missions as $mission)
+    <div class="callout" style="margin-top:var(--s-4)">
+        <p style="margin:0">{{ Text::get('cyberspace.run.mission', ['action' => $mission->action->label(), 'entity' => $mission->entity?->name ?? '']) }}</p>
+        <p class="micro" style="margin:var(--s-1) 0 0;color:var(--ink-2)">{{ $mission->action->description() }}</p>
     </div>
-</div>
+@endforeach
 
 {{-- WRITTEN ONCE, SHOWN TWO WAYS. The kit clones this into the floating
      inspector on hover and into a modal on click. --}}
@@ -197,7 +176,7 @@
         </div>
         <div class="card__stats">
             <div class="card__stat">
-                <span>{{ $egress->grade === null ? Text::get('cyberspace.run.evasion_ice_none') : Text::get('cyberspace.run.evasion_grade', ['grade' => $egress->grade]) }}</span>
+                <span>{{ $egress->grade === null ? Text::get('cyberspace.run.evasion_ice_none') : Text::get($egress->tunnel > 0 ? 'cyberspace.run.evasion_tunnel' : ($egress->port ? 'cyberspace.run.evasion_port' : 'cyberspace.run.evasion_grade'), ['grade' => $egress->grade, 'strength' => $egress->tunnel]) }}</span>
                 <b class="num">{{ $egress->gradeDifficulty }}</b>
             </div>
             <div class="card__stat">
@@ -236,6 +215,10 @@
 <div class="panel panel--snug" style="margin-top:var(--s-4)" data-run-watch="{{ $run->id }}" data-turn="{{ $run->turn }}" data-party="{{ $shared ? 1 : 0 }}">
     {{-- ON OR PAST A THRESHOLD: the next turn pulls them out whatever they press. The loud thing on the
          panel, because it is the one fact that changes what the buttons below will do. --}}
+    {{-- A TREE RUN'S THRESHOLD ONLY WARNS: leaving takes the entry, so nothing pulls them out where they stand. --}}
+    @if ($thresholdBreached && $tree)
+        <p class="micro" style="color:var(--warn);margin:var(--s-2) 0 0">{{ Text::get('cyberspace.tree.threshold_warn') }}</p>
+    @endif
     @if ($thresholdBreached)
         <div class="hazard-stripe hazard-stripe--thin" role="img" aria-label="{{ Text::get('cyberspace.run.overview.threshold_hit') }}" title="{{ Text::get('cyberspace.run.overview.threshold_hit') }}"></div>
     @endif
@@ -281,33 +264,104 @@
          That is the moment the run's own action stops being a gamble, and its button says so by turning green. --}}
     @php($coreOpen = ! $run->inAFight() && $core === null)
 
+    {{-- WAITING ON THE CREW: the whole screen dims behind the line and the round's timer. --}}
     @if ($waiting)
-        <p class="micro" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.waiting') }}</p>
+        <div class="wait-overlay" role="status">
+            <p class="h3" style="margin:0">{{ Text::get('cyberspace.run.waiting') }}</p>
+            @if ($roundSeconds !== null)
+                <p class="micro num" style="margin:0">{{ Text::get('cyberspace.run.round_timer') }} <span data-countdown="{{ $roundSeconds }}">{{ $roundSeconds }}</span></p>
+            @endif
+        </div>
     @endif
     @if ($alone)
         <p class="micro" style="margin:0 0 var(--s-2);color:var(--warn)">{{ Text::get('cyberspace.run.alone') }}</p>
     @endif
-    @if ($roundSeconds !== null)
+    @if ($roundSeconds !== null && ! $waiting)
         <p class="micro num" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.round_timer') }} <span data-countdown="{{ $roundSeconds }}">{{ $roundSeconds }}</span></p>
     @endif
 
     <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)" data-turn-form data-waiting="{{ $waiting ? $run->pending_action : '' }}">
         @csrf
         <div class="row row--wrap" style="--gap:var(--s-2)">
-            <button type="submit" name="action" value="attack" class="btn cut" @unless ($run->inAFight()) disabled @endunless>
+            {{-- A TREE RUN: the core's actions are offered on the core, a Flood on the entry, and Nmap anywhere. --}}
+            @php($atCore = ! $tree || $tree->atCore)
+            {{-- A DATA VAULT takes an Extract on any purpose: no lock, no ICE. Continuing names the pull that is here. --}}
+            @if ($tree && $tree->atVault)
+                <button type="submit" name="action" value="extract" class="btn cut btn--go">
+                    {{ Text::get($run->extracting_qb !== null && $run->pull_node === $run->node ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
+                </button>
+            @endif
+            {{-- A FIREWALL that still holds: Breach is its OS roll, and moving on through it is the next turn. --}}
+            @if ($tree && $tree->firewallChance !== null)
+                <button type="submit" name="action" value="breach" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.breach') }}
+                </button>
+            @endif
+            {{-- AN INTERNAL RELAY: a Loopback from the stash holds the trace while they stay. --}}
+            @if ($tree && $tree->atRelay)
+                <button type="submit" name="action" value="loopback" class="btn cut btn--go" @if ($tree->loopbackChance === null) disabled @endif>
+                    {{ Text::get('cyberspace.run.action.loopback') }}
+                </button>
+            @endif
+            {{-- AN AWAKE SENTRY off the core: Attack hits it (on the core, the core's own Attack does, the sentry first). --}}
+            @if ($tree && ! $tree->atCore && collect($tree->sentriesHere)->contains('awake', true))
+                <button type="submit" name="action" value="attack" class="btn cut">
+                    {{ Text::get('cyberspace.run.action.attack') }}
+                </button>
+            @endif
+            {{-- AN EGRESS TUNNEL from the stash: this node becomes an exit while they stay. --}}
+            @if ($tree && $tree->canTunnel)
+                <button type="submit" name="action" value="tunnel" class="btn cut">
+                    {{ Text::get('cyberspace.run.action.tunnel') }}
+                </button>
+            @endif
+            {{-- THE ICE CONTROLLER while it runs: Shut down is its OS roll. --}}
+            @if ($tree && $tree->shutdownChance !== null)
+                <button type="submit" name="action" value="shutdown" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.shutdown') }}
+                </button>
+            @endif
+            {{-- A LOG SERVER holding an alert: Wipe is its OS roll. Before the alert it shows, greyed out. --}}
+            @if ($tree && ($tree->wipeChance !== null || $tree->logQuiet))
+                <button type="submit" name="action" value="wipe" class="btn cut btn--go" @if ($tree->logQuiet) disabled @endif>
+                    {{ Text::get('cyberspace.run.action.wipe') }}
+                </button>
+            @endif
+            {{-- A SECURITY HUB nobody has subverted: Subvert is its OS roll. --}}
+            @if ($tree && $tree->hubChance !== null)
+                <button type="submit" name="action" value="subvert" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.subvert') }}
+                </button>
+            @endif
+            @if ($tree)
+                <button type="submit" name="action" value="nmap" class="btn cut" @unless ($tree->canNmap) disabled @endunless>
+                    {{ Text::get('cyberspace.run.action.nmap') }}
+                </button>
+            @endif
+            @if ($atCore)
+            <button type="submit" name="action" value="attack" class="btn cut" @unless ($run->inAFight() || ($tree && collect($tree->sentriesHere)->contains('awake', true))) disabled @endunless>
                 {{ Text::get('cyberspace.run.action.attack') }}
             </button>
             {{-- ONLY ON AN EXTRACTION RUN. Purpose decides what a core touch IS, and each of the three has
                  its own button: offering one on the wrong purpose would promise something the turn would
                  silently waste. --}}
-            @if ($run->purpose === RunPurpose::Extraction)
+            @if ($run->purpose === RunPurpose::Extraction || $tree)
                 <button type="submit" name="action" value="extract" class="btn cut @if ($coreOpen) btn--go @endif" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get($run->extracting_qb !== null ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
                 </button>
             @endif
             {{-- THE SAME RULE ON THE OTHER PURPOSE. The kind was chosen at the door and is permanent, so
                  the button says which one it is about to leave rather than asking again mid-fight. --}}
-            @if ($run->purpose === RunPurpose::Backdoor)
+            {{-- A TREE RUN chose nothing at the door: a button for each backdoor, the kind going with the press. --}}
+            @if ($tree)
+                @foreach (\App\Cyberspace\BackdoorKind::cases() as $doorKind)
+                    <button type="submit" name="action" value="install" class="btn cut"
+                            formaction="{{ route('run.act', ['backdoor_kind' => $doorKind->value]) }}"
+                            @if ($run->backdoored || $run->inAFight()) disabled @endif>
+                        {{ Text::get($run->backdoored && $run->backdoor_kind === $doorKind ? 'cyberspace.run.action.install_done' : 'cyberspace.run.action.install', ['kind' => $doorKind->label()]) }}
+                    </button>
+                @endforeach
+            @elseif ($run->purpose === RunPurpose::Backdoor)
                 <button type="submit" name="action" value="install" class="btn cut @if ($coreOpen && ! $run->backdoored) btn--go @endif"
                         @if ($run->backdoored || $run->inAFight()) disabled @endif>
                     {{-- The planning screen calls it "Place backdoor" while a Placement job names the system; so does the run. --}}
@@ -326,7 +380,8 @@
             {{-- THE ONLY BUTTON THAT ENDS THE RUN BY WORKING, so it is the only one that wears the accent:
                  ember means destructive, and there is nothing in the game this word fits better. It cannot
                  be pressed twice — the system is gone and the run is over the moment it lands. --}}
-            @if ($run->purpose === RunPurpose::Denial)
+            @endif
+            @if (($run->purpose === RunPurpose::Denial && ! $tree) || ($tree && $tree->atExit))
                 <div style="min-width:min(160px,100%)">
                     <span class="micro">{{ Text::get('cyberspace.run.pressure') }}</span>
                     <div class="meter" style="--v:{{ min(1, max(0, $run->pressure / \App\Cyberspace\Simulator::denialTarget($run))) }}"
@@ -341,12 +396,12 @@
                     {{ Text::get('cyberspace.run.action.infiltrate') }}
                 </button>
             @endif
-            @if ($run->purpose === RunPurpose::Burn)
+            @if (($run->purpose === RunPurpose::Burn || $tree) && $atCore)
                 <button type="submit" name="action" value="burn" class="btn btn--danger cut" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get('cyberspace.run.action.burn') }}
                 </button>
             @endif
-            @if ($fortresses->isNotEmpty())
+            @if ($fortresses->isNotEmpty() && $atCore)
                 @if ($fortresses->count() > 1)
                     <select class="input" name="fortress" aria-label="{{ Text::get('cyberspace.run.action.leech') }}">
                         @foreach ($fortresses as $fortress)
@@ -366,16 +421,24 @@
                  roll uses, so the number a player decides against is the number the game believes. --}}
             {{-- The working behind that number floats from here (hover, or keyboard focus) — it is the
                  button the number is on. Not on click: that is the egress itself. --}}
+            {{-- CRASH JACKOUT, on a tree run only: out from anywhere, for certain, at a price in Synaptic Integrity. It asks
+                 twice, in the kit's own modal: this button only opens it, and the modal's button is the turn. --}}
+            @if ($tree)
+                <button type="button" class="btn btn--danger cut" data-open="#jackout-confirm" aria-haspopup="dialog">
+                    {{ Text::get('cyberspace.run.action.jackout') }}
+                </button>
+            @endif
+            {{-- A TREE RUN LEAVES BY THE ENTRY: elsewhere the button is there but cannot be pressed. --}}
             <button type="submit" name="action" value="egress" class="btn btn--warn cut"
-                    data-inspect="#egress-working" data-inspect-hover>
+                    data-inspect="#egress-working" data-inspect-hover @if ($tree && ! $tree->atExit) disabled @endif>
                 {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egress->percent()]) }}
             </button>
         </div>
-        @if ($run->inAFight())
+        @if ($run->inAFight() && (! $tree || $tree->atCore))
             <p class="micro" style="color:var(--warn);margin:var(--s-2) 0 0">
                 {{ Text::get('cyberspace.run.core_guarded') }}
             </p>
-        @elseif ($core !== null)
+        @elseif ($core !== null && $atCore)
             <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
                 {{ Text::get('cyberspace.run.core_chance', ['chance' => $core]) }}
                 {{ Text::get('cyberspace.run.core_hint') }}
@@ -395,6 +458,178 @@
     </form>
 </div>
 
+@if ($tree)
+    <dialog id="jackout-confirm" class="modal">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('cyberspace.run.action.jackout') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('cyberspace.run.action.jackout_cancel') }}</button>
+        </div>
+        <div class="panel__bd">
+            <p style="margin:0 0 var(--s-4)">{{ Text::get('cyberspace.tree.jackout_warning') }}</p>
+            <form method="POST" action="{{ route('run.act') }}" class="row row--wrap" style="--gap:var(--s-2)">
+                @csrf
+                <button type="submit" name="action" value="jackout" class="btn btn--danger cut">{{ Text::get('cyberspace.run.action.jackout_confirm') }}</button>
+                <button type="button" class="btn btn--ghost cut" data-close>{{ Text::get('cyberspace.run.action.jackout_cancel') }}</button>
+            </form>
+        </div>
+    </dialog>
+@endif
+
+{{-- WHAT IS FIGHTING, drawn from the RUN and not from the system: integrity is being ground down, and
+     the catalogue says what an ICE is rather than what this fight has left of it. --}}
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.ice') }}</h2>
+    </div>
+
+    <div style="padding:var(--s-3) 0">
+        {{-- ON A RUN TREE, the ICE on the runner's node: its sentries (and barrier), each with its own bar; the core's
+             ICE only on the core, where it can reach them. --}}
+        @php($sentries = $tree ? $tree->sentriesHere : [])
+        @foreach ($sentries as $sentry)
+            <div class="card__stats" style="padding:0;border:0;@if (! $loop->first) margin-top:var(--s-3) @endif">
+                <div class="card__stat">
+                    <span>{{ ucfirst(Text::get(($sentry['barrier'] ?? false) ? 'cyberspace.tree.barrier' : 'cyberspace.tree.sentry')) }}</span>
+                    <span class="tag {{ $sentry['awake'] ? 'tag--crit' : '' }}">{{ $sentry['grade'] }}</span>
+                </div>
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>
+                    <b class="num">{{ $sentry['integrity'] }} / {{ $sentry['max'] }}</b>
+                </div>
+            </div>
+            <div class="meter meter--lg" style="--v:{{ round($sentry['integrity'] / max(1, $sentry['max']), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
+                <div class="meter__fill"></div>
+            </div>
+        @endforeach
+        @if ($run->inAFight() && (! $tree || $tree->atCore))
+            @php($ice = $run->ice)
+            <div class="card__stats" style="padding:0;border:0">
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_grade') }}</span>
+                    <span class="tag tag--crit">{{ \App\Cyberspace\FortressCloak::iceNameFor($run) }}</span>
+                </div>
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>
+                    <b class="num">{{ $run->ice_integrity }} / {{ $ice->integrity }}</b>
+                </div>
+            </div>
+
+            {{-- The kit's own meter, driven by --v the way every other one is. It is the ICE's health and
+                 not the player's, so it empties as things go WELL — `--fill` says which way to read it.
+                 A <div>, like every other fill: an inline <span> has no height and draws nothing. --}}
+            <div class="meter meter--lg" style="--v:{{ round($run->ice_integrity / max(1, $ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
+                <div class="meter__fill"></div>
+            </div>
+        @elseif ($sentries === [])
+            <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.ice_none') }}</p>
+        @endif
+    </div>
+</div>
+
+</div>
+<aside class="map-side">
+{{-- THE ONLY SCREEN A PLAYER IN A RUN CAN REACH.
+
+     EnsureRunIsFinished sends every other request here, which is what replaces
+     atomicity: signing out does not end a run, it postpones a turn. So this
+     page has to be able to stand alone — there is no rail out of it, and the
+     only way off it is to finish what was started. --}}
+<details class="panel panel--snug" style="margin-top:var(--s-4)" open data-remember="run-overview">
+    <summary class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.heading') }}</h2>
+        <div class="spacer"></div>
+        {{-- Where the run has got to, and the one number to watch: large, and green because it is
+             progress rather than danger (the trace below is the danger). --}}
+        <span class="num" style="font-size:var(--fs-xl);line-height:1;color:var(--ok)">{{ Text::get('cyberspace.run.turn', ['turn' => $run->turn]) }}</span>
+    </summary>
+
+    {{-- The target, drawn from the RUN and not from the system: the row carries the address and the
+         position it went in at, so a system that has since moved does not change what this run was
+         against. --}}
+    <div style="padding:var(--s-3) 0">
+        <div class="card__stats" style="padding:0;border:0">
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.coordinates') }}</span>
+                <b class="num">{{ $run->position() }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.address') }}</span>
+                <b><x-address :address="$run->address" /></b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.type') }}</span>
+                <b>{{ $system?->type->label() ?? '—' }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.name') }}</span>
+                @if ($system)
+                    {{-- The one long value, in a narrow column: it wraps, right-aligned. --}}
+                    <b style="white-space:normal;text-align:right;min-width:0">{{ $system->displayName() }}</b>
+                @else
+                    {{-- Burned or relocated out from under them. Nothing here cancels the run — that is
+                         the simulator's, and it is why the row carries an address rather than a foreign key. --}}
+                    <span class="tag tag--warn">{{ Text::get('cyberspace.run.ended.cancelled') }}</span>
+                @endif
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.run_type') }}</span>
+                <b>{{ $run->purpose->label() }}@if ($run->backdoorKind()) · {{ $run->backdoorKind()->label() }}@endif</b>
+            </div>
+            {{-- THIS CHARACTER'S STANDING INSTRUCTIONS, set once from the map. Zero is off. --}}
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.threshold_trace') }}</span>
+                <b class="num">{{ $character->egress_trace_at > 0 ? $character->egress_trace_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.threshold_si') }}</span>
+                <b class="num">{{ $character->egress_si_at > 0 ? $character->egress_si_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
+            </div>
+        </div>
+    </div>
+</details>
+
+{{-- THE TRACE, AND THE ONE QUESTION IT ANSWERS: is it time to leave.
+
+     Drawn as the chain it actually is — the machine at one end, you at the
+     other, and every backdoored relay routed through in between. Routing is not
+     built, so today that chain is two nodes; the widget draws a chain rather
+     than a pair precisely so it will not have to change when hops arrive. --}}
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.trace') }}</h2>
+        <div class="spacer"></div>
+        @if ($run->trace >= 100)
+            <span class="tag tag--crit">{{ Text::get('cyberspace.run.trace_done') }}</span>
+        @elseif ($turnsLeft !== null)
+            <span class="micro num">{{ Text::plural('cyberspace.run.trace_turns', $turnsLeft, ['count' => $turnsLeft]) }}</span>
+        @endif
+    </div>
+
+    <div style="padding:0 var(--s-2)">
+        @if ($run->traceRate() > 0 || $run->trace > 0)
+            @php($chain = $run->traceChain())
+
+            <div class="trace" style="--v:{{ round($run->trace / 100, 3) }}">
+                @foreach ($chain as $node)
+                    <span class="trace__node trace__node--{{ $node['kind'] }} @if ($node['passed']) trace__node--passed @endif"
+                          @if ($node['label']) title="{{ $node['label'] }}" @endif>
+                        {{ $node['kind'] === 'you' ? '◉' : ($node['gone'] ? '◌' : '◇') }}
+                    </span>
+                @endforeach
+            </div>
+
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-3)">
+                <span class="num">{{ $run->trace }}%</span>
+                @if ($run->traceRate() > 0) · +{{ $run->traceRate() }}% a turn @endif
+            </p>
+        @else
+            <p class="micro" style="color:var(--ink-2);padding:var(--s-3) 0;margin:0">
+                {{ Text::get('cyberspace.run.trace_none') }}
+            </p>
+        @endif
+    </div>
+</div>
+
 {{-- THE ACCOUNT. A run is something a player watches happen, and the page is
      read from the top after every turn, so the log is NEWEST FIRST: the answer
      to the turn just taken is where the eye already is, and nobody scrolls
@@ -404,11 +639,14 @@
         <div class="panel__hd"><h2>{{ Text::get('cyberspace.run.log_heading') }}</h2></div>
 
         <div style="padding:var(--s-3) 0" data-log-watch="{{ $run->id }}" data-log-count="{{ count($run->log) }}">
+            @php($shownTurn = null)
             @foreach (array_reverse($run->log) as $line)
+                {{-- Each turn opens with a rule naming it (newest first, so it heads its own lines). --}}
+                @if (isset($line['turn']) && $line['turn'] !== $shownTurn)
+                    @php($shownTurn = $line['turn'])
+                    <div class="rule rule--center">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</div>
+                @endif
                 <p class="micro" data-log-index="{{ $loop->count - $loop->iteration }}" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
-                    @if (isset($line['turn']))
-                        <span class="tag tag--quiet">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
-                    @endif
                     {{-- A line may carry a tag naming who did it ("ICE VII lands a code payload…"), and
                          words before it ("Your [icebreaker] finds…"). The tag's colour is stored with it:
                          `crit` for the ICE hitting you (also what a line from before the colour was kept
@@ -438,5 +676,9 @@
         </div>
     </div>
 @endif
+
+</aside>
+</div>
+</div>
 
 @endsection

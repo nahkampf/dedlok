@@ -51,6 +51,10 @@ final readonly class EgressReport
         public ?int $snareLevel,
         public float $multiplier,
         public float $chance,
+        // Leaving by a maintenance port: gradeDifficulty is then the grade below's.
+        public bool $port = false,
+        // Leaving by an Egress Tunnel of this strength (0: none): gradeDifficulty is the grade below's, less it.
+        public int $tunnel = 0,
     ) {}
 
     /** The chance as whole per cent, which is the only form a screen ever wants. */

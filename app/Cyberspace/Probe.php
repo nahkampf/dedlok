@@ -8,6 +8,7 @@ use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Characters\Fatigue;
 use App\Checks\CheckRoller;
+use App\Cyberspace\Tree\RunTree;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\System;
@@ -520,6 +521,8 @@ final class Probe
             'x' => $system->x,
             'y' => $system->y,
             'passes' => 0,
+            // Whether there is a run tree to read, decided when the file is made: NULL is "none" (see the column).
+            'tree' => RunTree::appliesTo($system) ? 0 : null,
             'scanned_at' => CarbonImmutable::now(),
             'expires_at' => CarbonImmutable::now()->addHours($this->lifetimeHours),
         ]);
@@ -697,6 +700,10 @@ final class Probe
                 // the same: the day it becomes readable, this is a pointed
                 // failure naming the one place to write the read, rather than
                 // an UnhandledMatchError from a match that quietly fell short.
+                // The tree comes from the address, so the file records only how far into it the read has got.
+                'layout' => $scan->tree = 1,
+                'nodes' => $scan->tree = 2,
+                'traps' => $scan->tree = 3,
                 'cloaked' => throw new \LogicException(
                     'ScanFact::Cloaked became discoverable with no read behind it.'
                 ),

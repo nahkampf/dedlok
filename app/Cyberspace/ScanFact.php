@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Cyberspace\Tree\NodeKind;
+use App\Cyberspace\Tree\RunTree;
 use App\Models\Ice;
+use App\Models\System;
 use App\Models\SystemScan;
 use App\Support\Text;
 
@@ -35,6 +38,11 @@ enum ScanFact: string
     case Ice = 'ice';
     case Tracer = 'tracer';
     case Cloaked = 'cloaked';
+    // The run tree (docs/RUN_TREE.md): its shape, then what every node is. Only on a scan of a system that walks one.
+    case Layout = 'layout';
+    case Nodes = 'nodes';
+    // Phase 3: where the traps are, and what each does. Read after the Nodes.
+    case Traps = 'traps';
 
     /**
      * Can a scan find this out today?
@@ -46,8 +54,37 @@ enum ScanFact: string
     public function isDiscoverable(): bool
     {
         return match ($this) {
-            self::Grade, self::OperatingSystem, self::Ids, self::Tracer, self::Ice => true,
+            self::Grade, self::OperatingSystem, self::Ids, self::Tracer, self::Ice, self::Layout, self::Nodes, self::Traps => true,
             self::Cloaked => false,
+        };
+    }
+
+    /**
+     * Is this a question about THIS system at all?
+     *
+     * Only the tree facts can say no: a system that walks no tree (`system_scans.tree` NULL), or any system while
+     * `intrusion_runs_v2` is off, has no Layout and no Nodes to read, so neither is listed, rolled, or missing from a
+     * complete file.
+     */
+    public function appliesTo(SystemScan $scan): bool
+    {
+        return match ($this) {
+            self::Layout, self::Nodes, self::Traps => (bool) config('features.intrusion_runs_v2') && $scan->tree !== null,
+            default => true,
+        };
+    }
+
+    /**
+     * Can a pass roll for this yet? The tree is read in order, one fact a pass at most: the Layout once the Grade is
+     * known (the shape gives the grade away), the Nodes once the Layout is.
+     */
+    public function isReadyOn(SystemScan $scan): bool
+    {
+        return match ($this) {
+            self::Layout => self::Grade->isKnownOn($scan),
+            self::Nodes => self::Layout->isKnownOn($scan),
+            self::Traps => self::Nodes->isKnownOn($scan),
+            default => true,
         };
     }
 
@@ -76,7 +113,9 @@ enum ScanFact: string
             self::Ice => $scan->ice_level !== null,
             // Learned only by seeing through a Cloak; a scan whose disguise held never learns there was one.
             self::Cloaked => $scan->cloak_broken === true,
-            default => false,
+            self::Layout => $scan->tree >= 1,
+            self::Nodes => $scan->tree >= 2,
+            self::Traps => $scan->tree >= 3,
         };
     }
 
@@ -113,8 +152,41 @@ enum ScanFact: string
                 ? self::iceWithBounty($scan)
                 : Text::get('cyberspace.reading.none'),
             self::Cloaked => Text::get('cyberspace.reading.cloak_seen'),
-            default => null,
+            self::Layout, self::Nodes, self::Traps => self::treeReading($this, $scan),
         };
+    }
+
+    /**
+     * The tree's counts. Drawn from the system at the address now, since a tree is never stored; a system that has
+     * moved on took its tree with it.
+     */
+    private static function treeReading(self $fact, SystemScan $scan): string
+    {
+        $system = System::query()->where('address', $scan->address)->first();
+
+        if ($system === null) {
+            return Text::get('cyberspace.reading.unread');
+        }
+
+        $tree = RunTree::of($system);
+
+        if ($fact === self::Layout) {
+            return Text::get('cyberspace.reading.layout', [
+                'paths' => Text::plural('cyberspace.reading.paths', count(array_unique(array_filter(array_column($tree->nodes, 'path'))))),
+                'moves' => Text::plural('cyberspace.reading.moves', (int) $tree->distance($tree->entry, $tree->core)),
+            ]);
+        }
+
+        if ($fact === self::Traps) {
+            $traps = $tree->nodesOf(NodeKind::Trap);
+
+            return Text::plural('cyberspace.reading.traps', count($traps), [
+                'effects' => implode(', ', array_map(static fn (int $n): string => $tree->nodes[$n]['trap']->label(), $traps)),
+            ]);
+        }
+
+        // A count; the tag opens the breakdown by kind (TreeView::kindCounts(), the #nodes-view modal).
+        return Text::plural('cyberspace.reading.node_count', count($tree->nodes));
     }
 
     /**

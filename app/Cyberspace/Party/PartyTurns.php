@@ -9,6 +9,7 @@ use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
+use App\Cyberspace\Tree\RunTree;
 use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
 use App\Models\Character;
@@ -76,9 +77,9 @@ final class PartyTurns
     }
 
     /** Record a runner's choice, then resolve the round if it is complete or overdue. */
-    public function submit(Run $run, RunAction $action): void
+    public function submit(Run $run, RunAction $action, ?int $node = null): void
     {
-        $run->forceFill(['pending_action' => $action->value])->save();
+        $run->forceFill(['pending_action' => $action->value, 'pending_node' => $node, 'acted_at' => now()])->save();
 
         $this->settle((int) $run->run_party_id);
     }
@@ -152,18 +153,20 @@ final class PartyTurns
                 ? RunAction::from($run->pending_action)
                 : $this->defaultFor($character, $run);
 
-            $run->forceFill(['pending_action' => null])->save();
+            $node = $run->pending_node;
+            $run->forceFill(['pending_action' => null, 'pending_node' => null])->save();
 
-            $result = $this->simulator->take($character, $run, $action, iceStrikes: false);
+            $result = $this->simulator->take($character, $run, $action, iceStrikes: false, node: $node);
 
             $this->afterTurn($character, $run, $result->ended() ? $result->ending : null);
             $this->syncShared(self::liveRuns($party->getKey()), $run);
         }
 
-        // A backdoor that has landed is the job done: nothing is left to do inside, so everybody finishes together.
+        // A backdoor that has landed is the job done: nothing is left to do inside, so everybody finishes together. Not on
+        // a tree run, where leaving takes an exit (docs/RUN_TREE.md): each runner still walks out, Completed when they do.
         $live = self::liveRuns($party->getKey());
 
-        if ($live->contains(fn (Run $r): bool => (bool) $r->backdoored)) {
+        if ($live->contains(fn (Run $r): bool => (bool) $r->backdoored && ! $r->isTreeRun())) {
             foreach ($live as $run) {
                 $character = Character::query()->find($run->character_id);
 
@@ -183,7 +186,9 @@ final class PartyTurns
             return;
         }
 
+        $this->trace($party);
         $this->strike($party);
+        $this->sentries($party);
 
         $party->update(['round_started_at' => now()]);
     }
@@ -207,7 +212,7 @@ final class PartyTurns
             $live->each(fn (Run $r) => $r->forceFill(['pressure' => $pressure])->save());
 
             // Out of time: the node shakes the whole party off.
-            if ((int) $live->max('turn') >= (int) config('cyberspace.denial.turns', 12)) {
+            if ((int) $live->max(fn (Run $r): int => $r->floodedTurns()) >= (int) config('cyberspace.denial.turns', 12)) {
                 foreach ($live as $run) {
                     $character = Character::query()->find($run->character_id);
 
@@ -245,7 +250,8 @@ final class PartyTurns
     /** The ICE's one strike of the round. */
     private function strike(RunParty $party): void
     {
-        $live = self::liveRuns($party->getKey());
+        // On a tree run the ICE stands on the core: it chooses among the runners there, and hits nobody when none is.
+        $live = self::liveRuns($party->getKey())->filter(fn (Run $r): bool => $r->iceReachesHere())->values();
         $struck = $live->filter(fn (Run $r): bool => $r->ice_id !== null);
 
         if ($struck->isEmpty()) {
@@ -261,6 +267,68 @@ final class PartyTurns
 
         $ending = $this->simulator->strikeIce($character, $target->refresh());
         $this->afterTurn($character, $target, $ending);
+    }
+
+    /**
+     * A tree run's ONE trace (docs/RUN_TREE.md): the party comes in over one network, so it has one meter, started by
+     * anybody being picked up and advanced once a round. The hop rolls are the network's runner's (their routing
+     * skills), else the first runner's; what it says, every runner hears.
+     */
+    private function trace(RunParty $party): void
+    {
+        $live = self::liveRuns($party->getKey())->filter(fn (Run $r): bool => $r->isTreeRun())->values();
+
+        if ($live->isEmpty()) {
+            return;
+        }
+
+        $lead = $live->first();
+        $lead->forceFill([
+            'detected' => $live->contains(fn (Run $r): bool => (bool) $r->detected),
+            'trace' => (int) $live->max('trace'),
+            'trace_hop' => (int) $live->max('trace_hop'),
+        ]);
+        $network = Character::query()->find($party->chain_character_id) ?? Character::query()->find($lead->character_id);
+        $lines = $network === null ? [] : $this->simulator->advanceTrace($network, $lead);
+        $lead->save();
+
+        foreach ($live as $run) {
+            if (! $run->is($lead)) {
+                $run->forceFill(['detected' => $lead->detected, 'trace' => $lead->trace, 'trace_hop' => $lead->trace_hop])->save();
+            }
+        }
+
+        // The party's log is one account (Simulator::appendLog writes every runner's): once.
+        if ($lines !== []) {
+            $this->simulator->appendLog($lead->refresh(), $lines);
+        }
+    }
+
+    /** The sentries' one turn of the round (docs/RUN_TREE.md): each hunts, moves and strikes, and every runner it hit hears of it. */
+    private function sentries(RunParty $party): void
+    {
+        $live = self::liveRuns($party->getKey())->filter(fn (Run $r): bool => $r->isTreeRun())->values();
+
+        if ($live->isEmpty()) {
+            return;
+        }
+
+        $actor = $live->first();
+        $results = $this->simulator->sentriesAct($live, $actor);
+        // The actor carries the party's sentries, controller and any node a Cordon cut; the others were written alongside.
+        $actor->save();
+
+        foreach ($results as $runId => [$lines, $ending]) {
+            $run = $live->first(fn (Run $r): bool => $r->getKey() === $runId);
+            $character = $run === null ? null : Character::query()->find($run->character_id);
+
+            if ($run === null || $character === null) {
+                continue;
+            }
+
+            $this->simulator->appendLog($run->refresh(), $lines);
+            $this->afterTurn($character, $run, $ending);
+        }
     }
 
     /**
@@ -304,6 +372,24 @@ final class PartyTurns
     /** What an absent runner does: their own purpose, carried on, and out once it is done. */
     private function defaultFor(Character $character, Run $run): RunAction
     {
+        // A tree run: today's rule where it fits, which is on the core (a Flood on the entry); anywhere else, a Hold.
+        if ($run->isTreeRun()) {
+            $system = $run->system();
+            $tree = $system === null ? null : RunTree::of($system);
+
+            if ($tree === null) {
+                return RunAction::Hold;
+            }
+
+            if ($run->purpose === RunPurpose::Denial) {
+                return (int) $run->node === $tree->entry ? RunAction::Flood : RunAction::Hold;
+            }
+
+            if ((int) $run->node !== $tree->core) {
+                return RunAction::Hold;
+            }
+        }
+
         if ($run->purpose === RunPurpose::Denial) {
             return RunAction::Flood;
         }
@@ -320,8 +406,9 @@ final class PartyTurns
             return RunAction::Extract;
         }
 
+        // Never an automatic egress on a tree run: that needs the entry.
         if ($run->extracted || $run->backdoored) {
-            return RunAction::Egress;
+            return $run->isTreeRun() ? RunAction::Hold : RunAction::Egress;
         }
 
         return match ($run->purpose) {
@@ -346,6 +433,8 @@ final class PartyTurns
         }
 
         $detected = $runs->contains(fn (Run $r): bool => (bool) $r->detected);
+        // On a tree run the trace is the party's too (one network, one meter: PartyTurns::trace), and so is the alert.
+        $alerted = $runs->contains(fn (Run $r): bool => (bool) $r->alerted);
         $ice = $runs->filter(fn (Run $r): bool => $r->ice_id !== null)->sortBy('ice_integrity')->first();
         // A Denial meter is the node's, one for the party: the run that just acted carries it, else the highest.
         $pressure = $from !== null && $from->purpose === RunPurpose::Denial ? (float) $from->fresh()?->pressure : (float) $runs->max('pressure');
@@ -355,11 +444,14 @@ final class PartyTurns
 
         foreach ($runs as $run) {
             $run->forceFill([
-                'detected' => $detected,
+                'detected' => $detected || ($run->isTreeRun() && $alerted),
+                'alerted' => $alerted,
                 'pressure' => $pressure,
                 'ice_id' => $cleared ? null : $ice?->ice_id,
                 'ice_integrity' => $cleared ? null : $ice?->ice_integrity,
                 'ice_attack' => $cleared ? null : $ice?->ice_attack,
+                // A trace trap moves the one meter, wherever it went off.
+                ...($run->isTreeRun() ? ['trace' => (int) $runs->max('trace'), 'trace_hop' => (int) $runs->max('trace_hop')] : []),
             ])->save();
         }
     }

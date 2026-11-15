@@ -120,7 +120,7 @@ final readonly class Lockdown
         // The counter is read here rather than acted on: the raid ledger says
         // whether the books are spent, and shutting is this class's answer to
         // that — which is what took an immediate relocation out of the ledger.
-        if (! $run->detected && ! $this->raids->isSpent($system)) {
+        if (! $run->noticed() && ! $this->raids->isSpent($system)) {
             return false;
         }
 

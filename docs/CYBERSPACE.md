@@ -1042,6 +1042,9 @@ not to invite just anyone** — an eleventh runner who is bad at this costs the
 whole party more than they bring, which is what makes a party a thing you
 assemble rather than a queue you join.
 
+**On a run tree (`docs/RUN_TREE.md`, behind `intrusion_runs_v2`) this is replaced: the crew comes in over one network the
+owner picks and shares one trace.** Elsewhere, as below.
+
 **The trace runs for every runner, separately.** One meter each, advancing on the
 same clock — so an egress threshold is your own, a completed trace lands on you
 and not on the party, and the routing chain it burns is the chain *you* came in

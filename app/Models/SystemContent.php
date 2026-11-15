@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * extraction is the run, and the run is phase 5.
  */
 #[Fillable([
-    'system_id', 'kind', 'amount', 'item_id', 'quantity',
+    'system_id', 'node', 'kind', 'amount', 'item_id', 'quantity',
     'label', 'size_qb', 'encryption_skill_id', 'value_sealed', 'value_broken', 'area_id', 'deposited_by', 'meta', 'for_character_id', 'mission_id',
 ])]
 class SystemContent extends Model

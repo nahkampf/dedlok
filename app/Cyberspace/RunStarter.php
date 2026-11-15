@@ -7,13 +7,17 @@ namespace App\Cyberspace;
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Cyberspace\Party\Parties;
+use App\Cyberspace\Tree\NodeKind;
+use App\Cyberspace\Tree\RunTree;
 use App\Decks\DeckTotals;
 use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Run;
+use App\Models\RunParty;
 use App\Models\System;
+use App\Models\SystemScan;
 use App\Programs\ProcessRefused;
 use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
@@ -78,9 +82,10 @@ final readonly class RunStarter
      *
      * @param  iterable<InventoryItem>  $loadout
      */
-    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = []): RunResult
+    /** `$atEntry`: a runner holding a backdoor on a tree run's system starts at the entry rather than the core. */
+    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = [], bool $atEntry = false): RunResult
     {
-        return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout, $partyId, $suspend), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
+        return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout, $partyId, $suspend, $atEntry), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
     }
 
     /** Already in a run, hunted or fighting: the three things that come before everything else. THE one list, for the screen as much as for the start. */
@@ -105,7 +110,7 @@ final readonly class RunStarter
         return $deck !== null && DeckTotals::forCharacter($character, $deck, $this->resolver)->isReady();
     }
 
-    private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = []): RunResult
+    private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = [], bool $atEntry = false): RunResult
     {
         if (($blocked = $this->occupied($character)) !== null) {
             return RunResult::refused($blocked);
@@ -152,7 +157,7 @@ final readonly class RunStarter
         }
 
         try {
-            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout, $partyId, $suspend): ?Run {
+            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout, $partyId, $suspend, $atEntry): ?Run {
                 // The check at the top read a model that may be stale: ask the row, locked, so two presses make one run.
                 if (Character::query()->whereKey($character->getKey())->lockForUpdate()->value('current_run_id') !== null) {
                     return null;
@@ -173,7 +178,35 @@ final readonly class RunStarter
                     }
                 }
 
+                // A tree run (docs/RUN_TREE.md) starts on the entry, knowing it, with an empty noise bar; somebody holding a
+                // backdoor here comes in at the maintenance port instead (the core without one), unless they chose the
+                // entry. Decided here, once.
+                $tree = RunTree::appliesTo($system) ? RunTree::of($system) : null;
+                $start = $tree === null ? null
+                    : ((new Backdoors)->heldOn($character, $system) !== null && ! $atEntry ? $tree->backdoorStart() : $tree->entry);
+
+                // What the runner's own scan read of the tree: the Layout shows the whole shape, the Nodes every node.
+                // Their party's runs are read together (Run::knownNodes(), Run::mapped()), so the best scan in a party
+                // is what everybody sees.
+                $read = $tree === null ? 0 : (int) SystemScan::query()->where('character_id', $character->getKey())
+                    ->where('address', $system->address)->live()->value('tree');
+
                 $run = Run::query()->create([
+                    ...($tree === null ? [] : [
+                        'node' => $start,
+                        'known' => $read >= 2 ? array_keys($tree->nodes) : [$start],
+                        'mapped' => $read >= 1,
+                        // A scan that read the Traps knows every one of them.
+                        'traps' => $read >= 3 ? array_fill_keys($tree->nodesOf(NodeKind::Trap), 'found') : null,
+                        // The tree's sentries, as the party already has them (one set for everybody), or fresh at their posts.
+                        'sentries' => ($partyId === null ? null : Run::query()->live()->where('run_party_id', $partyId)->whereNotNull('sentries')->first()?->sentries)
+                            ?? Simulator::postedSentries($system, $tree),
+                        // An ICE controller waits for the alert (the party's, if it has one).
+                        'controller' => $tree->nodesOf(NodeKind::Controller) === [] ? null
+                            : (($partyId === null ? null : Run::query()->live()->where('run_party_id', $partyId)->whereNotNull('controller')->first()?->controller)
+                                ?? ['ticks' => 0, 'spawned' => 0, 'down' => false]),
+                        'noise' => 0,
+                    ]),
                     'character_id' => $character->getKey(),
                     'run_party_id' => $partyId,
                     'address' => $system->address,
@@ -192,8 +225,12 @@ final readonly class RunStarter
                      * best first". The setup screen shows the same list this
                      * writes, so what a player was shown is what they got.
                      */
-                    'chain' => ChainBuilder::fromConfig($this->resolver)
-                        ->for($character, $system)
+                    // A party on a tree run comes in over ONE network, the runner's the owner picked (none, if none).
+                    'chain' => ($tree !== null && $partyId !== null
+                        ? (($picked = Character::query()->find(RunParty::query()->whereKey($partyId)->value('chain_character_id'))) === null
+                            ? collect()
+                            : ChainBuilder::fromConfig($this->resolver)->for($picked, $system))
+                        : ChainBuilder::fromConfig($this->resolver)->for($character, $system))
                         ->map(static fn (System $hop): int => (int) $hop->getKey())
                         ->all(),
                     // Only a backdoor run carries one, so an extraction cannot end
@@ -280,6 +317,12 @@ final readonly class RunStarter
                 $character->forceFill(['current_run_id' => null])->save();
             }
 
+            // A Loopback or an Egress Tunnel still holding is spent with the run.
+            if ($run->loopback !== null || $run->tunnel !== null) {
+                InventoryItem::query()->whereKey(array_filter([$run->loopback, $run->tunnel]))->delete();
+                $run->forceFill(['loopback' => null, 'tunnel' => null])->save();
+            }
+
             // Nothing run-only outlives the run that started it.
             app(ProgramRunner::class)->stopRunOnly($character);
             app(ProgramRunner::class)->resumeSuspended($character);
@@ -326,7 +369,7 @@ final readonly class RunStarter
             }
 
             // AGITATE: the ICE was woken (the run was noticed), the runner got out, and the machine shut for it.
-            if ($shut && $run->detected && in_array($ending, [RunEnding::Egress, RunEnding::Completed], true)) {
+            if ($shut && $run->noticed() && in_array($ending, [RunEnding::Egress, RunEnding::Completed, RunEnding::Jackout], true)) {
                 $woken = System::query()->where('address', $run->address)->first();
 
                 if ($woken !== null && $woken->ice_id !== null) {

@@ -36,6 +36,14 @@ class RunPartyController extends Controller
         return $this->back($parties->options($this->character($request), $credits, $extraction));
     }
 
+    /** The owner picks whose trace network a tree run's party comes in over: a runner's id, or empty for none. */
+    public function network(Request $request, Parties $parties): RedirectResponse
+    {
+        $data = $request->validate(['network' => ['nullable', 'integer']]);
+
+        return $this->back($parties->network($this->character($request), isset($data['network']) ? (int) $data['network'] : null));
+    }
+
     public function invite(Request $request, Parties $parties): RedirectResponse
     {
         $data = $request->validate(['handle' => ['required', 'string', 'max:40']]);
@@ -52,6 +60,7 @@ class RunPartyController extends Controller
             'programs' => ['nullable', 'array', 'max:20'], 'programs.*' => ['integer', 'distinct'],
             'scripts' => ['nullable', 'array', 'max:20'], 'scripts.*' => ['integer', 'distinct'],
             'suspend' => ['nullable', 'array', 'max:50'], 'suspend.*' => ['integer', 'distinct'],
+            'start_at' => ['nullable', Rule::in(['core', 'entry'])],
         ]);
 
         $ids = array_values(array_unique(array_map('intval', array_filter([
@@ -66,7 +75,7 @@ class RunPartyController extends Controller
             return redirect()->route('run.setup')->with('error', Text::get('cyberspace.party.refused.loadout_wont_run', ['reason' => $why]));
         }
 
-        return $this->back($parties->accept($character, $ids, $suspend));
+        return $this->back($parties->accept($character, $ids, $suspend, isset($data['start_at']) ? $data['start_at'] === 'entry' : null));
     }
 
     /** Accept by id, from a `run:<id>` link in chat; only for somebody invited. JSON for the page's script, a redirect otherwise. */

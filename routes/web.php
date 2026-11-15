@@ -30,6 +30,7 @@ use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DecryptionController;
 use App\Http\Controllers\DiscordInviteController;
+use App\Http\Controllers\DocsController;
 use App\Http\Controllers\EncounterController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExchangeController;
@@ -73,6 +74,9 @@ Route::get('/', HomeController::class)->name('home');
 Route::post('/kofi_webhook', KofiWebhookController::class)->name('kofi.webhook');
 
 Route::get('/supporters', [SupportersController::class, 'index'])->name('supporters.index');
+
+// The Markdown reader: /docs/<name>.md is rewritten here (public/.htaccess). Only plain names directly in public/docs.
+Route::get('/docs/{file}', [DocsController::class, 'show'])->where('file', DocsController::NAME)->name('docs.show');
 
 // The whole pool in one response; the client randomises locally so repeated
 // presses cost no requests at all. Read-only, so GET and no CSRF. Still
@@ -175,6 +179,7 @@ Route::middleware('auth')->group(function () {
 
     // A text file an encounter left, as the fragment the reader dialog fetches (ui-kit.js `data-listing`).
     Route::get('/inventory/{entry}/text', [InventoryController::class, 'text'])->name('inventory.text');
+    Route::get('/inventory/{entry}/tree', [InventoryController::class, 'tree'])->name('inventory.tree');
 
     // Decryption: queue a file to be broken, or take one out. Startable while jacked in; the file being worked on
     // cannot be called off from in there. See App\Decryption\DecryptionQueue.
@@ -301,6 +306,7 @@ Route::middleware('auth')->group(function () {
     // because it reads — and it settles a matured pass on the way past, which
     // is the same lazy catch-up the map does rather than a write of its own.
     Route::get('/cyberspace/reading', [CyberspaceController::class, 'reading'])->name('cyberspace.reading');
+    Route::get('/cyberspace/tree', [CyberspaceController::class, 'tree'])->name('cyberspace.tree');
 
     // The two standing instructions. A play style rather than a per-run
     // choice, so they are saved from the map and never from inside a run.
@@ -356,6 +362,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/run/party/loadout', [RunPartyController::class, 'loadout'])->name('run.party.loadout');
     Route::post('/run/party', [RunPartyController::class, 'open'])->name('run.party.open');
     Route::post('/run/party/options', [RunPartyController::class, 'options'])->name('run.party.options');
+    Route::post('/run/party/network', [RunPartyController::class, 'network'])->name('run.party.network');
     Route::post('/run/party/invite', [RunPartyController::class, 'invite'])->name('run.party.invite');
     Route::post('/run/party/{party}/join', [RunPartyController::class, 'join'])->name('run.party.join');
     Route::post('/run/party/accept', [RunPartyController::class, 'accept'])->name('run.party.accept');

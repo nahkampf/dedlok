@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Cyberspace\Tree\NodeKind;
+use App\Cyberspace\Tree\RunTree;
 use App\Market\Rarity;
 use App\Models\Item;
 use App\Models\LootTable;
@@ -85,8 +87,9 @@ final class NodeStocker
 
         System::query()
             ->whereNotIn('type', [SystemType::Portal->value, SystemType::Fortress->value, SystemType::Gateway->value])
-            // A job file seeded for one runner is not stock: an emptied system still restocks.
-            ->whereDoesntHave('contents', fn ($query) => $query->whereNull('mission_id'))
+            // A job file seeded for one runner is not stock: an emptied system still restocks. Nor is a data vault's
+            // loot (`node`): the core restocks when the CORE is empty, each vault on its own below.
+            ->whereDoesntHave('contents', fn ($query) => $query->whereNull('mission_id')->whereNull('node'))
             ->chunkById(self::CHUNK, function ($systems) use ($result, $encryption, $items, $dryRun): void {
                 $rows = [];
 
@@ -105,7 +108,81 @@ final class NodeStocker
                 }
             });
 
+        $this->stockVaults($result, $encryption, $items, $dryRun);
+
         return $result;
+    }
+
+    /**
+     * DATA VAULTS (docs/RUN_TREE.md), only for systems whose runs walk a tree, so with the flag off the world's loot is
+     * exactly what it was. Each empty vault rolls the core's table at about a third: a third of the creds, and each file
+     * or item kept one time in three.
+     *
+     * @param  array<string, int>  $encryption
+     * @param  array<string, list<int>>  $items
+     */
+    private function stockVaults(NodeStockResult $result, array $encryption, array $items, bool $dryRun): void
+    {
+        if (! config('features.intrusion_runs_v2')) {
+            return;
+        }
+
+        System::query()
+            ->where('grid_id', 1)
+            ->whereNull('owner_character_id')
+            ->whereIn('type', [SystemType::Silo->value, SystemType::Compute->value, SystemType::Relay->value])
+            ->chunkById(self::CHUNK, function ($systems) use ($result, $encryption, $items, $dryRun): void {
+                $stocked = SystemContent::query()->whereIn('system_id', $systems->modelKeys())->whereNotNull('node')
+                    ->get(['system_id', 'node'])->groupBy('system_id')->map(fn ($rows) => $rows->pluck('node')->map('intval')->all());
+                $rows = [];
+
+                foreach ($systems as $system) {
+                    if (! RunTree::appliesTo($system)) {
+                        continue;
+                    }
+
+                    $tree = RunTree::of($system);
+
+                    foreach ($tree->nodesOf(NodeKind::Vault) as $vault) {
+                        // A honeypot's bait is the look of a vault: it holds nothing.
+                        if ($tree->isHoneypot($vault) || in_array($vault, $stocked[$system->getKey()] ?? [], true)) {
+                            continue;
+                        }
+
+                        $contents = $this->vaultContents($this->contentsFor($system, $encryption, $items));
+                        $result->record($system, $contents);
+
+                        foreach ($contents as $content) {
+                            $rows[] = self::row($content + ['node' => $vault], (int) $system->getKey());
+                        }
+                    }
+                }
+
+                if (! $dryRun && $rows !== []) {
+                    SystemContent::query()->insert($rows);
+                }
+            });
+    }
+
+    /**
+     * A core's roll cut to about a third: a third of the creds, and each other row kept one time in three.
+     *
+     * @param  list<array<string, mixed>>  $contents
+     * @return list<array<string, mixed>>
+     */
+    private function vaultContents(array $contents): array
+    {
+        $out = [];
+
+        foreach ($contents as $content) {
+            if ($content['kind'] === ContentKind::Creds->value) {
+                $out[] = ['amount' => max(1, (int) round($content['amount'] / 3))] + $content;
+            } elseif (($this->roll)(1, 3) === 1) {
+                $out[] = $content;
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -123,6 +200,7 @@ final class NodeStocker
     {
         return array_merge([
             'system_id' => $systemId,
+            'node' => null,
             'kind' => null,
             'amount' => null,
             'item_id' => null,

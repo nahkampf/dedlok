@@ -14,6 +14,7 @@ use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\ReadinessWatch;
 use App\Cyberspace\ScanImporter;
 use App\Cyberspace\ScanImportRefusal;
+use App\Cyberspace\Tree\TreeView;
 use App\Decks\FittingRefusal;
 use App\Decks\ModuleFitter;
 use App\Drugs\DrugTaker;
@@ -104,6 +105,19 @@ class InventoryController extends Controller
         abort_if($text === null, 404);
 
         return view('inventory._text', ['text' => $text]);
+    }
+
+    /** The tree modal's body for a scan file (docs/RUN_TREE.md): what it read of the system's tree, or that it is gone. */
+    public function tree(Request $request, InventoryItem $entry): View
+    {
+        abort_unless($entry->character_id === $this->character($request)->id, 404);
+        $file = $entry->scanFile();
+        abort_unless($file !== null && (int) $file->tree >= 1, 404);
+
+        return view('cyberspace._tree', [
+            'view' => TreeView::ofScan(System::query()->where('address', $file->address)->first(), $file->tree),
+            'label' => $file->displayName(),
+        ]);
     }
 
     public function read(Request $request, InventoryItem $entry, ScanImporter $importer): RedirectResponse

@@ -100,9 +100,9 @@ return [
         'register' => 'New identity',
         // The beta key, while `features.alpha_testing` is on.
         'beta' => [
-            'code' => 'Beta key',
+            'code' => 'Alpha key',
             'hint' => 'Registration is by invitation while the game is in testing. Enter the key you were given.',
-            'invalid' => 'That beta key is not valid.',
+            'invalid' => 'That alpha key is not valid.',
             'credit_name' => 'What do we call you (for credits, on the thank you page)',
         ],
         'handle' => 'Handle',
@@ -212,6 +212,11 @@ return [
             'one_locator' => 'Only one program that locates or walks may run at a time',
             'one_jumper' => 'Only one program that jumps may run at a time',
             'one_assessor' => 'Only one assessor may run at a time',
+            // A suggestion, for the user to edit. :reach is how many edges out it reveals.
+            'nmaps' => 'Nmap reveals nodes up to :reach links away.',
+            'loopback' => 'Loopback, strength :strength: stalls the trace from an internal relay.',
+            'nmap_deep' => 'Deep Nmap: one link further, and it finds traps and honeypots and reads sentries.',
+            'tunnel' => 'Egress Tunnel, strength :strength: an exit wherever you hold it.',
             'assesses' => 'Estimates your odds, rounded to :step%',
             'locates' => 'Locates: finds the nearest system you have met',
             'walks' => 'Walks: takes you to what it found',
@@ -952,6 +957,7 @@ return [
             'fortress_moved' => 'Data Fortress :system relocated',
             'fortress_burned' => 'Your fortress Kernel is burned',
             'party_dropped' => 'Left out of a co-op run',
+            'run_idle_jackout' => 'Jacked out of an idle run',
             'programs_not_resumed' => 'Processes not restarted',
             'hunt_programs_not_resumed' => 'Processes not restarted',
             'party_member_dropped' => 'Co-op run member dropped',
@@ -1025,6 +1031,7 @@ return [
             'fortress_moved' => 'The new position is :x,:y, address :address',
             'fortress_burned' => 'Your fortress Kernel was burned. Everything else on it is gone and the Kernel is Frozen for :hours hours: bring in new Leechers that can run it, or lose it.',
             'party_dropped' => ':owner started the co-op run without you. :reason',
+            'run_idle_jackout' => 'You stopped answering inside :address, so your deck pulled you out cleanly. Nothing was lost but the run.',
             'programs_not_resumed' => 'THe run is over, but these programs would not start again: :programs',
             'hunt_programs_not_resumed' => 'You were cornered by a Bloodhound program and some processes could not restart after it was resolved.',
             'party_member_dropped' => ':handle was dropped from the run. :reason',
@@ -1268,6 +1275,66 @@ return [
     |
     */
     'cyberspace' => [
+        // Run trees (docs/RUN_TREE.md). Suggestions, for the user to edit.
+        'tree' => [
+            'heading' => 'System map',
+            'alerted' => 'Alert',
+            'noise' => 'Noise',
+            'no_ids' => 'No IDS',
+            'allies' => 'crew',
+            'firewall_chance' => 'Firewall: :chance% to get through.',
+            'hub_chance' => 'Security hub: :chance% to subvert.',
+            'subverted' => 'The security hub is subverted. No alert can go off.',
+            'loopback_chance' => 'Loopback: :chance% to hold each turn.',
+            'disarm_chance' => 'Traps: :chance% to disarm.',
+            'wipe_chance' => 'Log server: :chance% to wipe the alert from the record.',
+            'wipe_quiet' => 'Log server: nothing to wipe until an alert goes off.',
+            'sentry' => 'sentry',
+            'ice' => 'ICE',
+            'barrier' => 'barrier',
+            'barrier_here' => ':name is a barrier: you cannot go on from here until it is broken (integrity :integrity).',
+            'tunnel_holding' => 'Your Egress Tunnel holds this node open as a way out, for you and your crew, while you stay.',
+            'shutdown_chance' => 'ICE controller: :chance% to shut it down.',
+            'cutting' => 'A Cordon is cutting this node: :turns turns left.',
+            'cordon_warning' => 'A Cordon is cutting a node out of the system. When the countdown runs out, the node is gone.',
+            'sentry_awake' => ':name is awake on this node and hunting (integrity :integrity).',
+            'sentry_asleep' => ':name sleeps at its post here (integrity :integrity).',
+            'trap_label' => 'Trap: :effect',
+            'honeypot_label' => 'Honeypot: :effect',
+            'sentry_fast' => 'Fast',
+            'sentry_slow' => 'Slow',
+            'sentry_cordon' => 'Cordon',
+            'trap' => [
+                'alarm' => 'Alarm',
+                'trace' => 'Trace jump',
+                'ensnare' => 'Ensnare',
+                'disconnect' => 'Node Disconnect',
+            ],
+            'loopback_holding' => 'Your Loopback holds the trace: :chance% each turn to keep it.',
+            'threshold_warn' => 'You are past one of your thresholds, and you should egress immediately.',
+            'start_heading' => 'Entrypoint',
+            'start_core' => 'Through your backdoor, at the core',
+            'start_port' => 'Through your backdoor, at the maintenance port',
+            'start_entry' => 'At the entry, like anybody else',
+            'jackout_warning' => 'Are you sure you want to pull the plug? This can cause serious neural damage!',
+            // The tree modal, opened from a scan (the scanner window, the map's Interact box, the briefing, a scan file).
+            'view' => 'View tree',
+            'gone' => 'This system has moved on, and its tree with it. The file no longer describes anything.',
+            'node' => [
+                'entry' => 'Entrypoint',
+                'switch' => 'Switch',
+                'conduit' => 'Conduit',
+                'firewall' => 'Firewall',
+                'vault' => 'Data vault',
+                'port' => 'Maintenance port',
+                'hub' => 'Security hub',
+                'relay' => 'Internal relay',
+                'trap' => 'Trap',
+                'log' => 'Log server',
+                'controller' => 'ICE controller',
+                'core' => 'Core',
+            ],
+        ],
         'run_outcome' => [
             'success' => 'Success',
             'failure' => 'Failure',
@@ -1574,6 +1641,11 @@ return [
             'copy_link' => 'Copy this run\'s id. Pasted in a private chat it invites the people there; in General it invites nobody.',
             'link' => 'Run: :address',
             'terms' => 'Credits: :credits. Extraction: :extraction.',
+            'network' => 'Trace network',
+            'network_none' => 'No network',
+            'network_option' => ':handle (:grades)',
+            'network_set' => 'Set network',
+            'network_is' => 'Trace network: :network. The whole crew comes in over it and shares one trace.',
             'share' => [
                 'even' => 'Even split',
                 'half' => '50% cut (the owner takes half)',
@@ -1718,6 +1790,9 @@ return [
                 | additionally decides a permanent property of the machine.
                 */
                 'intent' => 'Mission goal',
+                // A tree run: one Start, every action inside. Suggestions, for the user to edit.
+                'start' => 'Start the run',
+                'start_hint' => 'Go in with nothing decided. Extract, plant a backdoor, burn it or flood it from inside: whatever the system lets you.',
                 'intent_extraction' => 'Extract data',
                 'intent_siphon' => 'Install a siphon',
                 // The same button while an accepted Placement job names this system.
@@ -1761,13 +1836,17 @@ return [
             'evasion_unmodified' => 'Nothing you carry moves it.',
             'evasion_against' => 'Opposition',
             'evasion_grade' => 'Grade :grade',
+            'evasion_port' => 'Grade :grade, maintenance port',
+            'evasion_tunnel' => 'Grade :grade, Egress Tunnel :strength',
+            // The runner's open mission against this system, on the run screen.
+            'mission' => 'Mission for :entity: :action',
             'evasion_ice' => 'ICE activated, level :level',
             'evasion_ice_none' => 'Nothing activated',
             'evasion_difficulty' => 'Difficulty',
             'evasion_snare' => 'Ensnare :level',
             'evasion_snare_cost' => ':points points of chance',
             'evasion_result' => 'Evasion chance for egress',
-            'waiting' => 'Waiting for all runners to take action',
+            'waiting' => 'Waiting for crew...',
             'round_timer' => 'Default action in',
             'alone' => 'Only you remain in the run. Be careful!',
             // A party's log, told in the third person for everybody (same keys as `log`); a key missing here falls back to
@@ -1784,7 +1863,7 @@ return [
                 'ice_broken' => 'The ICE is broken. It freezes and vanishes, stuck in a crash loop.',
             ],
             'action' => [
-                'attack' => 'Continue run',
+                'attack' => 'Attack',
                 'extract' => 'Extract',
                 // Same button, same RunAction — only the label changes while
                 // runs.extracting_qb is set, so a player is never asked to
@@ -1806,6 +1885,19 @@ return [
                 'flood' => 'Flood',
                 'hold' => 'Hold',
                 'egress' => 'Egress',
+                // Run trees (docs/RUN_TREE.md). Suggestions, for the user to edit.
+                'move' => 'Move',
+                'nmap' => 'Network Map',
+                'breach' => 'Breach',
+                'subvert' => 'Subvert',
+                'loopback' => 'Loopback',
+                'disarm' => 'Disarm :trap',
+                'wipe' => 'Wipe logs',
+                'shutdown' => 'Shut down',
+                'tunnel' => 'Egress Tunnel',
+                'jackout' => 'Crash Jackout',
+                'jackout_confirm' => 'Pull the plug',
+                'jackout_cancel' => 'Stay in',
             ],
 
             /*
@@ -1827,6 +1919,53 @@ return [
                 'attack_critical' => 'finds a critical intrusion vector and drives a devastating payload through, causing :damage system integrity loss.',
                 'attack_fails' => 'You find no viable attack vectors.',
                 'hold' => 'You wait, and the system waits with you.',
+                // Run trees (docs/RUN_TREE.md). Suggestions, for the user to edit.
+                'tree' => [
+                    'move' => 'You slip down the link to the next node.',
+                    // :count is how many nodes it revealed that the runner (or their party) did not know.
+                    'nmap' => 'Your mapper sweeps the links around you. New nodes mapped: :count.',
+                    // :amount is the noise a failed stealth roll added, one decimal.
+                    'noise' => 'Something in the IDS stirs. Noise +:amount.',
+                    'alert' => 'The IDS reaches a threshold. The system is on alert.',
+                    'ice_wakes' => 'The ICE on the core turns its attention to you.',
+                    'traced' => 'A tracer catches your signal and starts walking it back.',
+                    'firewall_opens' => 'The firewall accepts you and lets you through.',
+                    'firewall_holds' => 'The firewall turns you away.',
+                    'hub_subverted' => 'The security hub takes your word for everything now. Nothing here will raise the alarm.',
+                    'hub_holds' => 'The security hub refuses you, loudly.',
+                    'loopback' => 'You wire a Loopback into the relay. The trace starts chasing its own tail.',
+                    'loopback_fails' => 'The Loopback collapses. The trace finds its way again.',
+                    'loopback_stalls' => 'The trace runs in circles through the Loopback.',
+                    // Tagged with the sentry's ICE name, like the core ICE's lines.
+                    'sentry_wakes' => 'wakes up and locks on to you.',
+                    'sentry_broken' => 'The sentry comes apart under your icebreaker.',
+                    'controller_spawns' => 'The ICE controller spins up another sentry.',
+                    'tunnel' => 'You punch an Egress Tunnel out through this node. It is a way out for as long as you hold it.',
+                    'shut_down' => 'You shut the ICE controller down. Nothing more comes out of it.',
+                    'shutdown_fails' => 'The ICE controller refuses the command, loudly.',
+                    // :node is the kind of node (a switch, an internal relay, a maintenance port); :turns the countdown.
+                    'cordon_starts' => 'A Cordon settles on a :node and starts cutting it out of the system. :turns turns until it is gone.',
+                    'cordon_cuts' => 'The Cordon finishes its cut. The :node is gone, and every link through it.',
+                    'cordon_engaged' => 'The Cordon stops cutting and turns on whoever attacked it.',
+                    'cordon_resumes' => 'With nobody left fighting it, the Cordon goes back to its cut.',
+                    'cordon_thrown' => 'The node goes out from under you. You land hard on the :node.',
+                    'wiped' => 'You scrub the alert out of the logs. As far as the record goes, nobody was ever here.',
+                    'wipe_fails' => 'The log server fights back and makes a lot of noise doing it.',
+                    'trap' => [
+                        'alarm' => 'A trap goes off and the IDS hears every bit of it.',
+                        'trace' => 'A trap throws your signal straight at the tracer.',
+                        'ensnare' => 'A trap closes around you. You are not going anywhere for now.',
+                        'disconnect' => 'The node ahead tears itself out of the system. The way through it is gone.',
+                        'honeypot' => 'The vault was bait. There is nothing in it, and something knows you reached for it.',
+                        'disarmed' => 'You take the trap apart.',
+                        'disarm_fails' => 'The trap notices you first.',
+                    ],
+                    // :damage is the Synaptic Integrity it cost.
+                    'jackout' => 'You rip the jack out. The system is gone, and so is :damage of your synaptic integrity.',
+                    'jackout_neural' => 'Your mind does not come back whole: :damage of neural damage.',
+                    'idle_jackout' => 'You stopped answering, and your deck pulled you out cleanly.',
+                    'vault_empty' => 'The vault is empty. Somebody got here first.',
+                ],
                 'egress' => 'You egress.',
                 // HELD, and one line for both reasons — the machine out-rolled
                 // them, or something in it has hold of them. Which it was is
@@ -2040,6 +2179,18 @@ return [
                 'wrong_purpose' => 'A gateway can only be infiltrated, and nothing else can.',
                 'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
                 'already_running' => 'You are already in a run.',
+                // Run trees. Suggestions, for the user to edit.
+                'not_here' => 'You cannot do that from this node.',
+                'not_a_neighbour' => 'That node is not linked to where you stand.',
+                'no_nmapper' => 'You need an Nmapper running to map the links around you.',
+                'nothing_to_map' => 'There is nothing left within your mapper\'s reach to map.',
+                'no_loopback' => 'You carry no Loopback script.',
+                'ensnared' => 'The trap still holds you.',
+                'barrier_holds' => 'Barrier ICE holds the way on. Break it before you go further.',
+                'no_tunnel' => 'You need an Egress Tunnel script and the skill to open one.',
+                'loopback_refused' => 'Your deck cannot run the Loopback right now.',
+                'tunnel_refused' => 'Your deck cannot run the Egress Tunnel right now.',
+                'firewall_closed' => 'The firewall still holds. Breach it before you go on.',
                 'hunted' => 'You are currently locked in a confrontation with another entity.',
                 'fighting' => 'You are in a fight.',
                 'program_refused' => 'Something on your loadout would not start.',
@@ -2053,6 +2204,7 @@ return [
 
             'ended' => [
                 'egress' => 'You egressed the run.',
+                'jackout' => 'You pulled the plug and are back on the grid.',
                 'defeat' => 'You were defeated.',
                 'burnout' => 'Your deck cooked a module and unsafely dropped you out of cyberspace.',
                 'ejected' => 'The ICE threw you out of the subnet. You are back at the gateway, hurt.',
@@ -2075,6 +2227,9 @@ return [
             'ice' => 'ICE',
             'tracer' => 'Tracer',
             'cloaked' => 'Cloaked systems',
+            'layout' => 'Layout',
+            'nodes' => 'Nodes',
+            'traps' => 'Traps',
         ],
 
         /*
@@ -2107,6 +2262,15 @@ return [
             */
             'none' => 'None',
             'tracer' => ':detection, tracing :rate% a turn',
+            // The run tree's two facts (docs/RUN_TREE.md), as counts; the tree itself is drawn elsewhere.
+            'layout' => ':paths, :moves to the core',
+            'layout_seen' => ':paths seen, the core not reached',
+            'traps_none_found' => 'none found yet',
+            'partial' => 'What your runs have seen, not the whole system.',
+            'paths' => ['one' => '1 path', 'many' => ':count paths'],
+            'moves' => ['one' => '1 move', 'many' => ':count moves'],
+            'node_count' => ['one' => '1 node', 'many' => ':count nodes'],
+            'traps' => ['zero' => 'no traps', 'one' => '1 trap: :effects', 'many' => ':count traps: :effects'],
 
             /*
             | The guard and the reprisal, read together. A machine whose owner
@@ -3276,6 +3440,8 @@ return [
             'standing_gain' => 'standing gained',
             'trace_hop_chance' => 'chance a trace hops',
             'ensnare_reduction' => 'ensnare time',
+            // A suggestion, for the user to edit.
+            'nmap_noise' => 'Nmap noise',
             'fortress_slots' => 'fortress slots',
             // The combat numbers (docs/COMBAT.md), named so an implant or a drug that moves one can say what
             // it changes on a card, and so the modifier picker offers them. Per weapon class, plus the
@@ -3472,6 +3638,7 @@ return [
         // entity's minutes.
         'reasons' => [
             'noticed' => 'Seen on their system',
+            'logs_wiped' => 'Wiped from their logs',
             'raided' => 'Took from their system',
             'backdoor_found' => 'Your door was found',
             'traced' => 'Traced by their system',
@@ -4545,6 +4712,11 @@ return [
     | Merged over the framework's own validation messages by the validator, so
     | only the custom rules belong here.
     */
+    // The Markdown reader for public/docs (DocsController).
+    'docs' => [
+        'download' => 'Download :file',
+    ],
+
     'validation' => [
         'modifier_target' => 'nothing in the game is called [:target], so this effect would change nothing.',
         'handle_characters' => 'Handles may use letters and digits from any alphabet, plus: :symbols',
@@ -5427,6 +5599,15 @@ return [
                 'utility_hint' => 'A Utility (kind Utility) does what is ticked while it runs: Locates finds the nearest system you have met, Walks takes you to what it found (a Pathfinder is both), Jumps puts a Jump button beside addresses. Ignored by every other kind.',
                 'assess_step' => 'Assessor step (%)',
                 'assess_step_hint' => 'Utilities only: makes this an Assessor, which shows rough odds on the run screens, rounded to this many percent (5 is the finest). Blank is not an Assessor.',
+                // Suggestions, for the user to edit.
+                'nmap_reach' => 'Nmap reach',
+                'nmap_reach_hint' => 'How many links out one Nmap reveals in a run tree. Blank is not an Nmapper.',
+                'nmap_deep' => 'Deep Nmapper',
+                'nmap_deep_hint' => 'Ticked on an Nmapper: its Nmap reaches one link further, finds traps and honeypots in reach, and names whether the sentries it sees are Fast or carry the Cordon.',
+                'tunnel_strength' => 'Egress Tunnel strength',
+                'tunnel_strength_hint' => 'A Script only. Started on any node but the core (the Egress Tunneling skill at level 1 is needed): while its runner stays, anybody in the party may egress there, against the grade below\'s difficulty less this strength, and a Cordon cannot cut it. Blank is not an Egress Tunnel.',
+                'loopback_strength' => 'Loopback strength',
+                'loopback_strength_hint' => 'A Script only. Added to the Loopback skill level in the hold roll each turn on an internal relay, against the egress difficulty of the grade (3 at grade 1 to 19 at grade 9). Blank is not a Loopback.',
                 'family' => 'Family',
                 'family_none' => 'None',
                 'family_hint' => 'Utilities only. For targeting specific subtypes of utilities with effects/modifiers',

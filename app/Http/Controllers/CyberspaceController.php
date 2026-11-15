@@ -24,12 +24,16 @@ use App\Cyberspace\Position;
 use App\Cyberspace\Probe;
 use App\Cyberspace\ScanExporter;
 use App\Cyberspace\ScanExportRefusal;
+use App\Cyberspace\ScanFact;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\SystemType;
 use App\Cyberspace\Terrain;
 use App\Cyberspace\Tracker;
 use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
+use App\Cyberspace\Tree\Explored;
+use App\Cyberspace\Tree\RunTree;
+use App\Cyberspace\Tree\TreeView;
 use App\Cyberspace\ViewShape;
 use App\Missions\MissionLedger;
 use App\Models\Bookmark;
@@ -695,6 +699,49 @@ class CyberspaceController extends Controller
             // The character, so the operating system can say whether they can
             // operate it — a fact that is also a gate.
             'facts' => $scan->facts($character),
+            // The tree modal, once the read has the Layout (docs/RUN_TREE.md).
+            'tree' => ScanFact::Layout->appliesTo($scan) && (ScanFact::Layout->isKnownOn($scan) || Explored::of($character, (string) $scan->address) !== null)
+                ? route('cyberspace.tree', ['address' => $scan->address]) : null,
+        ]);
+    }
+
+    /**
+     * The tree modal's body for a system (docs/RUN_TREE.md): what the character's live scan read of its tree, or with
+     * `party` (the briefing) the best read in the party forming here, which is what the run will start with.
+     */
+    public function tree(Request $request, Parties $parties): View
+    {
+        $character = $this->character($request);
+        $data = $request->validate(['address' => ['required', 'string', 'max:32'], 'party' => ['sometimes', 'boolean'], 'nodes' => ['sometimes', 'boolean']]);
+        $address = strtoupper($data['address']);
+
+        $readers = [$character->id];
+
+        if ($request->boolean('party')) {
+            $readers = [...$readers, ...($parties->partyOf($character)?->crew() ?? [])];
+        }
+
+        $read = SystemScan::query()->whereIn('character_id', $readers)->where('address', $address)->live()->max('tree');
+        $system = System::query()->where('address', $address)->first();
+
+        // The Nodes tag's breakdown by kind: every node once a scan has read the Nodes, else the nodes their runs saw.
+        if ($request->boolean('nodes')) {
+            $seen = (int) $read >= 2 ? null : Explored::of($character, $address);
+            abort_unless((int) $read >= 2 || $seen !== null, 404);
+
+            return view('cyberspace._nodes', [
+                'counts' => $system === null || ! RunTree::appliesTo($system) ? null : TreeView::kindCounts(RunTree::of($system), $seen),
+            ]);
+        }
+
+        // The tree as the scan read it, with what their own runs saw added (not on the briefing's party view, which is what
+        // the run starts with).
+        $seen = $request->boolean('party') ? null : Explored::of($character, $address);
+        abort_unless((int) $read >= 1 || $seen !== null, 404);
+
+        return view('cyberspace._tree', [
+            'view' => TreeView::ofScan($system, (int) $read, $seen),
+            'label' => $system?->displayName() ?? $address,
         ]);
     }
 

@@ -88,15 +88,17 @@ final readonly class Extractor
      * finished taking first sees that honestly rather than trusting a number
      * from turns ago.
      */
-    public function filesFit(Character $character, string $address): bool
+    public function filesFit(Character $character, string $address, ?int $node = null): bool
     {
-        return Storage::fits($character, $this->totalFileQb($address, $character));
+        return Storage::fits($character, $this->totalFileQb($address, $character, $node));
     }
 
-    public function totalFileQb(string $address, ?Character $for = null): float
+    /** `$node`, everywhere here: a run tree's data vault (docs/RUN_TREE.md); null is the core, which is all loot that is not in a vault. */
+    public function totalFileQb(string $address, ?Character $for = null, ?int $node = null): float
     {
         return Qb::of(SystemContent::query()
             ->whereHas('system', fn ($query) => $query->where('address', $address))
+            ->where('node', $node)
             ->visibleTo((int) $for?->getKey())
             ->ofKind(ContentKind::Data)
             ->sum('size_qb'));
@@ -111,11 +113,12 @@ final readonly class Extractor
      * hold no creds or items at all, or somebody else's raid might have
      * beaten this one to them.
      */
-    public function takeCredsAndItems(Character $character, string $address): ExtractionResult
+    public function takeCredsAndItems(Character $character, string $address, ?int $node = null): ExtractionResult
     {
-        return DB::transaction(function () use ($character, $address): ExtractionResult {
+        return DB::transaction(function () use ($character, $address, $node): ExtractionResult {
             $contents = SystemContent::query()
                 ->whereHas('system', fn ($query) => $query->where('address', $address))
+                ->where('node', $node)
                 ->whereIn('kind', [ContentKind::Creds->value, ContentKind::Item->value])
                 ->get();
 
@@ -179,12 +182,13 @@ final readonly class Extractor
      * lets somebody else's raid finish first while this one is still counting
      * down.
      */
-    public function takeFiles(Character $character, string $address): ExtractionResult
+    public function takeFiles(Character $character, string $address, ?int $node = null): ExtractionResult
     {
-        return DB::transaction(function () use ($character, $address): ExtractionResult {
+        return DB::transaction(function () use ($character, $address, $node): ExtractionResult {
             $contents = SystemContent::query()
                 ->with('system')
                 ->whereHas('system', fn ($query) => $query->where('address', $address))
+                ->where('node', $node)
                 ->visibleTo((int) $character->getKey())
                 ->ofKind(ContentKind::Data)
                 ->get();

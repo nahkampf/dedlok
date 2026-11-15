@@ -88,6 +88,36 @@ enum RunAction: string
     /** Leave. Always possible, never certain. */
     case Egress = 'egress';
 
+    /** A tree run: step along an edge to a neighbouring node (docs/RUN_TREE.md). Carries the node it goes to. */
+    case Move = 'move';
+
+    /** A tree run: reveal the nodes around you, as far as the running Nmapper reaches. */
+    case Nmap = 'nmap';
+
+    /** A tree run: breach the firewall you stand on, with its OS roll. Moving on through it is the next turn. */
+    case Breach = 'breach';
+
+    /** A tree run: subvert the security hub you stand on, with the OS roll. Landed, no alert can go off for the run. */
+    case Subvert = 'subvert';
+
+    /** A tree run: start a Loopback from the stash on the internal relay you stand on. It holds while you stay. */
+    case Loopback = 'loopback';
+
+    /** A tree run: disarm a found trap one edge away (`node`), with the OS roll. Failed, it goes off. */
+    case Disarm = 'disarm';
+
+    /** A tree run: wipe the log server you stand on, with the OS roll. An alert that already went off then leaves nothing behind. */
+    case Wipe = 'wipe';
+
+    /** A tree run: shut down the ICE controller you stand on, with the OS roll. It posts no more sentries. */
+    case Shutdown = 'shutdown';
+
+    /** A tree run: start an Egress Tunnel from the stash on the node you stand on (not the core): an exit while you stay. */
+    case Tunnel = 'tunnel';
+
+    /** A tree run: Crash Jackout. Out from anywhere, for certain, at a price in Synaptic Integrity. */
+    case Jackout = 'jackout';
+
     public function label(): string
     {
         return Text::get("cyberspace.run.action.{$this->value}");
