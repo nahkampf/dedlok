@@ -380,18 +380,21 @@ Decided 2026-11-14.
 
 - **From grade 5, a sentry carries the Cordon tag one time in three** (`RunTree::$sentries[i]['cordon']`). Awake, it
   cuts the way out instead of hunting: it takes the runner nearest it, their nearest exit (the entry or a maintenance
-  port), and on the shortest way there the internal relay, switch or maintenance port whose loss lengthens the way out
-  most, or closes it. It walks there (at its speed), then counts down two of its turns, shown on the map (the node's
+  port), and on the shortest way there the internal relay, switch, conduit or maintenance port whose loss lengthens the
+  way out most, or closes it (conduits since 2026-11-15). It walks there (at its speed), then counts down two or three
+  of its turns (rolled when it starts, decided 2026-11-15), shown on the map (the node's
   border blinks dashed ember, and ✂ with the turns left sits under it), in a warning line, and in the log naming the
   kind of node; at zero the node and its edges are gone for the party's run, as a Node Disconnect.
-  With no such node it hunts like any sentry. It never strikes.
+  With no such node it hunts like any sentry. It strikes only when engaged (below).
 - **Whoever stands on the node when the cut lands is thrown clear** (decided 2026-11-14): onto its neighbour nearest an
   exit (the entry, a maintenance port, an Egress Tunnel) as the tree is without it, told where they landed in the log.
 - **Two Cordons can cut at once.** A cut costs no standing.
 - **Breaking it with Attack stops a cut**, and so does an Egress Tunnel going up on the node.
-- **Attacked while it cuts, its countdown holds** (decided 2026-11-15): a hit marks it (`sentries[i]['hit']`), and its
-  next sentry turn holds the countdown instead of counting down, with a line in the log. One turn's pause however many
-  hit it that turn or round; it cuts on once left alone.
+- **Attacked while it cuts, it is engaged** (decided 2026-11-15): it remembers who hit it (`sentries[i]['engaged']`),
+  its countdown holds, and each of its turns it strikes one of them still on its node (the least stealthy, then at
+  random), as a sentry strikes. Broken, the cut is over. When none of its attackers is on its node any more (they left,
+  or fell), it goes back to its cut and the countdown runs on from where it held. The log says when it turns to fight
+  and when it goes back.
 
 ### Deep Nmap
 

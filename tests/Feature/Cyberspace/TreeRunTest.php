@@ -906,15 +906,15 @@ final class TreeRunTest extends TestCase
 
         $cut = $run->fresh()->cutNodes();
         $this->assertCount(1, $cut);
-        $this->assertContains($tree->nodes[$cut[0]]['kind'], [NodeKind::Relay, NodeKind::Switch, NodeKind::Port]);
+        $this->assertContains($tree->nodes[$cut[0]]['kind'], [NodeKind::Relay, NodeKind::Switch, NodeKind::Port, NodeKind::Conduit]);
         $this->assertSame($tree->core, $run->fresh()->node, 'the runner never moved');
         // The log names what it cut.
         $named = Text::get('cyberspace.tree.node.'.$tree->nodes[$cut[0]]['kind']->value);
         $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_cuts', ['node' => $named]), array_column($run->fresh()->log, 'text'));
-        $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_starts', ['node' => $named, 'turns' => 2]), array_column($run->fresh()->log, 'text'));
+        $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_starts', ['node' => $named, 'turns' => 3]), array_column($run->fresh()->log, 'text'), 'the highest roll: three turns');
     }
 
-    public function test_attacking_a_cordon_while_it_cuts_holds_its_countdown_for_a_turn(): void
+    public function test_a_cordon_attacked_while_it_cuts_fights_its_attackers_and_cuts_on_once_they_are_gone(): void
     {
         $tree = $this->grade7();
         $breaker = $this->ownedBy($this->character, Item::factory()->program(ProgramKind::Icebreaker, qflops: 0.1, memory: 0.1, storage: 0.1,
@@ -923,15 +923,24 @@ final class TreeRunTest extends TestCase
         $node = $tree->neighbours($tree->entry)[0];
         $run = $this->sentry($node, $node);
         $run->forceFill(['node' => $node, 'sentries' => [['cordon' => true, 'countdown' => 2] + $run->sentries[0]]])->save();
+        $si = (float) $this->character->fresh()->current_synaptic_integrity;
 
-        $this->assertNull($this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Attack)->refusal);
+        $this->assertNull($this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Attack)->refusal);
         $cordon = $run->fresh()->sentries[0];
-        $this->assertSame(2, $cordon['countdown'], 'hit, it held its cut');
-        $this->assertArrayNotHasKey('hit', $cordon, 'for that one turn');
-        $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_paused'), array_column($run->fresh()->log, 'text'));
+        $this->assertSame(2, $cordon['countdown'], 'engaged, its cut holds');
+        $this->assertSame([$run->id], $cordon['engaged']);
+        $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_engaged'), array_column($run->fresh()->log, 'text'));
+        $this->assertLessThan($si, (float) $this->character->fresh()->current_synaptic_integrity, 'and it fights back');
 
-        $this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
-        $this->assertSame(1, $run->fresh()->sentries[0]['countdown'], 'left alone, it cuts on');
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $this->assertSame(2, $run->fresh()->sentries[0]['countdown'], 'still fighting while its attacker stays');
+
+        // The attacker steps away: it goes back to its cut, and the countdown runs on.
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $tree->entry);
+        $cordon = $run->fresh()->sentries[0];
+        $this->assertSame(1, $cordon['countdown']);
+        $this->assertArrayNotHasKey('engaged', $cordon);
+        $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_resumes'), array_column($run->fresh()->log, 'text'));
     }
 
     public function test_a_deep_nmap_reaches_further_finds_traps_and_reads_sentries(): void

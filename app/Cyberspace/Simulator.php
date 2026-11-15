@@ -850,6 +850,36 @@ final readonly class Simulator
                 continue;
             }
 
+            // A CORDON ENGAGED (attacked while it cuts) fights back instead: its countdown holds, and it strikes one of
+            // the runners who attacked it while any of them is still on its node. When none is (they left, or fell), it
+            // goes back to its cut and the countdown runs on.
+            if (($sentry['cordon'] ?? false) && $sentry['countdown'] !== null && ($sentry['engaged'] ?? []) !== []) {
+                $here = $live->filter(fn (Run $r): bool => $r->isLive() && (int) $r->node === (int) $sentry['node'] && in_array((int) $r->getKey(), $sentry['engaged'], true));
+
+                if ($here->isNotEmpty()) {
+                    if (! ($sentry['told'] ?? false)) {
+                        $all[$i]['told'] = true;
+                        $everybody($this->line('cyberspace.run.log.tree.cordon_engaged', tone: 'warn'));
+                    }
+
+                    $stealth = $here->mapWithKeys(fn (Run $r): array => [$r->getKey() => (float) Character::query()->find($r->character_id)?->stat('stealth')->value]);
+                    $target = $here->filter(fn (Run $r): bool => $stealth[$r->getKey()] === $stealth->min())->random();
+                    $character = Character::query()->find($target->character_id);
+
+                    if ($character !== null && ($ice = Ice::query()->find($sentry['ice'])) !== null) {
+                        [$line, $dealt, $extra] = $this->iceStrikes($character, $target, $ice);
+                        $key = $target->getKey();
+                        $out[$key] = [[...($out[$key][0] ?? []), ...array_values(array_filter([$line, $extra]))], $out[$key][1] ?? $dealt];
+                    }
+
+                    continue;
+                }
+
+                $sentry = array_diff_key($sentry, ['engaged' => true, 'told' => true]);
+                $all[$i] = $sentry;
+                $everybody($this->line('cyberspace.run.log.tree.cordon_resumes', tone: 'crit'));
+            }
+
             // A CORDON cuts the way out instead of hunting, while it has a node worth cutting.
             if (($sentry['cordon'] ?? false) && ($cut = $this->cordonTurn($tree, $live, $sentry, $actor)) !== null) {
                 [$all[$i], $line] = $cut;
@@ -914,7 +944,7 @@ final readonly class Simulator
     /**
      * One turn of a Cordon sentry: cutting where it stands counts down and, at zero, tears the node out for the party;
      * otherwise it picks the node to cut and walks there. The node: on the shortest way from the runner nearest it to
-     * that runner's nearest exit, an internal relay, switch or maintenance port, the one whose loss lengthens the way out
+     * that runner's nearest exit, an internal relay, switch, conduit or maintenance port, the one whose loss lengthens the way out
      * most (or closes it). Null when there is no such node: it hunts like any sentry instead.
      *
      * @param  Collection<int, Run>  $live
@@ -925,13 +955,6 @@ final readonly class Simulator
         $node = (int) $sentry['node'];
 
         if ($sentry['countdown'] !== null) {
-            // Hit since its last turn: the cut holds where it is. However many hit it, the pause is one turn.
-            if ($sentry['hit'] ?? false) {
-                unset($sentry['hit']);
-
-                return [$sentry, $this->line('cyberspace.run.log.tree.cordon_paused', tone: 'ok')];
-            }
-
             $sentry['countdown']--;
 
             // An Egress Tunnel went up on it meanwhile: the cut is stopped, and it looks again.
@@ -973,7 +996,7 @@ final readonly class Simulator
         // A node an Egress Tunnel holds cannot be cut.
         $held = $actor->tunnelNodes();
         $cuttable = array_values(array_filter($route, static fn (int $n): bool => $n !== (int) $runner->node && ! in_array($n, $held, true)
-            && in_array($tree->nodes[$n]['kind'], [NodeKind::Relay, NodeKind::Switch, NodeKind::Port], true)));
+            && in_array($tree->nodes[$n]['kind'], [NodeKind::Relay, NodeKind::Switch, NodeKind::Port, NodeKind::Conduit], true)));
 
         if ($cuttable === []) {
             return null;
@@ -993,9 +1016,10 @@ final readonly class Simulator
         }
 
         if ((int) $sentry['node'] === $goal) {
-            $sentry['countdown'] = 2;
+            // Two or three of its turns, rolled when it starts (decided 2026-11-15).
+            $sentry['countdown'] = ($this->roll)(2, 3);
 
-            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_starts', ['node' => Text::get('cyberspace.tree.node.'.$tree->nodes[$goal]['kind']->value), 'turns' => 2], 'crit')];
+            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_starts', ['node' => Text::get('cyberspace.tree.node.'.$tree->nodes[$goal]['kind']->value), 'turns' => $sentry['countdown']], 'crit')];
         }
 
         return [$sentry, null];
@@ -1952,9 +1976,9 @@ final readonly class Simulator
             $all = $this->sentriesOf($run);
             $all[$i]['integrity'] = max(0, Points::of((float) $all[$i]['integrity'] - $damage));
 
-            // A Cordon under attack while it cuts holds its countdown for its next turn (cordonTurn).
+            // A Cordon attacked while it cuts is ENGAGED with whoever hit it: its countdown holds while it fights them.
             if (($all[$i]['countdown'] ?? null) !== null) {
-                $all[$i]['hit'] = true;
+                $all[$i]['engaged'] = array_values(array_unique([...($all[$i]['engaged'] ?? []), (int) $run->getKey()]));
             }
 
             $this->writeSentries($run, $all);
