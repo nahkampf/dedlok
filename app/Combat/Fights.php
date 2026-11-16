@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Combat;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Characters\DownedCause;
 use App\Characters\Fatigue;
 use App\Characters\Mood;
@@ -224,6 +226,8 @@ final class Fights
                 $after = $after->withLog(array_map(static fn (array $line): array => ['round' => $round, 'ending' => true] + $line, $settled));
                 $effects = [...$effects, ...array_column($settled, 'text')];
             }
+
+            $this->achieve($locked, $fight, $before, $after);
 
             $fight->forceFill(['state' => $after->toArray()]);
 
@@ -501,6 +505,49 @@ final class Fights
 
         if ($loader->spend($character, $row, $before->rounds - $after->rounds) !== true) {
             throw new \LogicException('The fight fired more rounds than the weapon held.');
+        }
+    }
+
+    /**
+     * What the round was worth to the achievements. The engine tags the lines (`ach`); a status counts once per fight, so it is
+     * skipped when an earlier round's log already holds it. A win also asks what was in hand.
+     */
+    private function achieve(Character $character, Fight $fight, FightState $before, FightState $after): void
+    {
+        $achievements = new Achievements;
+        $earlier = array_column($before->log, 'ach');
+        $metrics = ['stun' => Metric::Stuns, 'burning' => Metric::Burns, 'poisoned' => Metric::Poisonings, 'headshot_kill' => Metric::LethalHeadshots];
+
+        foreach (array_column(array_slice($after->log, count($before->log)), 'ach') as $tag) {
+            if (isset($metrics[$tag]) && ($tag === 'headshot_kill' || ! in_array($tag, $earlier, true))) {
+                $achievements->record($character, $metrics[$tag]);
+                $earlier[] = $tag;
+            }
+        }
+
+        if ($after->result !== Result::BDown) {
+            return;
+        }
+
+        // Most of the player's damage in the fight, by hand, decides what it counts for.
+        $dealt = ['melee' => 0.0, 'ranged' => 0.0, 'fists' => 0.0];
+
+        foreach (array_column($after->log, 'dmg') as $blow) {
+            $dealt[$blow['src']] += (float) $blow['hp'];
+        }
+
+        if (array_sum($dealt) >= $dealt['melee'] * 2) {
+            return;
+        }
+
+        $melee = $fight->melee_row_id === null ? null : InventoryItem::query()->with('item.weapon')->find($fight->melee_row_id)?->item;
+
+        if ($melee?->slug === 'katana') {
+            $achievements->record($character, Metric::KatanaWins);
+        }
+
+        if ($melee?->weapon?->class === WeaponClass::Blade && $after->b->ranged?->class->firearm() === true) {
+            $achievements->record($character, Metric::BladeVsFirearmWins);
         }
     }
 

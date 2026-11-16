@@ -57,6 +57,8 @@ The Tailored Hardware Operations office of the Special Operations Command is whe
 - Nordic Capital Group: Private banking
 - Valhalla Virtual Systems: VR entertainment systems
 - Groupe des Systèmes Militaires SA: Military hardware and SIGINT systems
+- Kalashtec: Formerly state controlled Kalashnikov Concern, now a free entity focusing entirely on the international market for civilian firearms.
+- Norinco-ATEL: Chinese-Brazilian weapons manufacturer servicing both military and civilian sectors.
 - SveaCom: Fibreoptic infrastructure and networks
 - Cherny-Svyaz Telecom: Hardened and encrypted communications technology
 - Aethelgard Metallurgy: Produces high-grade titanium and carbon-fiber alloys for combat chassis.

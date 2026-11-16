@@ -24,6 +24,9 @@ enum RiderKind: string
     /** Lasts the whole fight and does not age. Its AMOUNT is its level: each level costs hit points every turn it is on. Engine-only. */
     case Bleeding = 'bleeding';
 
+    /** A weapon's Bleeding rider: so many hit points a turn for so many turns, flat and unresisted, like Burning but not resisted. Not the wound (`Bleeding`), which stacks levels and stays. */
+    case Haemorrhage = 'haemorrhage';
+
     /** Knocked senseless by a takedown: loses its next turn. Engine-only. */
     case Dazed = 'dazed';
 
@@ -41,7 +44,7 @@ enum RiderKind: string
     /** Does damage each turn it lasts, resisted like a hit of its type, and so carries an amount. Authorable kinds only. */
     public function damaging(): bool
     {
-        return $this->damageType() !== null;
+        return $this->damageType() !== null || $this === self::Haemorrhage;
     }
 
     /** The type of damage each tick deals; null for a kind that does none (or, for bleeding, none that is resisted). */
@@ -69,7 +72,7 @@ enum RiderKind: string
     /** What an editor may put on a weapon or a round. The rest are the engine's. */
     public function authorable(): bool
     {
-        return in_array($this, [self::Stun, self::Burning, self::Poisoned], true);
+        return in_array($this, [self::Stun, self::Burning, self::Poisoned, self::Haemorrhage], true);
     }
 
     /** @return list<self> */

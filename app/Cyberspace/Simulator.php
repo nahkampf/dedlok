@@ -537,6 +537,7 @@ final readonly class Simulator
         $character->forceFill(['current_synaptic_integrity' => max(0, Points::of((float) $character->current_synaptic_integrity - $damage))])->save();
         $log[] = $this->line('cyberspace.run.log.tree.jackout', ['damage' => $damage], 'crit');
         Glitch::flash($character, Glitch::CRASH);
+        (new Achievements)->record($character, Metric::CrashJackouts);
 
         $down = (float) $character->current_synaptic_integrity <= 0;
 

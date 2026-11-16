@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Drugs;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Characters\DownedCause;
 use App\Characters\Mood;
 use App\Characters\WaitingRoom;
@@ -117,6 +119,7 @@ final class DrugTaker
             ]);
 
             $this->ledger->record($character, $drug);
+            (new Achievements)->reach($character, Metric::DrugsTried, (new Achievements)->remember($character, Metric::DrugsTried, $item->getKey()));
             app(Mood::class)->event($character, 'dose');
 
             // The item may also be a consumable: what it does AT ONCE lands with the dose, and BEFORE any overdose

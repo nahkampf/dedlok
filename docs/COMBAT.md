@@ -388,6 +388,7 @@ those two ratios are what the balance pass tunes.
   ages, and every turn of its owner costs `bleed_per_level` (a stat, base 0.5) hit points a level, flat and unresisted. **Stopping it**: the consumable effect
   `stop_bleeding` (also usable on a fight-only drug's consumable half) takes levels off; a modifier on `bleed_per_level` (an implant, a drug, a skill) reduces
   it gradually. Bleeding is NOT stored on the body: it lives in the fight, so the fight (not `Consumer`) eases it.
+  **As a rider** a weapon or round carries Bleeding like Burning: a chance, turns and an amount (hit points a turn, flat, unresisted, `RiderKind::Haemorrhage`, shown as "Bleeding"); it is a different status from the wound above and ages out. **Cauterizing**: at the start of a side's turn a Burning tick that does at least what its bleeding costs a turn (wound level × `bleed_per_level` plus the rider's amount) has `combat.cauterize.chance` (50) percent, on the engine's own die, to end both ("The burn cauterizes the bleeding wound!").
 - **Opponents take people down too** (`FightEngine::takedownPays()`, asked by `choose()` at Close): when the sums over its next two turns favour a takedown
   (a success dazes the other and doubles its next attack, a failure loses its next turn, against attacking twice) AND the chance is at least
   `combat.takedown.npc_min_chance` (0.5). An opponent's takedown value is its `aim` unless a spec names one; no new NPC field yet. Bleeding is capped at

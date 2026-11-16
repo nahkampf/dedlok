@@ -52,6 +52,8 @@ final class Achievements
 
     private const UNLOCKED = 'user_achievements';
 
+    private const SEEN = 'achievement_seen';
+
     /** An event happened, $amount of it. Adds to the running total. */
     public function record(Character|User $who, Metric $metric, int $amount = 1): void
     {
@@ -68,6 +70,25 @@ final class Achievements
     public function reach(Character|User $who, Metric $metric, int $value): void
     {
         $this->move($who, $metric, $value, highWater: true);
+    }
+
+    /**
+     * A thing was seen, once. Remembers `$subject` under the metric and returns how many DIFFERENT ones there are now.
+     *
+     * For "how many different ..." where the totals cannot say: a drug taken twice is one. It moves nothing by itself;
+     * the caller reports the count with `reach()`, which lets it hold the number back until some other condition is met.
+     */
+    public function remember(Character|User $who, Metric $metric, int|string $subject): int
+    {
+        $userId = $this->accountOf($who);
+
+        if ($userId === null) {
+            return 0;
+        }
+
+        DB::table(self::SEEN)->insertOrIgnore(['user_id' => $userId, 'metric' => $metric->value, 'subject' => (string) $subject]);
+
+        return DB::table(self::SEEN)->where('user_id', $userId)->where('metric', $metric->value)->count();
     }
 
     /**

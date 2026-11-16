@@ -88,6 +88,43 @@ final class FightRiderTest extends TestCase
         $this->assertStringContainsString('Gang member is Burning for 3.', $after->log[1]['text']);
     }
 
+    public function test_a_bleeding_rider_works_like_burning_so_many_points_for_so_many_turns(): void
+    {
+        $bleed = ['kind' => 'haemorrhage', 'chance' => 100, 'turns' => 3, 'amount' => 2];
+        $after = $this->round($this->state($this->gun([$bleed])), ['a' => Action::attack(), 'b' => Action::brace()], new QueueDice([0.2, 0.5, 0.3]));
+
+        $this->assertSame('Gang member is Bleeding for 3.', $after->log[1]['text']);
+        // It was applied on the player's turn, so the first tick has landed this round and two turns are left.
+        $this->assertEquals(['kind' => 'haemorrhage', 'turns' => 2, 'amount' => 2], $after->b->statuses[0]);
+        $this->assertContains('Gang member takes 2 from Bleeding.', array_column($after->log, 'text'));
+        $this->assertSame(0, $after->b->bleeding(), 'the wound is a different thing');
+    }
+
+    public function test_a_burn_that_matches_the_bleeding_may_cauterize_it(): void
+    {
+        $state = $this->state($this->plain());
+        $state = $state->with(Side::B, $state->b->afflicted(RiderKind::Haemorrhage, 3, 2)->afflicted(RiderKind::Bleeding, 0, 1)->afflicted(RiderKind::Burning, 3, 3));
+        $round = fn (int $die): FightState => (new FightEngine(CheckRoller::fromConfig(), static fn (): int => $die))
+            ->round($state, ['a' => Action::brace(), 'b' => Action::brace()], new QueueDice([]), new MapMitigation);
+
+        // Three a turn against 2 + 0.5 of bleeding: sealed, both kinds, at a die of 50.
+        $sealed = $round(50);
+        $this->assertNull($sealed->b->status(RiderKind::Haemorrhage));
+        $this->assertSame(0, $sealed->b->bleeding());
+        $this->assertContains('The burn cauterizes the bleeding wound!', array_column($sealed->log, 'text'));
+
+        $open = $round(51);
+        $this->assertNotNull($open->b->status(RiderKind::Haemorrhage));
+        $this->assertSame(1, $open->b->bleeding());
+        $this->assertNotContains('The burn cauterizes the bleeding wound!', array_column($open->log, 'text'));
+
+        // A burn that does less than the bleeding never rolls.
+        $weak = $state->with(Side::B, $state->b->afflicted(RiderKind::Burning, 3, 2));
+        $weak = $weak->with(Side::B, $weak->b->afflicted(RiderKind::Haemorrhage, 3, 4));
+        $out = (new FightEngine(CheckRoller::fromConfig(), static fn (): int => 1))->round($weak, ['a' => Action::brace(), 'b' => Action::brace()], new QueueDice([]), new MapMitigation);
+        $this->assertNotNull($out->b->status(RiderKind::Haemorrhage));
+    }
+
     public function test_a_rider_that_fails_its_chance_is_not_applied(): void
     {
         $after = $this->round($this->state($this->gun([$this->burn(chance: 50)])), ['a' => Action::attack(), 'b' => Action::attack()], new QueueDice([0.2, 0.5, 0.9,   0.0, 0.5]));

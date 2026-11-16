@@ -258,6 +258,117 @@ return [
             'secret' => false,
         ],
 
+        // Crash Jackout, over and over.
+        26 => [
+            'name' => 'Jack out or die',
+            'description' => 'Crash jacked out 25 times.',
+            'metric' => 'crash_jackouts',
+            'threshold' => 25,
+            'secret' => false,
+        ],
+
+        // Fifty fights won mostly by the Katana.
+        27 => [
+            'name' => 'I studied the blade',
+            'description' => 'Won 50 fights where most of your damage came from a Katana.',
+            'metric' => 'katana_wins',
+            'threshold' => 50,
+            'secret' => false,
+        ],
+
+        // A ranged weapon in hand is fine; the blade must have done most of the damage.
+        28 => [
+            'name' => 'Knife at a gun fight',
+            'description' => 'Won 25 fights against opponents using firearms, with most of your damage coming from a blade.',
+            'metric' => 'blade_vs_firearm_wins',
+            'threshold' => 25,
+            'secret' => false,
+        ],
+
+        // Fifty opponents stunned.
+        29 => [
+            'name' => 'Sleep tight',
+            'description' => 'Successfully stunned 50 opponents.',
+            'metric' => 'stuns',
+            'threshold' => 50,
+            'secret' => false,
+        ],
+
+        // Fifty opponents set burning.
+        30 => [
+            'name' => "Light 'em up",
+            'description' => 'Caused burning on 50 opponents.',
+            'metric' => 'burns',
+            'threshold' => 50,
+            'secret' => false,
+        ],
+
+        // Fifty opponents poisoned.
+        31 => [
+            'name' => 'Dr Feelbad',
+            'description' => 'Caused poisoning on 50 opponents.',
+            'metric' => 'poisonings',
+            'threshold' => 50,
+            'secret' => false,
+        ],
+
+        // A headshot counts only if it took the opponent to nought hit points or less.
+        32 => [
+            'name' => 'Canoeing',
+            'description' => 'Landed 50 lethal headshots.',
+            'metric' => 'lethal_headshots',
+            'threshold' => 50,
+            'secret' => false,
+        ],
+
+        // The most implants installed at one time.
+        33 => [
+            'name' => 'Borged up',
+            'description' => 'Had 7 implants installed at the same time.',
+            'metric' => 'implants_installed',
+            'threshold' => 7,
+            'secret' => false,
+        ],
+
+        // Seven different drugs; a drug taken twice is one.
+        34 => [
+            'name' => 'Psychonaut',
+            'description' => 'Used 7 or more different drugs.',
+            'metric' => 'drugs_tried',
+            'threshold' => 7,
+            'secret' => true,
+        ],
+
+        // Counts people paid, and only once more than 25,000 credits has gone out in all.
+        35 => [
+            'name' => 'Rainmaker',
+            'description' => 'Transferred more than 25,000 credits in all, to more than 10 different people.',
+            'metric' => 'rainmaker',
+            'threshold' => 11,
+            'secret' => true,
+        ],
+
+        // A Pod journey is counted when the fare is paid.
+        36 => [
+            'name' => 'Podracer',
+            'description' => 'Took a Pod in the city 200 times.',
+            'metric' => 'pod_trips',
+            'threshold' => 200,
+            'secret' => false,
+        ],
+
+        // Set when the `njord_released` flag is.
+        37 => [
+            'name' => 'Free Njordy',
+            'description' => 'You released NJORD into Cyberspace.',
+            'metric' => 'njord_released',
+            'threshold' => 1,
+            'secret' => false,
+        ],
+
     ],
+
+    // Rainmaker (35) only counts people paid once this many credits has been sent in all.
+    'rainmaker_credits' => 25000,
 
 ];

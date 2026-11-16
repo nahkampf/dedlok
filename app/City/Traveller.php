@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\City;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Characters\Fatigue;
 use App\Models\Character;
 use App\Models\CityActivity;
@@ -130,6 +132,10 @@ final class Traveller
                 'cancelling' => false,
                 'pass_ends_at' => CarbonImmutable::now()->addSeconds($this->passSeconds($locked, $quote['route'][0], $mode)),
             ]);
+
+            if ($mode === TravelMode::Pod) {
+                (new Achievements)->record($locked, Metric::PodTrips);
+            }
 
             $character->refresh();
 
