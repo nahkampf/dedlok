@@ -510,7 +510,6 @@
         overviewPulse = setInterval(() => {
           if (!view.closest("dialog")?.open) { clearInterval(overviewPulse); return; }
           n++;
-          if (d.you && n % 3 === 0) cell(d.you[0], d.you[1], (n / 3) % 2 ? white : dark);
           washed.forEach(([list, phase]) => {
             ctx.globalAlpha = 1;
             list.forEach(([x, y]) => cell(x, y, brass));
@@ -518,6 +517,8 @@
             list.forEach(([x, y]) => cell(x, y, ember));
             ctx.globalAlpha = 1;
           });
+          // After the washes, or standing on an exchange or gateway they repaint the cell and hide it.
+          if (d.you) cell(d.you[0], d.you[1], Math.floor(n / 3) % 2 ? white : dark);
         }, 80);
       });
   });
