@@ -12,6 +12,7 @@ use App\Combat\HitQuality;
 use App\Combat\RiderKind;
 use App\Stats\Damage;
 use App\Stats\DamageOrigin;
+use App\Support\Glitch;
 use App\Support\Points;
 use App\Support\Text;
 
@@ -341,7 +342,7 @@ final class FightEngine
             // is said here and keeps the item.
             ActionKind::Use => $dice() < $this->quoteUse($state, $side)
                 ? $state->withUsed()
-                : $state->withLog([$this->line($state, Text::get('combat.fight.log.use_fumbled', ['who' => $name]))]),
+                : $state->withLog([$this->line($state, Text::get('combat.fight.log.use_fumbled', ['who' => $name]), fx: $side === Side::A ? Glitch::TICK : null)]),
             ActionKind::Headbutt => $this->headbutt($state, $side, $dice, $mitigation),
             ActionKind::Takedown => $this->takedown($state, $side, $dice),
             ActionKind::Disengage => $this->flight($state, $side, $dice, getAway: true),
@@ -368,9 +369,9 @@ final class FightEngine
     }
 
     /** @return array{round: int, text: string, tone: string} */
-    private function line(FightState $state, string $text, string $tone = 'default'): array
+    private function line(FightState $state, string $text, string $tone = 'default', ?string $fx = null): array
     {
-        return ['round' => $state->round, 'text' => $text, 'tone' => $tone];
+        return ['round' => $state->round, 'text' => $text, 'tone' => $tone] + ($fx === null ? [] : ['fx' => $fx]);
     }
 
     /**
@@ -623,6 +624,13 @@ final class FightEngine
             ]),
             'tone' => $target === Side::A ? 'crit' : 'ok',
         ];
+
+        // The page glitches (Glitch::strongest): a blow that lands on you is a hit, a shot of yours that finds nothing a tick.
+        if ($target === Side::A && $dealt !== []) {
+            $line['fx'] = Glitch::HIT;
+        } elseif ($attacker === Side::A && $dealt === [] && ! $recoil) {
+            $line['fx'] = Glitch::TICK;
+        }
 
         return $state->with($target, $victim)->withLog([$line]);
     }

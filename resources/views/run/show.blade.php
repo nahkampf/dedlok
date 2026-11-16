@@ -652,7 +652,7 @@
                     @php($shownTurn = $line['turn'])
                     <div class="rule rule--center">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</div>
                 @endif
-                <p class="micro" data-log-index="{{ $loop->count - $loop->iteration }}" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
+                <p class="micro" data-log-index="{{ $loop->count - $loop->iteration }}" @if ($fx = \App\Support\Glitch::forLogKey($line['key'] ?? null)) data-fx="{{ $fx }}" @endif style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
                     {{-- A line may carry a tag naming who did it ("ICE VII lands a code payload…"), and
                          words before it ("Your [icebreaker] finds…"). The tag's colour is stored with it:
                          `crit` for the ICE hitting you (also what a line from before the colour was kept

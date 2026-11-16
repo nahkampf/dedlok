@@ -2132,6 +2132,17 @@ a.tab { text-decoration: none; }
   100% { opacity: 0; }
 }
 
+/* THE PAGE GLITCH (UI.glitch, docs/frontend.md): the whole screen tears, ghosts in ember and flashes at its edge. Three weights: `tick`
+   (a nick: a miss, a failure), `hit` (something got through) and `crash` (the screen is lost). The tearing and the ember ghost are an
+   SVG filter (`#glitch-tear`, in layouts/glitch.blade.php) set on the page root for the length of the effect only; everything else is this
+   overlay: an edge flash, bands of the page inverted to grey, and a black cut. Each frame is a hard cut, never a fade. */
+.glitch { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
+.glitch__hit { position: absolute; inset: 0; opacity: 0; box-shadow: inset 0 0 0 var(--glitch-edge, var(--s-1)) var(--ember), inset 0 0 var(--s-8) var(--s-4) color-mix(in srgb, var(--ember) 55%, transparent); }
+.glitch__band { position: absolute; left: 0; right: 0; display: none; backdrop-filter: invert(1) grayscale(1) contrast(1.2); }
+.glitch__black { position: absolute; inset: 0; background: var(--bg-0); opacity: 0; }
+.glitch__read { position: absolute; left: 0; right: 0; top: 46%; text-align: center; opacity: 0; color: var(--ember); font-family: var(--font-mono); font-size: var(--fs-sm); letter-spacing: .3em; text-transform: uppercase; }
+@media (prefers-reduced-motion: reduce) { html { filter: none !important; } }
+
 .empty {
   display: grid; place-items: center; gap: var(--s-3);
   padding: var(--s-7) var(--s-4);

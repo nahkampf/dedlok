@@ -37,6 +37,7 @@ use App\Stats\DamageResolver;
 use App\Stats\InjuryLedger;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
+use App\Support\Glitch;
 use App\Support\Points;
 use App\Support\Qb;
 use App\Support\Text;
@@ -535,6 +536,7 @@ final readonly class Simulator
 
         $character->forceFill(['current_synaptic_integrity' => max(0, Points::of((float) $character->current_synaptic_integrity - $damage))])->save();
         $log[] = $this->line('cyberspace.run.log.tree.jackout', ['damage' => $damage], 'crit');
+        Glitch::flash($character, Glitch::CRASH);
 
         $down = (float) $character->current_synaptic_integrity <= 0;
 
@@ -551,8 +553,6 @@ final readonly class Simulator
         $this->appendLog($run, $log);
         $this->runs->end($character, $run, $ending);
 
-        // Emptied: off the grid BEFORE the waiting screen, the order every way of going down keeps.
-        if ($down) {
         // The Priority message: what it cost, the Synaptic Integrity and (when it emptied them) the neural damage.
         $costs = [Text::get('cyberspace.run.log.tree.jackout_cost_si', ['points' => $damage])];
 
@@ -562,6 +562,8 @@ final readonly class Simulator
 
         (new Notifier)->send($character, Category::Cyberspace, 'crash_jackout', ['damage' => implode(' and ', $costs)]);
 
+        // Emptied: off the grid BEFORE the waiting screen, the order every way of going down keeps.
+        if ($down) {
             Navigator::fromConfig($this->resolver)->jackOut($character);
             $this->waitingRoom->checkFloor($character, new DownedCause(
                 reason: RunEnding::Jackout->value,

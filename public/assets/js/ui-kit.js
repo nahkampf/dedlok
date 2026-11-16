@@ -2453,5 +2453,72 @@
     setInterval(() => { if (!document.hidden && !live) swap(); }, 5000);
   })();
 
-  window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
+  /* --- THE PAGE GLITCH ------------------------------------------------------
+     UI.glitch("tick" | "hit" | "crash"): the whole page tears for a moment. A level is a list of hard-cut frames,
+     [ms, tear px, ember ghost px, inverted bands, edge flash 0-1, black 0-1, readout]; a new one is a new list. Where it
+     fires is the server's call, never the page's own: `body[data-glitch]` (Glitch::flash(), played once on load) and
+     `.log-new[data-fx]` (a run's new log lines, the strongest wins). The tear is the SVG filter in layouts/glitch.blade.php,
+     on the page root only while it runs. Reduced motion: no movement, just the edge flash, held. */
+  const GLITCH = {
+    tick: [[50, 6, 3, 0, .6, 0], [40, 0, 0, 0, 0, 0], [60, 10, 4, 1, .4, 0], [70, 0, 0, 0, 0, 0]],
+    hit: [[60, 40, 10, 2, 1, 0], [50, 0, 0, 0, .7, 0], [70, 55, 14, 3, 0, 0], [40, 0, 0, 0, 0, 0], [80, 28, 8, 1, .5, 0], [60, 12, 5, 0, 0, 0],
+      [90, 0, 0, 0, 0, 0], [70, 20, 6, 1, 0, 0], [50, 0, 0, 0, 0, 0], [80, 8, 3, 0, 0, 0], [60, 0, 0, 0, 0, 0]],
+    crash: [[70, 30, 8, 1, 1, 0], [60, 60, 14, 2, 0, 0], [60, 90, 20, 3, .8, 0], [50, 0, 0, 0, 0, 1], [90, 120, 28, 3, 0, 0], [40, 0, 0, 0, 0, 1],
+      [140, 0, 0, 0, 0, 1, true], [60, 150, 34, 3, 1, 0], [70, 80, 18, 2, 0, 0], [50, 0, 0, 0, .6, 0], [90, 60, 14, 2, 0, 0],
+      [60, 0, 0, 0, 0, 0], [110, 35, 10, 1, 0, 0], [80, 0, 0, 0, 0, 0], [100, 16, 5, 1, 0, 0], [90, 0, 0, 0, 0, 0], [120, 6, 2, 0, 0, 0], [80, 0, 0, 0, 0, 0]],
+  };
+  const GLITCH_RANK = { tick: 1, hit: 2, crash: 3 };
+  let glitching = false;
+  async function glitch(level) {
+    const root = document.querySelector("[data-glitch-layer]");
+    const stage = document.documentElement;
+    const frames = GLITCH[level];
+    if (!root || !stage || !frames || glitching) return;
+    glitching = true;
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const hit = root.querySelector(".glitch__hit"), black = root.querySelector(".glitch__black"), read = root.querySelector(".glitch__read");
+    const bands = [...root.querySelectorAll(".glitch__band")];
+    const noise = document.getElementById("glitch-noise"), disp = document.getElementById("glitch-disp"), ghost = document.getElementById("glitch-ghost");
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const clear = () => {
+      stage.style.filter = "";
+      hit.style.opacity = 0; black.style.opacity = 0; read.style.opacity = 0;
+      bands.forEach((b) => { b.style.display = "none"; });
+    };
+    const list = still ? [[frames[0][0] * 4, 0, 0, 0, 1, 0], [10, 0, 0, 0, 0, 0]] : frames;
+    for (const [ms, tear, g, nb, h, b, text] of list) {
+      if (!still) {
+        stage.style.filter = tear || g ? "url(#glitch-tear)" : "";
+        noise.setAttribute("seed", Math.floor(rnd(1, 9999)));
+        disp.setAttribute("scale", tear);
+        ghost.setAttribute("dx", g * (Math.random() < .5 ? -1 : 1));
+        black.style.opacity = b;
+        read.style.opacity = text ? 1 : 0;
+        bands.forEach((el, i) => {
+          el.style.display = i < nb ? "block" : "none";
+          if (i < nb) { el.style.top = rnd(0, 92) + "%"; el.style.height = rnd(1, i ? 4 : 9) + "%"; }
+        });
+      }
+      hit.style.opacity = h;
+      hit.style.setProperty("--glitch-edge", `calc(var(--s-1) * ${1 + h})`);
+      await new Promise((r) => setTimeout(r, ms));
+    }
+    clear();
+    glitching = false;
+  }
+  // The server's say-so: whatever it put on the body for this page, and the strongest new log line.
+  let glitchPlayed = false;
+  function glitchOnLoad() {
+    if (glitchPlayed) return;
+    const levels = [document.body.dataset.glitch, ...[...document.querySelectorAll(".log-new[data-fx]")].map((n) => n.dataset.fx)].filter(Boolean);
+    if (!levels.length) return;
+    glitchPlayed = true;
+    delete document.body.dataset.glitch;
+    glitch(levels.sort((a, b) => (GLITCH_RANK[b] || 0) - (GLITCH_RANK[a] || 0))[0]);
+  }
+  on("click", "[data-glitch-demo]", (e, btn) => glitch(btn.dataset.glitchDemo));
+  glitchOnLoad();
+  document.addEventListener("DOMContentLoaded", glitchOnLoad);
+
+  window.UI = { glitch, toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
 })();

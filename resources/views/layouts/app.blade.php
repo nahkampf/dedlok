@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="{{ Asset::url('assets/css/ui-kit.css') }}">
     @stack('head')
 </head>
-<body>
+<body @if ($glitch = \App\Support\Glitch::pull()) data-glitch="{{ $glitch }}" @endif>
 
 {{-- The character behind the HUD. Named apart from the $character a view may
      already have been given, so the layout can never shadow it. An admin who
@@ -681,5 +681,7 @@
         </div>
         <div class="panel__bd" data-listing-body></div>
     </dialog>
+
+    @include('layouts.glitch')
 </body>
 </html>

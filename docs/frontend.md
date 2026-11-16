@@ -184,3 +184,13 @@ origin — the layouts carry no `<link>` and nothing to preconnect to. Overpass 
 variable file per subset; IBM Plex is static instances. Each face splits `latin` /
 `latin-ext` by `unicode-range`. Both SIL OFL, licences beside the files. **Adding a
 weight means adding a file and an `@font-face` block** — keep the set small.
+
+### The page glitch
+
+`UI.glitch("tick" | "hit" | "crash")` tears the whole page (SVG filter on `<html>` for the length of the effect, plus the overlay in
+`layouts/glitch.blade.php`); gallery demo "Page glitch". Hard cuts only, and the colour-split is ember on bone, never cyan or magenta.
+**The page never decides to play one; the server does.** `App\Support\Glitch::flash($character, level)` keeps the strongest asked for in the
+session and the layout pulls it onto `body[data-glitch]` (only for the character making the request, so a party round closed by someone
+else does not shake your screen). A run's new log lines carry `data-fx` from `config/glitch.php` (log key to weight); a fight's lines carry
+`fx` (`FightEngine`, read by `FightController::act`). Weights: `tick` your own miss or failure, `hit` ICE, a blow on you, a bloodhound,
+jacking in or out, a bloodhound's blow, `crash` Crash Jackout and being incapacitated. Something that happened TO the player, never a good result.
