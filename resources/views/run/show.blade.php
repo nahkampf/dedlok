@@ -571,6 +571,12 @@
                     <span class="tag tag--warn">{{ Text::get('cyberspace.run.ended.cancelled') }}</span>
                 @endif
             </div>
+            @if ($system)
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.overview.grade') }}</span>
+                    <b class="num">{{ $system->grade }}</b>
+                </div>
+            @endif
             <div class="card__stat">
                 <span>{{ Text::get('cyberspace.run.overview.run_type') }}</span>
                 <b>{{ $run->purpose->label() }}@if ($run->backdoorKind()) · {{ $run->backdoorKind()->label() }}@endif</b>

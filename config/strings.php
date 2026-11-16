@@ -1685,6 +1685,7 @@ return [
                 // The player's standing instructions, as they set them on the map. Zero turns one off.
                 'threshold_trace' => 'Egress at trace',
                 'threshold_si' => 'Egress below SI',
+                'grade' => 'Grade',
                 'threshold_off' => 'Off',
                 'threshold_hit' => 'You are on or past a threshold. Your next turn tries to egress on its own.',
             ],
