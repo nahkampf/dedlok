@@ -1,3 +1,9 @@
+## 0.98.0 (2026-11-16)
+
+- New achievements (some of them hidden)
+- Weapons now also support the Bleeding effect
+- A Burning effect that causes greater damage than the Bleeding has a chance to cauterize the wound and remove Bleeding
+
 ## 0.97.2 (2026-11-16)
 
 - Crash Jackout now sends a message
