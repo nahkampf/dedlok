@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.98.0] — 2026-11-16
+
+### Added
+- **Twelve achievements (ids 26–37).** Jack out or die (25 Crash Jackouts), I studied the blade (50 fights won with most of the damage from a Katana), Knife at a gun fight (25 wins against firearm users with most of the damage from a blade), Sleep tight (stun 50), Light 'em up (burn 50), Dr Feelbad (poison 50), Canoeing (50 headshots that took the opponent to 0 HP or less), Borged up (7 implants installed at once), Psychonaut (hidden: 7 different drugs), Rainmaker (hidden: more than 10 people paid and more than 25 000 credits in all, `achievements.rainmaker_credits`), Podracer (200 Pod trips) and Free Njordy (flag `njord_released`). New `Metric` cases for each.
+  - **Fights tag their events instead of the engine counting them.** `FightEngine` stays pure: rider lines carry `ach`, a player blow carries `dmg` (`src` and `hp`) and a lethal player headshot carries `ach: headshot_kill`; `Fights::achieve()` counts them from the new log lines. Stun, burning and poisoning count once per fight.
+  - **`Achievements::remember()`** counts distinct subjects (drugs, people paid) in the new `achievement_seen` table.
+- **Bleeding rider (`RiderKind::Haemorrhage`).** A weapon rider that works exactly like Burning: damage per turn for a number of turns, flat and unresisted, labelled "Bleeding" (`combat.riders.kinds.haemorrhage`). Authorable in the weapon form.
+- **Cauterizing.** When a side is bleeding, a Burning tick doing at least the bleeding's damage has a `combat.cauterize.chance` (50%) of ending it: "The burn cauterizes the bleeding wound!" Covers both the persistent wound and the rider. `docs/COMBAT.md`.
+- **The worldbuilding gains Kalashtec and Norinco-ATEL** (`docs/WORLDBUILDING.md`).
+
+### Migrations
+- `achievement_seen` (user, metric, subject; unique).
+- Data: the Katana, Switchblade, Tebbit Knife, Liquid Knuckles and LK Canister, Zip Gun (calibre `.22LR`) and `.22 LR`, Kalashtec Udar-9, RD-S22P and Kuroda Lifeframe-300 with their weapon, ammunition and armour rows, and their Dynamico Armaments and Night Market listings. Skips any slug or listing that exists.
+- Data: Free Njordy is unlocked, with an inbox message, for everyone whose character already has `njord_released`.
+
+### Notes
+- Burn, poison and bleed tick damage does not count as the player's damage for the majority rules; stop-bleeding consumables ease the wound, not the rider. Achievement pictures 26–37 (`public/images/achievements/<id>.jpg`) are not made yet.
+
+
 ## [0.97.2] — 2026-11-16
 
 ### Added
@@ -4337,7 +4356,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.97.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.98.0...HEAD
+[0.98.0]: https://github.com/nahkampf/dedlok/compare/v0.97.2...v0.98.0
 [0.97.2]: https://github.com/nahkampf/dedlok/compare/v0.97.1...v0.97.2
 [0.97.1]: https://github.com/nahkampf/dedlok/compare/v0.97.0...v0.97.1
 [0.97.0]: https://github.com/nahkampf/dedlok/compare/v0.96.4...v0.97.0

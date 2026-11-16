@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Wallet;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Character;
+use App\Models\WalletEntry;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Support\Text;
@@ -51,6 +54,15 @@ final class Transfers
                 'handle' => $payer->handle,
                 'amount' => number_format($amount),
             ]);
+
+            // Rainmaker: how many people, but only once enough has gone out in all.
+            $achievements = new Achievements;
+            $people = $achievements->remember($payer, Metric::Rainmaker, $payee->getKey());
+            $sent = -(int) WalletEntry::query()->where('character_id', $payer->getKey())->where('reason', Reason::TransferOut)->sum('amount');
+
+            if ($sent > (int) config('achievements.rainmaker_credits')) {
+                $achievements->reach($payer, Metric::Rainmaker, $people);
+            }
 
             $from->forceFill(['creds' => $payer->creds]);
 

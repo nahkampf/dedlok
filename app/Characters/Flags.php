@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Characters;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Character;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -23,11 +25,18 @@ final class Flags
             throw new InvalidArgumentException("A flag is a lower-case slug of up to 60 characters, got '{$flag}'.");
         }
 
-        return DB::table('character_flags')->insertOrIgnore([
+        $news = DB::table('character_flags')->insertOrIgnore([
             'character_id' => $character->getKey(),
             'flag' => $flag,
             'set_at' => now(),
         ]) === 1;
+
+        // The flags that are worth an achievement: the flag's name is the metric's.
+        if ($news && ($metric = Metric::tryFrom($flag)) === Metric::NjordReleased) {
+            (new Achievements)->record($character, $metric);
+        }
+
+        return $news;
     }
 
     public static function has(Character $character, string $flag): bool

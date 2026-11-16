@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Implants;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use Carbon\CarbonImmutable;
@@ -64,6 +66,8 @@ final class ImplantFitter
             }
 
             $implant->forceFill(['installed_at' => CarbonImmutable::now()])->save();
+
+            (new Achievements)->reach($character, Metric::ImplantsInstalled, InventoryItem::query()->where('character_id', $character->getKey())->whereNotNull('installed_at')->count());
 
             return ImplantResult::installed($implant);
         });

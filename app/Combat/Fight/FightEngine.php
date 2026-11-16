@@ -427,7 +427,7 @@ final class FightEngine
             // (an NPC has none), so the older dice orders are untouched.
             $critical = $self->critChance > 0 && $tier !== HitQuality::NearMiss && $dice() * 100 < $self->critChance;
             $before = $state->combatant($target)->hp;
-            $state = $this->land($state, $attacker, $spec, $tier, $slot, $mitigation, $critical);
+            $state = $this->land($state, $attacker, $spec, $tier, $slot, $mitigation, $critical, source: $state->range === Range::Close ? 'melee' : 'ranged');
             $state = $this->riders($state, $attacker, $spec, $tier, $dice, $state->combatant($target)->hp < $before);
         }
 
@@ -457,7 +457,7 @@ final class FightEngine
         $critical = $self->critChance > 0 && $tier !== HitQuality::NearMiss && $dice() * 100 < $self->critChance;
         $before = $state->combatant($target)->hp;
 
-        $state = $this->land($state, $side, $spec, $tier, $slot, $mitigation, $critical);
+        $state = $this->land($state, $side, $spec, $tier, $slot, $mitigation, $critical, source: 'fists');
         $state = $this->riders($state, $side, $spec, $tier, $dice, $state->combatant($target)->hp < $before);
 
         // It hurts to hit somebody with your head. Only a blow that landed, and only if the fight is still on.
@@ -532,7 +532,7 @@ final class FightEngine
 
             $kind = RiderKind::from($rider['kind']);
             $state = $state->with($target, $victim->afflicted($kind, $rider['turns'], $rider['amount']))
-                ->withLog([$this->line($state, Text::get('combat.fight.log.afflicted', ['who' => $victim->name, 'status' => $kind->label(), 'turns' => $rider['turns']]), $target === Side::A ? 'crit' : 'ok')]);
+                ->withLog([$this->line($state, Text::get('combat.fight.log.afflicted', ['who' => $victim->name, 'status' => $kind->label(), 'turns' => $rider['turns']]), $target === Side::A ? 'crit' : 'ok') + ($target === Side::B ? ['ach' => $kind->value] : [])]);
         }
 
         // A wound: only a hit that took hit points, and rolled on the engine's own die so the pinned ones keep their order.
@@ -572,9 +572,26 @@ final class FightEngine
 
             // Bleeding is flat: what is lost is the level times what a level costs, and nothing worn or carried resists it.
             if ($kind === RiderKind::Bleeding) {
+                // Sealed by a burn earlier this turn.
+                if ($victim->bleeding() === 0) {
+                    continue;
+                }
+
                 $lost = Points::of($status['amount'] * $victim->bleedPerLevel());
                 $victim = $victim->hurt('current_hitpoints', $lost);
                 $lines[] = $this->line($state, Text::get('combat.fight.log.bleed', ['who' => $victim->name, 'amount' => $lost, 'level' => $status['amount']]), $side === Side::A ? 'crit' : 'ok');
+
+                continue;
+            }
+
+            // A bleeding rider: its amount in hit points, flat, and nothing resists it. Sealed already, it is not there.
+            if ($kind === RiderKind::Haemorrhage) {
+                if ($victim->status($kind) === null) {
+                    continue;
+                }
+
+                $victim = $victim->hurt('current_hitpoints', $status['amount']);
+                $lines[] = $this->line($state, Text::get('combat.fight.log.tick', ['who' => $victim->name, 'amount' => $status['amount'], 'status' => $kind->label()]), $side === Side::A ? 'crit' : 'ok');
 
                 continue;
             }
@@ -586,13 +603,24 @@ final class FightEngine
             $taken = $mitigation->resolve($side, Damage::hitpoints($status['amount'], $origin));
             $victim = $victim->hurt('current_hitpoints', $taken);
             $lines[] = $this->line($state, Text::get('combat.fight.log.tick', ['who' => $victim->name, 'amount' => $taken, 'status' => $kind->label()]), $side === Side::A ? 'crit' : 'ok');
+
+            // A burn at least as bad as the bleeding under it may seal the wound.
+            $bleed = $victim->bleeding() * $victim->bleedPerLevel() + (float) ($victim->status(RiderKind::Haemorrhage)['amount'] ?? 0);
+
+            if ($kind === RiderKind::Burning && $bleed > 0 && ! $victim->down()
+                && $taken >= $bleed
+                && $this->extraDie !== null && ($this->extraDie)(1, 100) <= (int) config('combat.cauterize.chance')) {
+                [$victim] = $victim->eased($victim->bleeding());
+                $victim = $victim->withStatuses(array_values(array_filter($victim->statuses, static fn (array $s): bool => $s['kind'] !== RiderKind::Haemorrhage->value)));
+                $lines[] = $this->line($state, Text::get('combat.fight.log.cauterize'), $side === Side::A ? 'ok' : 'default');
+            }
         }
 
         return [$state->with($side, $victim->aged())->withLog($lines), $stunned];
     }
 
     /** One hit that has found its tier and its place: split, resolved part by part, and applied. */
-    private function land(FightState $state, Side $attacker, RoundSpec $spec, HitQuality $tier, ArmourSlot $slot, Mitigation $mitigation, bool $critical = false, bool $recoil = false): FightState
+    private function land(FightState $state, Side $attacker, RoundSpec $spec, HitQuality $tier, ArmourSlot $slot, Mitigation $mitigation, bool $critical = false, bool $recoil = false, ?string $source = null): FightState
     {
         $target = $attacker->other();
         $victim = $state->combatant($target);
@@ -630,6 +658,16 @@ final class FightEngine
             $line['fx'] = Glitch::HIT;
         } elseif ($attacker === Side::A && $dealt === [] && ! $recoil) {
             $line['fx'] = Glitch::TICK;
+        }
+
+        // For the achievements (`Fights::achieve`): what the player's blow took off, and from which hand.
+        if ($attacker === Side::A && $source !== null && ! $recoil) {
+            $line['dmg'] = ['src' => $source, 'hp' => Points::of(max(0, $state->combatant($target)->hp - $victim->hp))];
+        }
+
+        // And a headshot of the player's that took the opponent to nought.
+        if ($attacker === Side::A && ! $recoil && $slot === ArmourSlot::Head && $dealt !== [] && $victim->hp <= 0) {
+            $line['ach'] = 'headshot_kill';
         }
 
         return $state->with($target, $victim)->withLog([$line]);

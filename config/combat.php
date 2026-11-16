@@ -107,6 +107,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Cauterizing
+    |--------------------------------------------------------------------------
+    |
+    | A burning tick that does at least as much as the bleeding it lands on has this percent chance to seal the wound
+    | (the bleeding is gone). Rolled on the engine's own die, so the fight's pinned dice are untouched.
+    */
+    'cauterize' => [
+        'chance' => 50,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Headbutt and takedown
     |--------------------------------------------------------------------------
     |

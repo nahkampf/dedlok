@@ -310,9 +310,11 @@ final class WeaponEditorTest extends TestCase
     #[DataProvider('roundRefusals')]
     public function test_ammunition_refuses(array $override, string $field): void
     {
+        $before = Ammunition::query()->count();
+
         $this->save($this->round($override))->assertSessionHasErrors($field);
 
-        $this->assertSame(0, Ammunition::query()->count());
+        $this->assertSame($before, Ammunition::query()->count());
     }
 
     public function test_there_is_one_item_per_kind_of_round(): void

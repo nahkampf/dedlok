@@ -89,4 +89,43 @@ enum Metric: string
 
     /** Mental attribute points gained by studying: one per full meter, whichever of the three it raised. */
     case StudyGains = 'study_gains';
+
+    /** Crash Jackouts: one per run left on purpose by tearing out of it. */
+    case CrashJackouts = 'crash_jackouts';
+
+    /** Fights won where most of the player's damage came from a Katana. */
+    case KatanaWins = 'katana_wins';
+
+    /** Fights won against an opponent carrying a firearm, where most of the player's damage came from a blade. */
+    case BladeVsFirearmWins = 'blade_vs_firearm_wins';
+
+    /** Opponents stunned: once per opponent per fight, however often it was re-applied. */
+    case Stuns = 'stuns';
+
+    /** Opponents set burning: once per opponent per fight. */
+    case Burns = 'burns';
+
+    /** Opponents poisoned: once per opponent per fight. */
+    case Poisonings = 'poisonings';
+
+    /** Headshots that took an opponent to nought hit points or less. A headshot that only hurt is not one. */
+    case LethalHeadshots = 'lethal_headshots';
+
+    /** The most implants installed at once. HIGH-WATER: a state of the body, reported with `reach()`. */
+    case ImplantsInstalled = 'implants_installed';
+
+    /** Different drugs ever taken (`Achievements::remember()` counts the set). HIGH-WATER. */
+    case DrugsTried = 'drugs_tried';
+
+    /**
+     * How many different people were sent credits, counted ONLY once more than `achievements.rainmaker_credits` has gone out
+     * in all: below that line it stays at nought. Two conditions, one metric, so the unlock is still one row.
+     */
+    case Rainmaker = 'rainmaker';
+
+    /** NJORD set free: 1 once the character's `njord_released` flag is set (`Flags::set()` reports it). */
+    case NjordReleased = 'njord_released';
+
+    /** Journeys taken by Pod, one per fare paid. */
+    case PodTrips = 'pod_trips';
 }
