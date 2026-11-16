@@ -166,6 +166,7 @@ final readonly class Backdoors
             if ($backdoor->character !== null) {
                 (new Notifier)->send($backdoor->character, Category::Cyberspace, 'backdoor_lost', [
                     'system' => $system->displayName(),
+                    'kind' => $backdoor->kind->label(),
                 ]);
             }
         }

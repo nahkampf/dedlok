@@ -21,6 +21,7 @@ use App\Stats\Damage;
 use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
 use App\Stats\Resolver;
+use App\Support\Glitch;
 use App\Support\Points;
 use App\Support\Text;
 use App\Support\Trace;
@@ -142,6 +143,7 @@ final class HunterCombat
             );
 
             $new[] = $this->line('cyberspace.hunt.log.hunter_hits', ['damage' => $result->taken], 'crit');
+            Glitch::flash($character, Glitch::HIT);
 
             if ($character->fresh()->current_synaptic_integrity <= 0) {
                 $new[] = $this->lose($character, $hunt);

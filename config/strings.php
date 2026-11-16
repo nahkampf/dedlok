@@ -25,6 +25,8 @@ declare(strict_types=1);
 return [
 
     'ui' => [
+        // The word that holds the screen while a crash glitch has it black (UI.glitch).
+        'glitch' => ['lost' => 'Signal lost'],
         // A button that wants a second press (data-confirm).
         'confirm' => 'Are you sure?',
         // The topbar's speaker and note. The label names what pressing does NOT, but the state it is in.
@@ -958,6 +960,7 @@ return [
             'fortress_burned' => 'Your fortress Kernel is burned',
             'party_dropped' => 'Left out of a co-op run',
             'run_idle_jackout' => 'Jacked out of an idle run',
+            'crash_jackout' => 'Crash Jackout',
             'programs_not_resumed' => 'Processes not restarted',
             'hunt_programs_not_resumed' => 'Processes not restarted',
             'party_member_dropped' => 'Co-op run member dropped',
@@ -1019,7 +1022,7 @@ return [
             'supporter_welcome' => 'Thank you for supporting Dedlok. You now have a badge by your name, a training queue with no limit, and your name on the Supporters page. You are also welcome in our Discord: open :url, or paste it into Discord under + then Join a Server, and say hello. It is where to report bugs, give feedback, wish for features or just hang out.',
             'njord_jsc_notice' => 'It has come to our attention that you may have been the recipient of a classified message. This message was sent by mistake. We are hereby legally informing you that any breach, discussion or mention of that message or its contents will be treated as a national security issue with severe penalties. By reading this message you are also consenting to a full Non Disclosure Agreement regarding this message or anything pertaining to it. Criminal jurisdiction will be applied if this NDA is breached. Have a nice day.',
             'scan_complete' => 'Your scan of :system (:address) completed. The specifications are saved to a file.',
-            'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.:standing',
+            'backdoor_found' => 'Your :kind backdoor into :system was detected. The system has been purged and relocated.:standing',
             'party_invite' => ':owner has invited you to a co-op run. Stand at the same system and accept from the map.',
             'party_started' => ':owner has started the co-op run you joined. You are in it.',
             'party_run_ended' => 'Your co-op run is over: :ending',
@@ -1032,6 +1035,7 @@ return [
             'fortress_burned' => 'Your fortress Kernel was burned. Everything else on it is gone and the Kernel is Frozen for :hours hours: bring in new Leechers that can run it, or lose it.',
             'party_dropped' => ':owner started the co-op run without you. :reason',
             'run_idle_jackout' => 'You stopped answering inside :address, so your deck pulled you out cleanly. Nothing was lost but the run.',
+            'crash_jackout' => 'You crash jacked out of a system. This caused :damage.',
             'programs_not_resumed' => 'THe run is over, but these programs would not start again: :programs',
             'hunt_programs_not_resumed' => 'You were cornered by a Bloodhound program and some processes could not restart after it was resolved.',
             'party_member_dropped' => ':handle was dropped from the run. :reason',
@@ -1050,7 +1054,7 @@ return [
             'workout_gain' => "You've been working out. It shows. You gain +1 to :attribute!",
             'tracker_found' => 'Tracker has found the requested node: :address',
             'study_gain' => "You've been reading and studying. You gain +1 to :attribute!",
-            'backdoor_lost' => 'Your backdoor into :system is gone. The system was purged, relocated or burned.',
+            'backdoor_lost' => 'Your :kind backdoor into :system is gone. The system was purged, relocated or burned.',
             // A FILE DIES WITH NOBODY LOOKING AT IT. Says it is still there,
             // because nothing deletes one - destroying it is the player's call
             // from the card, like every other row they own.
@@ -1681,6 +1685,7 @@ return [
                 'address' => 'Address',
                 'type' => 'Node type',
                 'name' => 'System name',
+                'grade' => 'Grade',
                 'run_type' => 'Run type',
                 // The player's standing instructions, as they set them on the map. Zero turns one off.
                 'threshold_trace' => 'Egress at trace',
@@ -1966,6 +1971,8 @@ return [
                     ],
                     // :damage is the Synaptic Integrity it cost.
                     'jackout' => 'You rip the jack out. The system is gone, and so is :damage of your synaptic integrity.',
+                    'jackout_cost_si' => ':points Synaptic Integrity loss',
+                    'jackout_cost_neural' => ':points neural damage',
                     'jackout_neural' => 'Your mind does not come back whole: :damage of neural damage.',
                     'idle_jackout' => 'You stopped answering, and your deck pulled you out cleanly.',
                     'vault_empty' => 'The vault is empty. Somebody got here first.',

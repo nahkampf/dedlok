@@ -1,3 +1,11 @@
+## 0.97.2 (2026-11-16)
+
+- Crash Jackout now sends a message
+- Backdoor messages now contain the type of backdoor
+- "You are here" dot on overview map got overpainted
+- Run Overview now also shows grade
+- We now have some sexy glitches on failures, hits etc
+
 ## 0.97.1 (2026-11-15)
 
 - Lock Ensnare traps to 1-3 turns.

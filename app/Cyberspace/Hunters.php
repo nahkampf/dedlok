@@ -15,6 +15,7 @@ use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Modifier;
 use App\Stats\Resolver;
+use App\Support\Glitch;
 use App\Support\Trace;
 use Closure;
 use Illuminate\Support\Facades\Config;
@@ -170,6 +171,9 @@ final class Hunters
             $character->forceFill(['current_hunt_id' => $hunt->id])->save();
 
             $hunt->forceFill(['stopped_programs' => $this->startBestIcebreaker($character) ?: null])->save();
+
+            // A bloodhound has found you.
+            Glitch::flash($character, Glitch::HIT);
 
             return $hunt;
         });

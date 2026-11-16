@@ -1260,6 +1260,16 @@ public/assets/
       </template>
     </div>
     <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Page glitch</h3><p><code class="inl">UI.glitch("tick" | "hit" | "crash")</code> tears the whole page for a moment: horizontal slices shifted sideways, an <strong>ember ghost</strong> of everything bright beside them (the colour-split, in the kit's own two inks, never cyan or magenta), a few bands of the page inverted to grey, an ember flash at the edge and, for <code class="inl">crash</code>, the screen cut to black. Every frame is a hard cut, never a fade. <strong><code class="inl">tick</code></strong> is a nick (your miss, your failed roll), <strong><code class="inl">hit</code></strong> is something getting through (ICE, a blow, a bloodhound, jacking in or out) and <strong><code class="inl">crash</code></strong> is the screen lost (Crash Jackout, being incapacitated). The page never decides to play one: <code class="inl">App\Support\Glitch::flash()</code> puts the strongest asked for on the next page (<code class="inl">body[data-glitch]</code>), and a run's new log lines carry <code class="inl">data-fx</code> from <code class="inl">config/glitch.php</code>. It needs the layer and the filter of <code class="inl">layouts/glitch.blade.php</code> in the page (the signed-in layout has them). Reduced motion keeps only the edge flash, held. Use it for something that happened TO the player; a good result is never a glitch.</p></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-3)">
+          <button type="button" class="btn btn--sm" data-glitch-demo="tick">Tick</button>
+          <button type="button" class="btn btn--sm" data-glitch-demo="hit">Hit</button>
+          <button type="button" class="btn btn--sm" data-glitch-demo="crash">Crash</button>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
       <div class="demo__hd"><h3 class="h3">A tag that wraps</h3><p><code class="inl">.tag</code> is one line by design. <code class="inl">.tag--wrap</code> is for text that may be longer than the room it has (a system's name in a panel header): it wraps and grows rather than running out of its box. A tag in a <code class="inl">.card__stat</code> does this by itself, right-aligned. A tag that opens more is a <code class="inl">button.tag</code>, with the ember hairline on hover.</p></div>
       <template class="demo-src">
         <div class="panel panel--snug" style="max-width:260px">
@@ -1654,6 +1664,26 @@ public/assets/
   </section>
 
   </main>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="glitch-tear" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feTurbulence id="glitch-noise" type="fractalNoise" baseFrequency="0 0.011" numOctaves="1" seed="1" result="n"/>
+        <feComponentTransfer in="n" result="slices">
+            <feFuncR type="discrete" tableValues=".5 .5 .5 .5 .95 .5 .5 .5 .05 .5 .5 .5 .5 .85 .5 .5"/>
+        </feComponentTransfer>
+        <feColorMatrix in="slices" type="matrix" values="1 0 0 0 0  0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 1" result="map"/>
+        <feDisplacementMap id="glitch-disp" in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G" result="torn"/>
+        <feColorMatrix in="torn" type="matrix" values="0 0 0 0 1  0 0 0 0 .353  0 0 0 0 .212  1.6 1.6 1.6 0 -.55" result="emberMask"/>
+        <feOffset id="glitch-ghost" in="emberMask" dx="0" dy="0" result="ghost"/>
+        <feBlend in="ghost" in2="torn" mode="screen"/>
+    </filter>
+</svg>
+<div class="glitch" data-glitch-layer aria-hidden="true">
+    <div class="glitch__hit"></div>
+    <div class="glitch__band"></div><div class="glitch__band"></div><div class="glitch__band"></div>
+    <div class="glitch__black"></div>
+    <div class="glitch__read">Signal lost</div>
 </div>
 
 <script src="/assets/js/ui-kit.js" defer></script>

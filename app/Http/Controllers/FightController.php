@@ -11,6 +11,7 @@ use App\Combat\FightRefusal;
 use App\Combat\Fights;
 use App\Models\Character;
 use App\Models\Fight;
+use App\Support\Glitch;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,7 +52,13 @@ class FightController extends Controller
             'round' => ['nullable', 'string', 'max:20'],
         ]);
 
+        $before = count($this->live($character)?->snapshot()->log ?? []);
         $result = $fights->act($character, new Action(ActionKind::from($data['action']), $data['round'] ?? null));
+
+        // What this round did to the page: a blow that landed on you, a miss or a fumble of yours.
+        if (! $result instanceof FightRefusal && ($fx = Glitch::strongest(array_slice($result->snapshot()->log, $before))) !== null) {
+            Glitch::flash($character, $fx);
+        }
 
         // A press on a fight that is not there (a second click, a stale tab) changes nothing.
         if ($result instanceof FightRefusal) {

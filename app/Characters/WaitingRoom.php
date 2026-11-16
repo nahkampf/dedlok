@@ -6,6 +6,7 @@ namespace App\Characters;
 
 use App\Models\Character;
 use App\Stats\Resolver;
+use App\Support\Glitch;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +71,9 @@ final readonly class WaitingRoom
             'waiting_until' => CarbonImmutable::now()->addSeconds(max(0, $seconds)),
             'waiting_cause' => $cause->toArray(),
         ])->save();
+
+        // Incapacitated: the screen goes with them.
+        Glitch::flash($character, Glitch::CRASH);
     }
 
     /**

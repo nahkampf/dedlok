@@ -47,6 +47,7 @@ use App\Standing\StandingLedger;
 use App\Stats\Op;
 use App\Stats\Resolver;
 use App\Stats\StatRegistry;
+use App\Support\Glitch;
 use App\Support\Text;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
@@ -259,10 +260,13 @@ class CyberspaceController extends Controller
 
     public function jackIn(Request $request, Resolver $resolver): RedirectResponse
     {
-        return $this->settle(
-            Navigator::fromConfig($resolver)->jackIn($this->character($request)),
-            Text::get('cyberspace.status.jacked_in'),
-        );
+        $result = Navigator::fromConfig($resolver)->jackIn($this->character($request));
+
+        if ($result->succeeded()) {
+            Glitch::flash($this->character($request), Glitch::HIT);
+        }
+
+        return $this->settle($result, Text::get('cyberspace.status.jacked_in'));
     }
 
     /**
@@ -435,10 +439,13 @@ class CyberspaceController extends Controller
 
     public function jackOut(Request $request, Resolver $resolver): RedirectResponse
     {
-        return $this->settle(
-            Navigator::fromConfig($resolver)->jackOut($this->character($request)),
-            Text::get('cyberspace.status.jacked_out'),
-        );
+        $result = Navigator::fromConfig($resolver)->jackOut($this->character($request));
+
+        if ($result->succeeded()) {
+            Glitch::flash($this->character($request), Glitch::HIT);
+        }
+
+        return $this->settle($result, Text::get('cyberspace.status.jacked_out'));
     }
 
     /** Through the gateway underfoot, to its other end. */

@@ -92,6 +92,7 @@ class AgeBackdoors extends Command
                 // The message says what it cost, when it cost anything.
                 (new Notifier)->send($character, Category::Cyberspace, 'backdoor_found', [
                     'system' => $backdoor->system->displayName(),
+                    'kind' => $backdoor->kind->label(),
                     'standing' => $landed === null || $landed >= 0.0 ? '' : ' '.Text::get('notifications.standing_lost', [
                         'amount' => rtrim(rtrim(number_format(abs($landed), 3), '0'), '.'),
                         'entity' => $owner->name,
