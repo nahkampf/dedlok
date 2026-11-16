@@ -146,7 +146,7 @@ final class CityShopStockTest extends TestCase
 
         $this->assertSame(120, $this->sell($row->fresh(), 3));
         $this->assertNull(InventoryItem::query()->find($row->id), 'the whole pile went');
-        $this->assertSame(0, ShopItem::query()->count(), 'and it did not join any shelf');
+        $this->assertSame(0, ShopItem::query()->where('location_id', $this->place->id)->count(), 'and it did not join any shelf');
     }
 
     public function test_a_listing_pays_the_full_stock_price_unless_told_otherwise(): void
@@ -226,7 +226,7 @@ final class CityShopStockTest extends TestCase
             'buys' => [['item_id' => $item->id, 'percent' => '', 'max_quantity' => '7'], ['item_id' => '', 'percent' => '3']],
         ])->assertSessionHasNoErrors();
 
-        $row = ShopItem::query()->sole();
+        $row = ShopItem::query()->where('location_id', $this->place->id)->sole();
         $this->assertSame([6, 6, 2, 4], [$row->max_stock, $row->stock, $row->restock_amount, $row->restock_hours]);
         $buy = LocationBuy::query()->sole();
         $this->assertSame([100, 7], [$buy->percent, $buy->max_quantity], 'blank percent is 100');

@@ -41,6 +41,7 @@ final class FightAchievementsTest extends TestCase
 
     private function wield(string $slug, WeaponClass $class, array $weapon = []): InventoryItem
     {
+        Item::query()->where('slug', $slug)->delete(); // the real Katana arrives with the migrations
         $item = Item::factory()->physical()->create(['name' => ucfirst($slug), 'slug' => $slug, 'stackable' => false]);
         Weapon::create(['item_id' => $item->id, 'class' => $class, 'accuracy' => 0, 'rate' => 1] + $weapon);
 
