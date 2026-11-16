@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.97.2] — 2026-11-16
+
+### Added
+- **The page glitch (`UI.glitch("tick" | "hit" | "crash")`).** The whole page tears for a moment: an SVG filter on `<html>` (hard horizontal slices, an ember ghost of everything bright), a few bands of the page inverted to grey, an ember flash at the edge and, for `crash`, a black cut with a readout (`ui.glitch.lost`). Hard cuts only; reduced motion keeps just the edge flash. Gallery demo "Page glitch", `docs/frontend.md`. The page never decides: `App\Support\Glitch::flash()` keeps the strongest asked for in the session (only for the character making the request) and `layouts/app` pulls it onto `body[data-glitch]`; a run's new log lines carry `data-fx` from `config/glitch.php`, a fight's lines `fx`.
+  - **Tick:** your failures on a run (a failed attack, extract, install, leech, burn, shutdown, wipe, Loopback or disarm, a held egress, a firewall or hub turning you away, a failed stealth roll's noise), and your misses and fumbles in physical combat.
+  - **Hit:** ICE hitting you (`ice_hits`, `virus_infects`, `virus_hits`), a bloodhound finding you and hitting you, a blow landing on you in physical combat, jacking in and out.
+  - **Crash:** Crash Jackout and going down (`WaitingRoom::put()`).
+- **Crash Jackout sends a Priority message.** "Crash Jackout": what it cost, the Synaptic Integrity taken and, when it emptied them, the neural damage (`notifications.messages.crash_jackout`, `cyberspace.run.log.tree.jackout_cost_*`).
+- **The run overview shows the system's grade** (`cyberspace.run.overview.grade`).
+
+### Changed
+- **The backdoor found and lost messages name the kind of backdoor** (`:kind`: Siphon or Routing hop). Messages already written keep their text.
+
+### Fixed
+- **The you-are-here dot on the overview map did not show on an exchange or gateway.** The cells' brass and ember wash repainted over it every tick; it is now drawn after the wash.
+
+
 ## [0.97.1] — 2026-11-15
 
 ### Changed
@@ -4320,7 +4337,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.97.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.97.2...HEAD
+[0.97.2]: https://github.com/nahkampf/dedlok/compare/v0.97.1...v0.97.2
 [0.97.1]: https://github.com/nahkampf/dedlok/compare/v0.97.0...v0.97.1
 [0.97.0]: https://github.com/nahkampf/dedlok/compare/v0.96.4...v0.97.0
 [0.96.4]: https://github.com/nahkampf/dedlok/compare/v0.96.3...v0.96.4
