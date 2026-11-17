@@ -48,6 +48,7 @@ final class MapScreenTest extends TestCase
     {
         parent::setUp();
 
+        Config::set('cyberspace.encounter.grid_step_chance', 0.0);
         Config::set('cyberspace.size', 16);
         Config::set('cyberspace.view_range', 2);
         Config::set('cyberspace.map_range', 4);
