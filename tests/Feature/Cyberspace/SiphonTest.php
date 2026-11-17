@@ -34,6 +34,8 @@ final class SiphonTest extends TestCase
         parent::setUp();
 
         Config::set('cyberspace.size', 16);
+        // Pinned: these tests are about the mechanism, not the tuning.
+        Config::set('cyberspace.backdoors.siphon.by_grade', [1 => 45, 2 => 65, 3 => 95, 4 => 125, 5 => 160, 6 => 190, 7 => 220, 8 => 260, 9 => 290]);
 
         $this->character = Character::factory()->create(array_merge(
             array_fill_keys(Character::ATTRIBUTES, 20),
