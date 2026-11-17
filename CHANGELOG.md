@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.99.2] — 2026-11-17
+
+### Added
+- **Murder Hobo (achievement 38, hidden).** 150 physical fights won; new `Metric::FightsWon`, recorded by `Fights::achieve()` when the opponent goes down. An escape does not count, and fights before this release are not counted. Its picture is `public/images/achievements/38.jpg`.
+- **The overview map names what it points at.** Hovering a system on the canvas floats the inspector's card with its name, its grade (only when a live scan or an Exchange desk's own grade says so) and its coordinates. `/cyberspace/overview` cells now carry `[x, y, type, address, name, grade]`.
+
+
 ## [0.99.1] — 2026-11-17
 
 ### Added
@@ -4383,7 +4390,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.99.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.99.2...HEAD
+[0.99.2]: https://github.com/nahkampf/dedlok/compare/v0.99.1...v0.99.2
 [0.99.1]: https://github.com/nahkampf/dedlok/compare/v0.99.0...v0.99.1
 [0.99.0]: https://github.com/nahkampf/dedlok/compare/v0.98.0...v0.99.0
 [0.98.0]: https://github.com/nahkampf/dedlok/compare/v0.97.2...v0.98.0
