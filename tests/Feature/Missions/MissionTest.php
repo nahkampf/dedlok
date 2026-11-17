@@ -339,6 +339,31 @@ final class MissionTest extends TestCase
         $this->assertSame([MissionAction::Supply], $board->pluck('action')->unique()->values()->all());
     }
 
+    public function test_an_entitys_offers_can_depend_on_the_desks_grade(): void
+    {
+        Config::set('missions.entities', [$this->entity->name => ['grade_only' => [1 => ['supply'], 2 => ['supply', 'scan']]]]);
+        Config::set('missions.board.size', ['min' => 6, 'max' => 6]);
+        $this->targets(30);
+
+        $this->assertSame([MissionAction::Supply], $this->board()->forCharacter($this->character, $this->desk)->pluck('action')->unique()->values()->all());
+
+        $this->desk->forceFill(['grade' => 2])->save();
+        foreach (range(1, 6) as $i) {
+            foreach ($this->board()->forCharacter(Character::factory()->create(), $this->desk->fresh()) as $offer) {
+                $this->assertContains($offer->action, [MissionAction::Supply, MissionAction::Scan]);
+            }
+        }
+    }
+
+    public function test_the_bureau_of_network_integrity_offers_by_grade(): void
+    {
+        $terms = config('missions.entities')['Bureau of Network Integrity']['grade_only'];
+
+        $this->assertSame(['scan', 'agitate', 'transport', 'supply'], $terms[1]);
+        $this->assertSame([...$terms[1], 'denial'], $terms[2]);
+        $this->assertSame([...$terms[2], 'extract'], $terms[3]);
+    }
+
     public function test_the_board_is_not_rerolled_within_the_hour(): void
     {
         $this->targets(6);

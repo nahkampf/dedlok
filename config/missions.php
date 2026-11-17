@@ -170,10 +170,16 @@ return [
     */
     /*
     | An entity's own terms, keyed by NAME (like `cyberspace.exchanges.grades`); absent is the defaults. `without` leaves
-    | actions off its board, `only` leaves nothing else on it; `standing`, `loyalty` and `penalty` multiply what a job pays in each and what failing it costs.
+    | actions off its board, `only` leaves nothing else on it; `grade_only` is `only` per desk grade (a grade it does not name
+    | falls back to `only`, then to everything); `standing`, `loyalty` and `penalty` multiply what a job pays in each and what failing it costs.
     */
     'entities' => [
         'Anansi Data Weaving' => ['only' => ['supply']],
+        'Bureau of Network Integrity' => ['grade_only' => [
+            1 => ['scan', 'agitate', 'transport', 'supply'],
+            2 => ['scan', 'agitate', 'transport', 'supply', 'denial'],
+            3 => ['scan', 'agitate', 'transport', 'supply', 'denial', 'extract'],
+        ]],
         'TAO' => ['without' => ['transport'], 'standing' => 2, 'loyalty' => 2, 'penalty' => 3],
     ],
 

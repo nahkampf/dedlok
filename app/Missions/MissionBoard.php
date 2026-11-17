@@ -153,8 +153,8 @@ final readonly class MissionBoard
      */
     private function offer(Character $character, Exchange $desk, int $entityId, bool $allowTransport = true, array $terms = []): ?Mission
     {
-        $action = $this->pickAction($allowTransport, (array) ($terms['without'] ?? []), (array) ($terms['only'] ?? []));
         $grade = max(1, min(5, (int) $desk->grade));
+        $action = $this->pickAction($allowTransport, (array) ($terms['without'] ?? []), (array) ($terms['grade_only'][$grade] ?? $terms['only'] ?? []));
         $wants = [];
 
         // Some Extract rolls ask for components instead of a file at an address, when there is an owner to ask about.
