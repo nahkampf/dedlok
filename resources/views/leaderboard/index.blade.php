@@ -13,7 +13,10 @@
         <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));--gap:var(--s-4)">
             @foreach ($boards as $b)
                 <div class="panel">
-                    <div class="panel__hd"><span class="micro">{{ $b['board']->label() }}</span></div>
+                    <div class="panel__hd stack" style="--gap:var(--s-1)">
+                        <span class="micro" style="color:var(--ink-0)">{{ $b['board']->label() }}</span>
+                        <span class="muted" style="font-size:var(--fs-sm)">{{ $b['board']->about() }}</span>
+                    </div>
                     <div class="panel__bd stack" style="--gap:var(--s-3)">
                         @if ($b['rows']->isEmpty())
                             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('leaderboard.empty') }}</p>
@@ -24,10 +27,8 @@
                                         @foreach ($b['rows'] as $row)
                                             <tr @if ($row->character_id === $me->getKey()) aria-current="true" @endif>
                                                 <td class="num">{{ $row->rank }}</td>
-                                                <td><a href="{{ route('characters.show', $row->character) }}">{{ $row->character->handle }}</a></td>
-                                                @if ($b['board']->showsFigures())
-                                                    <td class="num">{{ number_format($row->value) }}</td>
-                                                @endif
+                                                <td><a href="{{ route('characters.show', $row->character) }}" @if ($row->character_id === $me->getKey()) style="color:var(--warn)" @endif>{{ $row->character->handle }}</a></td>
+                                                <td class="num">{{ $b['board']->figure($row->value) }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>

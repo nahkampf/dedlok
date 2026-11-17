@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Leaderboard;
 
 use App\Achievements\Metric;
+use App\Models\Character;
 use App\Models\InventoryItem;
+use App\Stats\Sheet;
 use Illuminate\Support\Facades\DB;
 
 /** What each board counts, per character. The only place the sums are worked out. */
@@ -22,7 +24,31 @@ final class Tally
             Board::Explorers => $this->progress(Metric::GridExplored),
             Board::Scanners => $this->progress(Metric::SystemsScanned),
             Board::NetWorth => $this->netWorth(),
+            Board::Attributes => $this->attributes(),
         };
+    }
+
+    /**
+     * The ten attributes summed as resolved: base, archetype, skills, implants, running programs, worn armour and
+     * modules, but not the temporary (drugs, injuries, statuses, fatigue). One sheet per character.
+     *
+     * @return array<int, int>
+     */
+    private function attributes(): array
+    {
+        $sums = [];
+
+        Character::query()->chunkById(200, function ($characters) use (&$sums): void {
+            foreach ($characters as $character) {
+                $sheet = Sheet::for($character, null, $character->modifiers(lastingOnly: true));
+                $sums[$character->id] = (int) floor(array_sum(array_map(
+                    fn (string $name): float => $sheet->get($name)->value,
+                    Character::ATTRIBUTES,
+                )));
+            }
+        });
+
+        return $sums;
     }
 
     /** @return array<int, int> */
