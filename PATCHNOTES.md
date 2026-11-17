@@ -1,3 +1,10 @@
+## 0.99.0 (2026-11-17)
+
+- Kronos Capital now exists; the premiere personal banking solution for people with shady income.
+  - Deposit and withdraw credits from your bank account, where it is safer than lugging around a digital credit wafer on the streets.
+  - Take out and repay loans. You better repay, or there will be _consequences_.
+  - Loan limits are dependent on your standing with the bank. Standing is increased by keeping money in your account and paying interest on your loans.
+
 ## 0.98.0 (2026-11-16)
 
 - New achievements (some of them hidden)
