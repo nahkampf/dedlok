@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [0.99.0] — 2026-11-17
+
+### Added
+- **Kronos Capital, the bank (`docs/BANK.md`).** A Corporation entity, a City branch (`kronos-capital`, Downtown; a place offers the bank by having a `bank_branches` row, `Feature::Bank`) and a desk in cyberspace (`'Kronos Capital' => 1` in `cyberspace.exchanges.grades`, placed by `cyberspace:exchanges`).
+  - **Accounts.** Deposit and withdraw at the branch and at the Exchange desk. `App\Bank\Bank` is the only writer of `bank_accounts` and its immutable `bank_entries` statement; every move of creds goes through `Wallet::move()` (new `Reason` cases `BankDeposit`, `BankWithdrawal`, `LoanPayout`, `LoanPayment`, `LoanSkim`). `bank:verify` checks balances against the statement and each loan's principal against its payments.
+  - **Loans (City only).** `App\Bank\Loans` is the only writer. The limit follows standing with Kronos along `bank.limit` (a table read as a straight line); below standing 0 there is no loan. Simple interest accrues every night, logged in or not. A fixed instalment of 4% of the amount borrowed is drawn from the wallet every 48 hours, all or nothing, rounded up. Instalments by hand only when one is due or missed; paying off costs principal, interest and 2%, waived in default.
+  - **Default.** A missed instalment starts a 24-hour grace; after it the loan defaults, standing is pinned to min(current, -5) and the account freezes (withdrawals only). A forced vidcall (`EnsureDefaultIsFaced`, `/bank/call`, standing down for a run, hunt, fight, encounter, jack-in or being down) offers pay in full, settlement (half of every wallet inflow goes to the loan, inside `Wallet::move()` via `Reason::settlesLoans()`) or refusal (account frozen, a bounty of 10% of the debt). After a refusal a nightly roll (10% plus 5 for each night) seizes the account, then the safehouse (8 days of rent; the box is exempt), then stored items at 75% of base cost, only as much as the debt needs; the surplus goes to the account.
+  - **Standing from the bank.** `StandingReason` `BankBalance` (balance held overnight), `LoanInterest` (interest and fees paid), `LoanDefault`, `LoanCleared`; the first two have a daily cap. Clearing a defaulted loan resets standing to 0.
+  - **Jobs.** `bank:sweep` every 15 minutes, `bank:nightly` at 05:30. Numbers are in `config/bank.php`.
+
+### Migrations
+- `bank_branches`, `bank_accounts`, `bank_entries`; data: the Kronos Capital entity and its Downtown location and branch.
+- `loans`, `loan_payments`.
+
+### Deploy
+- Run the migrations, then `php artisan cyberspace:exchanges` to place the Kronos desk.
+
+### Notes
+- No admin view of loans, no achievements and no stocks yet.
+
+
 ## [0.98.0] — 2026-11-16
 
 ### Added
@@ -4356,7 +4377,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.98.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.99.0...HEAD
+[0.99.0]: https://github.com/nahkampf/dedlok/compare/v0.98.0...v0.99.0
 [0.98.0]: https://github.com/nahkampf/dedlok/compare/v0.97.2...v0.98.0
 [0.97.2]: https://github.com/nahkampf/dedlok/compare/v0.97.1...v0.97.2
 [0.97.1]: https://github.com/nahkampf/dedlok/compare/v0.97.0...v0.97.1

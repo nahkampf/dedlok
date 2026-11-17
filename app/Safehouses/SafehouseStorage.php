@@ -228,6 +228,18 @@ final class SafehouseStorage
             ->orderBy('storage_expires_at')->get()->groupBy('safehouse_id');
     }
 
+    /** Take `$quantity` of a stored row away for good (a seizure): the whole row when that is all of it. The caller holds the lock. */
+    public function seizeUnits(InventoryItem $row, int $quantity): void
+    {
+        if ($quantity >= $row->quantity) {
+            $row->delete();
+
+            return;
+        }
+
+        $row->forceFill(['quantity' => $row->quantity - $quantity])->save();
+    }
+
     /** Delete what was not collected in time. @return int rows deleted */
     public function sweep(): int
     {

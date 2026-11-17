@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Bank\Bank;
+use App\Bank\BankRefusal;
 use App\City\CityRefusal;
 use App\Missions\MissionBoard;
 use App\Missions\MissionLedger;
@@ -37,7 +39,7 @@ use Illuminate\View\View;
  */
 class ExchangeController extends Controller
 {
-    public function show(Request $request): View|RedirectResponse
+    public function show(Request $request, Bank $bank): View|RedirectResponse
     {
         $character = $this->character($request);
 
@@ -55,6 +57,25 @@ class ExchangeController extends Controller
         $standing = $entity !== null
             ? (new StandingLedger)->standingFor($character, $entity)
             : 0.0;
+
+        // Kronos Capital's desk is a counter and nothing else: no work, no store, no gate on standing.
+        if ($entity?->name === config('bank.entity')) {
+            return view('exchange.bank', [
+                ...$this->shopContext($character),
+                'character' => $character,
+                'system' => $system,
+                'desk' => $system->exchange,
+                'entity' => $entity,
+                'standing' => $standing,
+                'band' => Band::for($standing),
+                'bank' => [
+                    'balance' => $bank->balance($character),
+                    'statement' => $bank->statement($character),
+                    'deposit' => route('exchange.bank', 'deposit'),
+                    'withdraw' => route('exchange.bank', 'withdraw'),
+                ],
+            ]);
+        }
 
         $welcome = $system->exchange->willDealWith($standing);
 
@@ -114,6 +135,27 @@ class ExchangeController extends Controller
                 ? app(DeskBuyer::class)->sellable($character, $system->exchange, $standing)
                 : [],
         ]);
+    }
+
+    /** Deposit or withdraw at Kronos Capital's desk, which is where the character is standing. */
+    public function bank(Request $request, string $op, Bank $bank): RedirectResponse
+    {
+        $character = $this->character($request);
+        $amount = (int) $request->validate(['amount' => ['required', 'integer', 'min:1', 'max:999999999']])['amount'];
+
+        $system = $character->isJackedIn()
+            ? System::query()->at($character->gridPosition())->with('owner', 'exchange')->first()
+            : null;
+
+        if ($system?->exchange === null || ! $system->type->isExchange() || $system->owner?->name !== config('bank.entity') || ! in_array($op, ['deposit', 'withdraw'], true)) {
+            return redirect()->route('cyberspace.index');
+        }
+
+        $result = $op === 'deposit' ? $bank->deposit($character, $amount) : $bank->withdraw($character, $amount);
+
+        return $result instanceof BankRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get($op === 'deposit' ? 'bank.deposited' : 'bank.withdrew', ['amount' => number_format($amount)]));
     }
 
     /** Sell to the desk you are standing on. Like redeeming, the desk is where the character is, never in the request. */

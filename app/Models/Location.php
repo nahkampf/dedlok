@@ -77,6 +77,12 @@ class Location extends Model
         return $this->hasMany(InsuranceOffer::class);
     }
 
+    /** @return HasOne<BankBranch, $this> */
+    public function bankBranch(): HasOne
+    {
+        return $this->hasOne(BankBranch::class);
+    }
+
     /** @return HasMany<ClinicOffer, $this> */
     public function clinicServices(): HasMany
     {
@@ -97,6 +103,7 @@ class Location extends Model
             ($this->meals_exists ?? $this->meals()->exists()) ? Feature::Food : null,
             ($this->clinic_services_exists ?? $this->clinicServices()->exists()) || ($this->surgery_exists ?? $this->surgery()->exists()) ? Feature::Clinic : null,
             ($this->insurance_offers_exists ?? $this->insuranceOffers()->exists()) ? Feature::Insurance : null,
+            ($this->bank_branch_exists ?? $this->bankBranch()->exists()) ? Feature::Bank : null,
         ]));
     }
 

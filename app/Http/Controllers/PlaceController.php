@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Bank\Bank;
+use App\Bank\BankRefusal;
+use App\Bank\LoanRefusal;
+use App\Bank\Loans;
+use App\Bank\LoanState;
+use App\Bank\PaymentSource;
 use App\City\CityClock;
 use App\City\CityRefusal;
 use App\City\Clinic;
@@ -11,6 +17,7 @@ use App\City\ClinicService;
 use App\City\Encounters;
 use App\City\EncounterStart;
 use App\City\Kitchen;
+use App\City\Presence;
 use App\City\ShopKeeper;
 use App\City\Surgeon;
 use App\City\SurgeryOperation;
@@ -39,7 +46,7 @@ use Illuminate\View\View;
  */
 class PlaceController extends Controller
 {
-    public function show(Request $request, string $slug, CityClock $clock, Clinic $clinic, ShopKeeper $shop, Surgeon $surgeon, Encounters $encounters, Insurance $insurance): View|RedirectResponse
+    public function show(Request $request, string $slug, CityClock $clock, Clinic $clinic, ShopKeeper $shop, Surgeon $surgeon, Encounters $encounters, Insurance $insurance, Bank $bank, Loans $loans): View|RedirectResponse
     {
         $character = $this->character($request);
 
@@ -86,6 +93,18 @@ class PlaceController extends Controller
             // The same call `treat()` charges from.
             'treatments' => $clinic->quote($character, $place),
             'policies' => $this->policies($character, $place, $insurance),
+            'loan' => $place->bankBranch()->exists() ? [
+                'open' => $loans->open($character),
+                'limit' => $loans->limit($character),
+                'min' => (int) config('bank.min_loan'),
+                'fee' => ($open = $loans->open($character)) !== null ? $loans->payoffFee($open->borrowed) : 0,
+            ] : null,
+            'bank' => $place->bankBranch()->exists() ? [
+                'balance' => $bank->balance($character),
+                'statement' => $bank->statement($character),
+                'deposit' => route('city.bank', [$place->slug, 'deposit']),
+                'withdraw' => route('city.bank', [$place->slug, 'withdraw']),
+            ] : null,
             'menu' => $place->meals()->orderBy('price')->get(),
             // What is going on here, which a button starts. Only while the body is here.
             'happenings' => $character->district_id === $place->district_id
@@ -226,6 +245,55 @@ class PlaceController extends Controller
         return $result instanceof CityRefusal
             ? back()->with('error', $result->message())
             : back()->with('status', Text::get('city.insurance.signed', ['paid' => number_format($result)]));
+    }
+
+    public function bank(Request $request, string $slug, string $op, Bank $bank): RedirectResponse
+    {
+        $character = $this->character($request);
+        $place = $this->place($character, $slug);
+        $amount = (int) $request->validate(['amount' => ['required', 'integer', 'min:1', 'max:999999999']])['amount'];
+
+        if (! $place->bankBranch()->exists() || ! in_array($op, ['deposit', 'withdraw'], true)) {
+            return back()->with('error', CityRefusal::NotOffered->message());
+        }
+
+        $refusal = Presence::refusal($character, $place);
+
+        if ($refusal !== null) {
+            return back()->with('error', $refusal->message());
+        }
+
+        $result = $op === 'deposit' ? $bank->deposit($character, $amount) : $bank->withdraw($character, $amount);
+
+        return $result instanceof BankRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get($op === 'deposit' ? 'bank.deposited' : 'bank.withdrew', ['amount' => number_format($amount)]));
+    }
+
+    public function loan(Request $request, string $slug, string $op, Loans $loans): RedirectResponse
+    {
+        $character = $this->character($request);
+        $place = $this->place($character, $slug);
+
+        if (! $place->bankBranch()->exists() || ! in_array($op, ['take', 'pay', 'payoff'], true)) {
+            return back()->with('error', CityRefusal::NotOffered->message());
+        }
+
+        $refusal = Presence::refusal($character, $place);
+
+        if ($refusal !== null) {
+            return back()->with('error', $refusal->message());
+        }
+
+        $result = match ($op) {
+            'take' => $loans->take($character, (int) $request->validate(['amount' => ['required', 'integer', 'min:1', 'max:999999999']])['amount']),
+            'pay' => $loans->payInstalment($character, PaymentSource::from($request->validate(['source' => ['required', 'in:account,wallet']])['source'])),
+            'payoff' => $loans->payoff($character, PaymentSource::from($request->validate(['source' => ['required', 'in:account,wallet']])['source'])),
+        };
+
+        return $result instanceof LoanRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get($op === 'take' ? 'bank.loan.taken' : ($result->state === LoanState::Repaid ? 'bank.loan.cleared' : 'bank.loan.paid')));
     }
 
     public function encounter(Request $request, string $slug, int $encounter, Encounters $encounters): RedirectResponse

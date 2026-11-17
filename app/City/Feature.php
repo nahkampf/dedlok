@@ -13,6 +13,7 @@ enum Feature: string
     case Clinic = 'clinic';
     case Food = 'food';
     case Insurance = 'insurance';
+    case Bank = 'bank';
 
     public function label(): string
     {

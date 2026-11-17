@@ -28,7 +28,7 @@ final class EntityRosterTest extends TestCase
 
         // Ten desks against a hundred and more companies: being somebody you
         // can work for is the exception and has to be authored.
-        $this->assertSame(11, Entity::query()->interactable()->count());
+        $this->assertSame(12, Entity::query()->interactable()->count());
         $this->assertGreaterThan(100, Entity::query()->where('interactable', false)->count());
     }
 
@@ -71,7 +71,7 @@ final class EntityRosterTest extends TestCase
             ->where('category', EntityCategory::Corporation)
             ->get();
 
-        $this->assertCount(5, $promoted);
+        $this->assertCount(6, $promoted);
 
         $entity = $promoted->firstOrFail();
         System::factory()->ownedBy($entity)->create();

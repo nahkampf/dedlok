@@ -36,6 +36,27 @@ enum Reason: string
     case FortressMarket = 'fortress_market';
     case FortressSale = 'fortress_sale';
     case FortressWallet = 'fortress_wallet';
+    case BankDeposit = 'bank_deposit';
+    case BankWithdrawal = 'bank_withdrawal';
+    case LoanPayout = 'loan_payout';
+    case LoanPayment = 'loan_payment';
+    case LoanSkim = 'loan_skim';
+
+    /**
+     * Whether a settlement takes its share of an inflow of this kind. A `match` with no default on purpose: a new
+     * Reason is a decision, and an unhandled one throws in the test that walks every case.
+     */
+    public function settlesLoans(): bool
+    {
+        return match ($this) {
+            self::BankWithdrawal, self::LoanPayout, self::LoanPayment, self::LoanSkim, self::Starting => false,
+            self::Market, self::PlayerMarket, self::Mission, self::Siphon, self::Extraction, self::Hunt, self::Skim,
+            self::TransferOut, self::TransferIn, self::Pod, self::Shop, self::Sale, self::Clinic, self::Insurance,
+            self::Surgery, self::Encounter, self::Fight, self::Mugged, self::Rent, self::Meal, self::Inquiry,
+            self::Granted, self::AlphaGift, self::FortressMarket, self::FortressSale, self::FortressWallet,
+            self::BankDeposit => true,
+        };
+    }
 
     public function label(): string
     {

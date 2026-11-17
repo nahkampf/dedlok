@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\SubnetController as AdminSubnetController;
 use App\Http\Controllers\Admin\SudoController;
 use App\Http\Controllers\Admin\SupporterController as AdminSupporterController;
 use App\Http\Controllers\AvailableHandlesController;
+use App\Http\Controllers\BankCallController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\ChatController;
@@ -344,6 +345,7 @@ Route::middleware('auth')->group(function () {
     // is no id for the DESK in the route: being there is the permission.
     Route::post('/exchange/store/{offer}', [ExchangeController::class, 'redeem'])->name('exchange.redeem');
     Route::post('/exchange/sell/{row}', [ExchangeController::class, 'sell'])->name('exchange.sell');
+    Route::post('/exchange/bank/{op}', [ExchangeController::class, 'bank'])->name('exchange.bank');
 
     /*
      * Work. There is no index and never will be: a board belongs to a DESK,
@@ -490,6 +492,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/city/place/{slug}/encounter/{encounter}', [PlaceController::class, 'encounter'])->name('city.place.encounter');
     Route::post('/city/place/{slug}/sell/{row}', [PlaceController::class, 'sell'])->name('city.sell');
     Route::post('/city/place/{slug}/eat/{meal}', [PlaceController::class, 'eat'])->name('city.eat');
+    Route::get('/bank/call', [BankCallController::class, 'show'])->name('bank.call');
+    Route::post('/bank/call/{choice}', [BankCallController::class, 'answer'])->whereIn('choice', ['pay', 'settle', 'refuse'])->name('bank.call.answer');
+    Route::post('/city/place/{slug}/loan/{op}', [PlaceController::class, 'loan'])->name('city.loan');
+    Route::post('/city/place/{slug}/bank/{op}', [PlaceController::class, 'bank'])->name('city.bank');
     Route::post('/city/place/{slug}/insure/{kind}/{share}', [PlaceController::class, 'insure'])->whereNumber('share')->name('city.insure');
     Route::post('/city/place/{slug}/treat/{service}', [PlaceController::class, 'treat'])->name('city.treat');
     Route::post('/city-explore', [CityController::class, 'explore'])->name('city.explore');

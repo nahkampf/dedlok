@@ -15,6 +15,6 @@ declare(strict_types=1);
 
 return [
 
-    'app' => '0.98.0',
+    'app' => '0.99.0',
 
 ];
