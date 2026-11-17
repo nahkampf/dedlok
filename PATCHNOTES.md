@@ -1,3 +1,7 @@
+## 0.99.1 (2026-11-17)
+
+- Added a few achievement images
+
 ## 0.99.0 (2026-11-17)
 
 - Kronos Capital now exists; the premiere personal banking solution for people with shady income.

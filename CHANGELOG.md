@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.99.1] — 2026-11-17
+
+### Added
+- **Achievement pictures 27, 28, 29, 32, 33 and 37** (`public/images/achievements/<id>.jpg`).
+
+
 ## [0.99.0] — 2026-11-17
 
 ### Added
@@ -4377,7 +4383,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.99.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.99.1...HEAD
+[0.99.1]: https://github.com/nahkampf/dedlok/compare/v0.99.0...v0.99.1
 [0.99.0]: https://github.com/nahkampf/dedlok/compare/v0.98.0...v0.99.0
 [0.98.0]: https://github.com/nahkampf/dedlok/compare/v0.97.2...v0.98.0
 [0.97.2]: https://github.com/nahkampf/dedlok/compare/v0.97.1...v0.97.2
