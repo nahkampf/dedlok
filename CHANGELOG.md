@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.100.0] — 2026-11-17
+
+### Added
+- **The leaderboard (`docs/LEADERBOARD.md`).** A tab of the character window (`/leaderboard`) with the first five of six boards: successful intrusion runs (runs ended `completed`), net worth (wallet + bank + every item at `stockPrice()` − loan owed; names and order only, never the figure), most skill points, Explorers (`grid_explored`), Scanners (`systems_scanned`) and Murder Hobos (fights won, counted from `fights.result = 'b_down'`, so history counts). Equal values share a rank and stand alphabetically; a value of 0 or less is not ranked; each board ends with your own rank only. Everyone counts, admins included.
+  - **A snapshot, not a live query.** `leaderboard:snapshot` runs hourly at minute 12 and rewrites `leaderboard_entries` with every ranked character of every board (`App\Leaderboard\Snapshot`, sums in `Tally`); the page reads that table and says how old it is.
+
+### Fixed
+- **The scan window stays open when a pass ends.** The map screen's reload at the end of a pass waited for the page, which closed the open `<dialog>`; with the window open it now reloads when the window is closed. `ui-kit.js` `passClocks()`.
+
+### Migrations
+- `leaderboard_entries` (board, character, value, rank, position, written_at; unique per board and character).
+
+### Deploy
+- Run the migration, then `php artisan leaderboard:snapshot` once so the boards are not empty until minute 12.
+
+
 ## [0.99.2] — 2026-11-17
 
 ### Added
@@ -4390,7 +4406,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.99.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.100.0...HEAD
+[0.100.0]: https://github.com/nahkampf/dedlok/compare/v0.99.2...v0.100.0
 [0.99.2]: https://github.com/nahkampf/dedlok/compare/v0.99.1...v0.99.2
 [0.99.1]: https://github.com/nahkampf/dedlok/compare/v0.99.0...v0.99.1
 [0.99.0]: https://github.com/nahkampf/dedlok/compare/v0.98.0...v0.99.0

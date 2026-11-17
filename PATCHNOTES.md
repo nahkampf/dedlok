@@ -1,3 +1,8 @@
+## 0.100.0 (2026-11-17)
+
+- Scan window stays open when a pass finishes now
+- We now have leaderboards!
+
 ## 0.99.2 (2026-11-17)
 
 - The overview map now has tool tips for system name, grade and coordinate
