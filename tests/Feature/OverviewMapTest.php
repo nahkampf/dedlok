@@ -31,7 +31,7 @@ final class OverviewMapTest extends TestCase
         $json = $this->actingAs($me->user)->getJson(route('cyberspace.overview'))->assertOk()->json();
 
         $this->assertSame('Overview map: Main Grid', $json['title']);
-        $this->assertSame([[2, 3, 'silo', 'AAAAAAAA']], $json['cells']);
+        $this->assertSame([[2, 3, 'silo', 'AAAAAAAA', 'Silo - A', null]], $json['cells']);
         $this->assertSame([5, 6], $json['you']);
         $this->assertCount((int) config('cyberspace.size'), $json['swept']);
         $this->assertSame(str_repeat('0', (int) config('cyberspace.size')), $json['swept'][0]);

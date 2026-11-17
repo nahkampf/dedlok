@@ -1,3 +1,7 @@
+## 0.99.2 (2026-11-17)
+
+- The overview map now has tool tips for system name, grade and coordinate
+
 ## 0.99.1 (2026-11-17)
 
 - Added a few achievement images

@@ -306,11 +306,24 @@ class CyberspaceController extends Controller
                     $swept[] = $row;
                 }
 
+                $contacts = SystemContact::query()
+                    ->where('character_id', $character->getKey())->where('grid_id', $grid->id())
+                    ->get(['x', 'y', 'type', 'address', 'name']);
+
+                // The grade only where it is known, as on the map: a live scan's, or a desk's own.
+                $grades = SystemScan::query()->where('character_id', $character->getKey())->live()
+                    ->whereIn('address', $contacts->pluck('address'))->get()
+                    ->filter(static fn (SystemScan $file): bool => $file->grade !== null)
+                    ->pluck('grade', 'address')
+                    ->union(
+                        Exchange::query()->join('systems', 'systems.id', '=', 'exchanges.system_id')
+                            ->whereIn('systems.address', $contacts->where('type', SystemType::Exchange)->pluck('address'))
+                            ->pluck('exchanges.grade', 'systems.address'),
+                    );
+
                 return [
-                    'cells' => SystemContact::query()
-                        ->where('character_id', $character->getKey())->where('grid_id', $grid->id())
-                        ->get(['x', 'y', 'type', 'address'])
-                        ->map(static fn (SystemContact $c): array => [$c->x, $c->y, $c->type->value, $c->address])->all(),
+                    'cells' => $contacts
+                        ->map(static fn (SystemContact $c): array => [$c->x, $c->y, $c->type->value, $c->address, $c->name, $grades[$c->address] ?? null])->all(),
                     'swept' => $swept,
                 ];
             },
