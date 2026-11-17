@@ -269,15 +269,15 @@ return [
 
         // Creds per grade: [min, max]. Rolled once per restock.
         'creds' => [
-            1 => [40, 120],
-            2 => [80, 240],
-            3 => [150, 450],
-            4 => [300, 800],
-            5 => [600, 1500],
-            6 => [1000, 2600],
-            7 => [1800, 4200],
-            8 => [3000, 7000],
-            9 => [5000, 12000],
+            1 => [13, 60],
+            2 => [27, 120],
+            3 => [50, 225],
+            4 => [100, 400],
+            5 => [200, 750],
+            6 => [333, 1300],
+            7 => [600, 2100],
+            8 => [1000, 3500],
+            9 => [1667, 6000],
         ],
 
         /*
@@ -658,8 +658,8 @@ return [
         /*
         | WHAT A SIPHON PAYS, per night, per backdoor.
         |
-        | A table by grade, not a rate: 45 at grade 1 up to 290 at grade 9 for
-        | doing nothing. The steps are uneven on purpose (20 to 35 a grade).
+        | A table by grade, not a rate: 10 at grade 1 up to 180 at grade 9 for
+        | doing nothing. The steps are uneven on purpose.
         | Against a node's own haul (a grade 9 holds hundreds) that is
         | deliberately modest: a siphon is the SAFE half of a backdoor
         | portfolio and safe income should be slow income. What makes it worth
@@ -674,7 +674,7 @@ return [
         | touches. The dial to turn is this one.
         */
         'siphon' => [
-            'by_grade' => [1 => 45, 2 => 65, 3 => 95, 4 => 125, 5 => 160, 6 => 190, 7 => 220, 8 => 260, 9 => 290],
+            'by_grade' => [1 => 10, 2 => 17, 3 => 25, 4 => 32, 5 => 49, 6 => 76, 7 => 99, 8 => 117, 9 => 180],
         ],
 
         'ageing' => [

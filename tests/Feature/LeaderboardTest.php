@@ -7,7 +7,9 @@ namespace Tests\Feature;
 use App\Achievements\Metric;
 use App\Leaderboard\Board;
 use App\Leaderboard\Snapshot;
+use App\Leaderboard\Tally;
 use App\Models\Character;
+use App\Models\CharacterModifier;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\LeaderboardEntry;
@@ -66,7 +68,7 @@ final class LeaderboardTest extends TestCase
         $this->assertSame(7, (new Snapshot)->rankOf(Board::Runs, $last));
     }
 
-    public function test_net_worth_is_wallet_bank_and_items_less_the_loan_and_shows_no_figure(): void
+    public function test_net_worth_is_wallet_bank_and_items_less_the_loan_and_shows_an_approximation(): void
     {
         $rich = $this->who('Rich', 1000);
         DB::table('bank_accounts')->insert(['character_id' => $rich->id, 'balance' => 500, 'created_at' => now(), 'updated_at' => now()]);
@@ -78,8 +80,10 @@ final class LeaderboardTest extends TestCase
         (new Snapshot)->write();
 
         $this->assertSame([['Rich', 1, 1000 + 500 + 600 - 350]], $this->board(Board::NetWorth));
-        $this->assertFalse(Board::NetWorth->showsFigures());
-        $this->assertTrue(Board::Runs->showsFigures());
+        foreach ([[300, '300'], [1422, '1k'], [13100, '10k'], [17321, '20k'], [49000, '50k'], [89212, '100k'], [101232, '100k'], [154012, '200k'], [202312, '200k'], [550000, '500k'], [1100000, '1M'], [3160974, '3M'], [424242, '500k'], [2600000000, '3B']] as [$value, $shown]) {
+            $this->assertSame($shown, Board::NetWorth->figure($value));
+        }
+        $this->assertSame('1,234', Board::Runs->figure(1234));
     }
 
     public function test_the_other_boards_read_their_counters(): void
@@ -99,6 +103,17 @@ final class LeaderboardTest extends TestCase
         $this->assertSame([['Ada', 1, 40]], $this->board(Board::Explorers));
         $this->assertSame([['Ada', 1, 7]], $this->board(Board::Scanners));
         $this->assertSame([['Ada', 1, 150]], $this->board(Board::SkillPoints));
+    }
+
+    public function test_attributes_sum_the_lasting_and_leave_out_the_temporary(): void
+    {
+        $a = $this->who('Ada');
+        $plain = (new Tally)->values(Board::Attributes)[$a->id];
+        $this->assertSame(array_sum($a->attributeScores()), $plain);
+
+        CharacterModifier::query()->create(['character_id' => $a->id, 'definition_key' => 'fatigue_tired']);
+
+        $this->assertSame($plain, (new Tally)->values(Board::Attributes)[$a->id]);
     }
 
     public function test_writing_again_replaces_the_board(): void
@@ -121,7 +136,7 @@ final class LeaderboardTest extends TestCase
         $this->assertSame('12 * * * *', $event->expression);
     }
 
-    public function test_the_page_lists_the_boards_hides_net_worth_and_says_where_you_stand(): void
+    public function test_the_page_lists_the_boards_shows_net_worth_approximately_and_says_where_you_stand(): void
     {
         $me = $this->who('Me', 10);
         $rich = $this->who('Richie', 424242);
@@ -130,10 +145,11 @@ final class LeaderboardTest extends TestCase
 
         $html = $this->actingAs($me->user)->get(route('leaderboard.index'))->assertOk()->getContent();
 
-        $this->assertStringContainsString('Successful intrusion runs', $html);
-        $this->assertStringContainsString('Murder Hobos', $html);
+        $this->assertStringContainsString(Board::Runs->label(), $html);
+        $this->assertStringContainsString(Board::MurderHobos->label(), $html);
         $this->assertStringContainsString('Me', $html);
         $this->assertStringContainsString('Richie', $html);
         $this->assertStringNotContainsString('424,242', $html);
+        $this->assertStringContainsString('500k', $html);
     }
 }

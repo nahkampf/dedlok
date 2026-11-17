@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.100.1] — 2026-11-17
+
+### Added
+- Leaderboard: an **Attributes** board (the ten attributes as resolved, without drugs, injuries, statuses or fatigue; `Character::modifiers(lastingOnly: true)`), a description under each board title (`leaderboard.about.*`), the viewer's own handle in the warn colour, and net worth now shows an approximation snapped to a ladder of nice figures (`Board::LADDER`: 1, 2, 3, 5, 7 times a power of ten) instead of nothing.
+- Admin: an **Artisan actions** panel at `admin/artisan`. One card per command in `config/artisan_actions.php` (the whole whitelist; anything else is a 404), run through `Artisan::call()`, logged, output flashed. Once-a-night commands and anything needing an argument are left out on purpose.
+- Missions: per-entity `grade_only` terms (offers per desk grade). The Bureau of Network Integrity offers Survey, Agitation, Data transport and Supply at grade 1, plus Denial at grade 2, plus Extraction at grade 3.
+- Planning screen: the Mission goal box names every accepted job held against the system.
+
+### Changed
+- Balance: extract creds per grade cut (minimum to a third, maximum to a half); siphon payouts retuned to 10, 17, 25, 32, 49, 76, 99, 117, 180.
+- Run screen: Disarm buttons moved into the Actions row.
+
+### Fixed
+- Run screen: the spinner on a pressed action button no longer widens it, so Egress no longer wraps onto a second row.
+
+### Deploy
+- No migration. After deploy, run `php artisan leaderboard:snapshot` once (or press it in Admin → Artisan commands) so the Attributes board fills.
+
+
 ## [0.100.0] — 2026-11-17
 
 ### Added
@@ -4406,7 +4425,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.100.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.100.1...HEAD
+[0.100.1]: https://github.com/nahkampf/dedlok/compare/v0.100.0...v0.100.1
 [0.100.0]: https://github.com/nahkampf/dedlok/compare/v0.99.2...v0.100.0
 [0.99.2]: https://github.com/nahkampf/dedlok/compare/v0.99.1...v0.99.2
 [0.99.1]: https://github.com/nahkampf/dedlok/compare/v0.99.0...v0.99.1

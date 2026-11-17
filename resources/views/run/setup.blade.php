@@ -476,6 +476,14 @@
         <h2>{{ Text::get('cyberspace.run.setup.intent') }}</h2>
     </div>
 
+    {{-- THE JOBS THEY HOLD FOR THIS SYSTEM, worded as on the run screen. --}}
+    @foreach ($missions as $mission)
+        <div class="callout" style="margin-top:var(--s-3)">
+            <p style="margin:0">{{ Text::get('cyberspace.run.mission', ['action' => $mission->action->label(), 'entity' => $mission->entity?->name ?? '']) }}</p>
+            <p class="micro" style="margin:var(--s-1) 0 0;color:var(--ink-2)">{{ $mission->action->description() }}</p>
+        </div>
+    @endforeach
+
     @if ($lockedDown)
         <p class="micro" style="color:var(--warn);padding:var(--s-3) 0;margin:0">
             {{ Text::get('cyberspace.run.refused.locked_down') }}

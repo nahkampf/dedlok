@@ -629,12 +629,23 @@ return [
         'title' => 'Leaderboard',
         'lede' => 'The hottest names on the scene.',
         'boards' => [
-            'runs' => 'Successful intrusion runs',
+            'runs' => 'Runners',
             'net_worth' => 'Net worth',
             'skill_points' => 'Most skillpoints',
             'explorers' => 'Explorers',
             'scanners' => 'Scanners',
             'murder_hobos' => 'Murder Hobos',
+            'attributes' => 'Attributes',
+        ],
+        // A line of small text under each board's title: what it counts. The owner writes these.
+        'about' => [
+            'runs' => 'Number of successful intrusion runs',
+            'net_worth' => 'Credits + assets - loans',
+            'skill_points' => 'Who\'s been studying?',
+            'explorers' => 'Number of grid positions discovered',
+            'scanners' => 'Systems fully scanned',
+            'murder_hobos' => 'Number of opponents killed in combat',
+            'attributes' => 'Sum of attributes (no temporary modifiers)',
         ],
         // A board nobody is on yet.
         'empty' => '-',
@@ -4862,6 +4873,16 @@ return [
     | Item and skill NAMES are still columns — these are the words around them.
     */
     'admin' => [
+        // The Artisan actions panel: the owner writes these.
+        'artisan' => [
+            'title' => 'Artisan commands',
+            'lede' => 'List all the available (normally runnable) artisan commands',
+            'run' => 'Run',
+            'output' => 'Output',
+            'no_output' => 'No output',
+            'done' => ':command done!',
+            'failed' => ':command failed!',
+        ],
         'sudo' => [
             'title' => 'Sudo',
             'lede' => 'Play as another character, for debugging. You are signed in as them until you press Exit sudo in the side menu.',

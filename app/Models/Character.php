@@ -682,12 +682,14 @@ class Character extends Model
      * and sums within each, so two sources cannot fight over which went first.
      *
      * @param  list<string>  $without  `character_modifiers` definition keys to leave out; only `Sheet` asks, for `fatigue_max`.
+     * @param  bool  $lastingOnly  leave out what is temporary: drugs and the statuses and injuries on `character_modifiers`
+     *                             (fatigue's included). Only the leaderboard asks.
      * @return list<Modifier>
      */
-    public function modifiers(?\DateTimeInterface $asAt = null, array $without = []): array
+    public function modifiers(?\DateTimeInterface $asAt = null, array $without = [], bool $lastingOnly = false): array
     {
         // Remembered for the length of a web request (see ModifierMemo); never for a past moment, an exclusion, or a what-if.
-        $memoKey = $asAt === null && $without === [] && $this->exists && $this->assumedRunning === null && $this->assumedStopped === null && ModifierMemo::active()
+        $memoKey = $asAt === null && $without === [] && ! $lastingOnly && $this->exists && $this->assumedRunning === null && $this->assumedStopped === null && ModifierMemo::active()
             ? "{$this->getKey()}:{$this->archetype}:{$this->equipped_deck_id}"
             : null;
 
@@ -706,10 +708,10 @@ class Character extends Model
             new InstalledImplants($this, $asAt),
             // The first source that is not derived from something else the
             // character has: injuries and statuses that happened TO them.
-            new CharacterModifiers($this->getKey(), $asAt, null, $without),
+            ...($lastingOnly ? [] : [new CharacterModifiers($this->getKey(), $asAt, null, $without)]),
             // What they have in them. The sixth, and the resolver learned
             // nothing new for it — a dose is a list of modifiers with a clock.
-            new ActiveDoses($this, $asAt),
+            ...($lastingOnly ? [] : [new ActiveDoses($this, $asAt)]),
             // What they are wearing. The seventh: a damage resistance counts only for the body
             // part the piece covers, via a condition the source adds. Nothing records when a
             // piece came off, so a past moment cannot be asked.

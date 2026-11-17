@@ -85,3 +85,5 @@ controller drops the imprint in the same transaction. Everything else cascades.
 
 **Grants live at `admin/characters`**: a searchable list of characters with *Give creds* (1 to 1,000,000, through `Wallet::move()` as `Reason::Granted`, so the ledger has the line), *Full HP* and *Full SI* (`Character::recover()` to the resolved maximum, never past it), each under a row lock. Not a writer of its own: it only calls the ones that own the numbers.
 
+
+**Artisan actions live at `admin/artisan`**: one card per command in `config/artisan_actions.php` (name, the command's own description, a Run button). `ArtisanController::run()` runs it through `Artisan::call()`, logs who ran it, and flashes the output. **The config list is the whole whitelist**: anything else is a 404. It holds only commands that are safe at any moment: setup, reports, and sweeps that act on what has come due. The once-a-night ones (`bank:nightly`, `cyberspace:siphons`, …) and anything needing an argument are left out on purpose, and a test pins that.

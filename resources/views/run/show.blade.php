@@ -80,22 +80,11 @@
         @elseif ($tree->logQuiet)
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">{{ Text::get('cyberspace.tree.wipe_quiet') }}</p>
         @endif
-        {{-- FOUND TRAPS next door: a Disarm each (the OS roll), its own form since it names a node. --}}
+        {{-- FOUND TRAPS next door: the chance is here; the Disarm buttons are in Actions. --}}
         @if ($tree->disarm !== [])
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
                 {{ Text::get('cyberspace.tree.disarm_chance', ['chance' => (int) round(($tree->disarmChance ?? 0) * 100)]) }}
             </p>
-            <div class="row row--wrap" style="--gap:var(--s-2);margin:0 0 var(--s-2)">
-                @foreach ($tree->disarm as [$trapNode, $trapLabel])
-                    <form method="POST" action="{{ route('run.act') }}" data-turn-form data-turn-field="node" data-waiting="">
-                        @csrf
-                        <input type="hidden" name="action" value="disarm">
-                        <button type="submit" name="node" value="{{ $trapNode }}" class="btn cut">
-                            {{ Text::get('cyberspace.run.action.disarm', ['trap' => $trapLabel]) }}
-                        </button>
-                    </form>
-                @endforeach
-            </div>
         @endif
         @if ($tree->subverted && ! $run->alerted)
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
@@ -332,6 +321,14 @@
                 <button type="submit" name="action" value="subvert" class="btn cut btn--go">
                     {{ Text::get('cyberspace.run.action.subvert') }}
                 </button>
+            @endif
+            {{-- FOUND TRAPS next door: a Disarm each (the OS roll), the node going with the press, as an Install's kind does. --}}
+            @if ($tree)
+                @foreach ($tree->disarm as [$trapNode, $trapLabel])
+                    <button type="submit" name="action" value="disarm" class="btn cut" formaction="{{ route('run.act', ['node' => $trapNode]) }}">
+                        {{ Text::get('cyberspace.run.action.disarm', ['trap' => $trapLabel]) }}
+                    </button>
+                @endforeach
             @endif
             @if ($tree)
                 <button type="submit" name="action" value="nmap" class="btn cut" @unless ($tree->canNmap) disabled @endunless>

@@ -2076,6 +2076,10 @@ a.tab { text-decoration: none; }
 
 /* A spinner inside a button: the one that was pressed while the turn is waiting on the others. */
 .btn .spinner { display: inline-block; vertical-align: -2px; width: 12px; height: 12px; margin-right: var(--s-2); }
+/* ...but in a run's action row it sits in the button's own padding rather than widening the button, which would wrap the
+   last button (Egress) onto a second row the moment it was pressed. */
+form[data-turn-form] .btn { position: relative; }
+form[data-turn-form] .btn .spinner { position: absolute; left: calc((var(--btn-px) - 12px) / 2); top: 50%; margin: -6px 0 0; }
 
 .skeleton {
   background: linear-gradient(90deg, var(--bg-2) 0%, var(--bg-3) 50%, var(--bg-2) 100%);
