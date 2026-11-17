@@ -1,3 +1,13 @@
+## 0.100.1 (2026-11-17)
+
+- Some further polish for leaderboards
+- Internal admin tool to run engine commands
+- Changed so that BNI only offers Survey, Agitation, Data transport and Supply at G1, and adds Denial at G2 and Extract at G3.
+- "Mission goal" box in planning screen now actually shows the mission if you have one
+- Run screen: Disarm buttons moved to Actions
+- Run screen: The spinner in the egress button pushed it to a new row, fixed now
+- Balancing: Slashed creds per grade for extractions and siphons. A small first step in balancing missions vs rampaging around the grid.
+
 ## 0.100.0 (2026-11-17)
 
 - Scan window stays open when a pass finishes now
