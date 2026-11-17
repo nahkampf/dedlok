@@ -14,7 +14,7 @@ section below points at its file; read it before editing that subsystem.
 Companion docs: `docs/MECHANICS.md` (anything producing a number), `docs/CYBERSPACE.md` (the grid,
 systems, runs), `docs/CYBERSPACE_RULES.md` (the binding rules for all of it), `docs/CITY.md` (districts,
 travel, explore, shops, clinics, encounters), `docs/COMBAT.md` (physical combat — items built, engine designed),
-`docs/FATIGUE.md`, `docs/BANK.md` (Kronos Capital: accounts built, loans designed), `docs/CRAFTING.md`, `docs/ENCOUNTERS_GRID.md`, `docs/WORLDBUILDING.md`, `docs/TODO.md`.
+`docs/FATIGUE.md`, `docs/BANK.md` (Kronos Capital: accounts and loans built), `docs/LEADERBOARD.md` (built), `docs/CRAFTING.md`, `docs/ENCOUNTERS_GRID.md`, `docs/WORLDBUILDING.md`, `docs/TODO.md`.
 
 ## Everything runs in Docker
 

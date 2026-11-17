@@ -43,6 +43,7 @@ use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\KofiWebhookController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MissionController;
@@ -512,6 +513,7 @@ Route::middleware('auth')->group(function () {
      * character's.
      */
     Route::get('/achievements', [AchievementController::class, 'index'])->name('achievements.index');
+    Route::get('/leaderboard', LeaderboardController::class)->name('leaderboard.index');
 
     /*
      * The inbox. Also the account's rather than the character's, and for the

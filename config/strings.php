@@ -624,6 +624,28 @@ return [
     ],
 
     // Kronos Capital (docs/BANK.md). Every value is a PLACEHOLDER: the owner writes the text.
+    // The leaderboard (docs/LEADERBOARD.md): a tab of the character window, the first five of each board.
+    'leaderboard' => [
+        'title' => 'Leaderboard',
+        'lede' => 'The hottest names on the scene.',
+        'boards' => [
+            'runs' => 'Successful intrusion runs',
+            'net_worth' => 'Net worth',
+            'skill_points' => 'Most skillpoints',
+            'explorers' => 'Explorers',
+            'scanners' => 'Scanners',
+            'murder_hobos' => 'Murder Hobos',
+        ],
+        // A board nobody is on yet.
+        'empty' => '-',
+        // Under a board: your place on it. Takes :rank.
+        'your_rank' => 'Your rank: :rank',
+        // Under a board, when you are not on it.
+        'unranked' => 'You are not ranked on this board yet',
+        // Under the boards, when they were last written. Takes :when ("2 hours ago").
+        'written' => 'Last updated :when',
+    ],
+
     'bank' => [
         'heading' => 'Kronos Capital Bank',
         'balance' => 'Balance',
@@ -3296,6 +3318,7 @@ return [
             'equipment' => 'Equipment',
             'standing' => 'Standing',
             'achievements' => 'Achievements',
+            'leaderboard' => 'Leaderboard',
         ],
 
         'attributes_heading' => 'Attributes',

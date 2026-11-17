@@ -26,6 +26,7 @@
         'equipment' => 'equipment.index',
         'standing' => 'standing.index',
         'achievements' => 'achievements.index',
+        'leaderboard' => 'leaderboard.index',
     ] as $tab => $route)
         <a class="tab" href="{{ route($route) }}"
            @if ($current === $tab) aria-current="page" @endif>
