@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.100.2] — 2026-11-17
+
+### Fixed
+- Cyberspace: a Denial run that fills the node's pressure meter now shuts the system down (`Lockdown::afterRun()`), whether or not the alert went off. A tree run's flood is only noisy when the noise bar trips, so a quiet flood finished with nothing noticed and the system stayed open.
+
+
 ## [0.100.1] — 2026-11-17
 
 ### Added
@@ -4425,7 +4431,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.100.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.100.2...HEAD
+[0.100.2]: https://github.com/nahkampf/dedlok/compare/v0.100.1...v0.100.2
 [0.100.1]: https://github.com/nahkampf/dedlok/compare/v0.100.0...v0.100.1
 [0.100.0]: https://github.com/nahkampf/dedlok/compare/v0.99.2...v0.100.0
 [0.99.2]: https://github.com/nahkampf/dedlok/compare/v0.99.1...v0.99.2

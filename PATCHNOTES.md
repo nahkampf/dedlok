@@ -1,3 +1,6 @@
+## 0.100.2 (2026-11-17)
+- A Denial run didn't cause a lockdown after the switch to tree runs. Fixed now.
+
 ## 0.100.1 (2026-11-17)
 
 - Some further polish for leaderboards
