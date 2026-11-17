@@ -176,6 +176,11 @@ class RunController extends Controller
             'target' => $target,
             // An accepted Placement job still waiting on this system: the backdoor button then says what it is for.
             'placement' => app(MissionLedger::class)->hasOpenAgainst($character, $target, MissionAction::Plant),
+            // Every accepted job of theirs still open against this system, named in the Mission goal box.
+            'missions' => Mission::query()->accepted()->with('entity')
+                ->where('character_id', $character->id)
+                ->whereHas('targets', fn ($q) => $q->whereNull('satisfied_at')->where('system_id', $target->getKey())->where('address', $target->address))
+                ->get(),
             'scan' => $scan,
             // The same rows the scanner window shows, every fact either way: an unread one says so.
             // No scan yet: a tree system still lists its tree facts, unread.

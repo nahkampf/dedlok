@@ -6,10 +6,15 @@ namespace Tests\Feature\Cyberspace;
 
 use App\Cyberspace\RunPurpose;
 use App\Decks\DeckTotals;
+use App\Missions\MissionAction;
+use App\Missions\MissionState;
 use App\Models\Character;
+use App\Models\Entity;
+use App\Models\Exchange;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Mission;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemScan;
@@ -18,6 +23,7 @@ use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
 use App\Support\Qb;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -70,6 +76,27 @@ final class AssessorScreensTest extends TestCase
         app(ProgramRunner::class)->start($this->character, $this->assessor());
 
         $this->actingAs($this->character->user)->get(route('run.setup'))->assertOk()->assertSee('data-assess-readout', false)->assertSee('[???]');
+    }
+
+    public function test_the_mission_goal_box_names_a_job_held_for_this_system(): void
+    {
+        $page = fn () => $this->actingAs($this->character->user)->get(route('run.setup'))->assertOk();
+        $entity = Entity::query()->interactable()->firstOrFail();
+        $system = System::query()->where('address', 'DEADBEEF')->firstOrFail();
+
+        $page()->assertDontSee(Text::get('cyberspace.run.mission', ['action' => 'Demolition', 'entity' => $entity->name]));
+
+        $deskSystem = System::factory()->at(30, 30)->ownedBy($entity)->create(['type' => 'exchange', 'grade' => 1]);
+        $desk = Exchange::query()->create(['system_id' => $deskSystem->id, 'grade' => 1, 'agent' => 'Mr Nakata', 'min_standing' => 0]);
+
+        $mission = Mission::query()->create([
+            'character_id' => $this->character->id, 'entity_id' => $entity->id, 'exchange_id' => $desk->id, 'action' => MissionAction::Burn,
+            'state' => MissionState::Accepted, 'quantity_required' => 0, 'creds_reward' => 1, 'standing_reward' => 0.01,
+            'loyalty_reward' => 1, 'penalty' => 0.01, 'offered_at' => now(), 'accepted_at' => now(), 'expires_at' => now()->addHour(),
+        ]);
+        $mission->targets()->create(['system_id' => $system->id, 'address' => $system->address]);
+
+        $page()->assertSee(Text::get('cyberspace.run.mission', ['action' => $mission->action->label(), 'entity' => $entity->name]));
     }
 
     public function test_a_read_system_gets_a_rounded_figure_not_the_unknown_mark(): void
