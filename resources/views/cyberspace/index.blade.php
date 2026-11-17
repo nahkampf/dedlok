@@ -805,7 +805,8 @@
         <div class="overview" data-overview-view
              data-copied-address="{{ Text::get('cyberspace.known.overview_copied_address') }}"
              data-copied-coords="{{ Text::get('cyberspace.known.overview_copied_coords') }}"
-             data-copy-failed="{{ Text::get('cyberspace.reading.copy_failed') }}">
+             data-copy-failed="{{ Text::get('cyberspace.reading.copy_failed') }}"
+             data-grade-label="{{ Text::get('cyberspace.scan.grade') }}">
             <canvas></canvas>
         </div>
     </dialog>

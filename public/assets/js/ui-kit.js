@@ -466,6 +466,8 @@
   const OVERVIEW_CELL = 10;
   let overviewPulse = null;
   let overviewAddress = new Map();
+  let overviewSystem = new Map();
+  let overviewHover = null;
   const OVERVIEW_TOKEN = { silo: "--steel", compute: "--cyan", relay: "--jade", exchange: "--brass", fortress: "--ember", gateway: "--brass", portal: "--brass" };
   on("click", "[data-overview]", (e, btn) => {
     const view = document.querySelector("[data-overview-view]");
@@ -492,6 +494,7 @@
         cell(d.portal[0], d.portal[1], tok(OVERVIEW_TOKEN.portal));
         d.cells.forEach(([x, y, type]) => cell(x, y, tok(OVERVIEW_TOKEN[type] || "--ink-2")));
         overviewAddress = new Map(d.cells.map(([x, y, , address]) => [`${x},${y}`, address]));
+        overviewSystem = new Map(d.cells.map(([x, y, , , name, grade]) => [`${x},${y}`, { name, grade }]));
         const at = d.you || d.portal;
         view.scrollLeft = (at[0] + 0.5) * OVERVIEW_CELL - view.clientWidth / 2;
         view.scrollTop = (at[1] + 0.5) * OVERVIEW_CELL - view.clientHeight / 2;
@@ -522,6 +525,41 @@
         }, 80);
       });
   });
+  /* Pointing at a system floats its name, its grade (when a scan has found it out) and where it is: the inspector's layer,
+     placed over the cell. Nothing for ground with no system on it. */
+  on("pointermove", "[data-overview-view] canvas", (e, canvas) => {
+    const r = canvas.getBoundingClientRect();
+    const x = Math.floor(((e.clientX - r.left) * canvas.width) / r.width / OVERVIEW_CELL);
+    const y = Math.floor(((e.clientY - r.top) * canvas.height) / r.height / OVERVIEW_CELL);
+    const key = `${x},${y}`;
+    const system = overviewSystem.get(key);
+    if (!system) { overviewHover = null; uninspect(); return; }
+    if (overviewHover === key && layer?.hasAttribute("data-shown")) return;
+    overviewHover = key;
+    const label = canvas.closest("[data-overview-view]").dataset.gradeLabel;
+    const line = (text) => { const p = document.createElement("div"); p.className = "item-card__stat"; p.textContent = text; return p; };
+    const card = document.createElement("div");
+    card.className = "item-card";
+    const hd = document.createElement("div");
+    hd.className = "item-card__hd";
+    const name = document.createElement("span");
+    name.className = "item-card__name";
+    name.textContent = system.name;
+    hd.appendChild(name);
+    const bd = document.createElement("div");
+    bd.className = "item-card__stats";
+    if (system.grade !== null) bd.appendChild(line(`${label} ${system.grade}`));
+    bd.appendChild(line(`${x}, ${y}`));
+    card.append(hd, bd);
+    const cell = new DOMRect(
+      r.left + (x * OVERVIEW_CELL * r.width) / canvas.width,
+      r.top + (y * OVERVIEW_CELL * r.height) / canvas.height,
+      (OVERVIEW_CELL * r.width) / canvas.width,
+      (OVERVIEW_CELL * r.height) / canvas.height,
+    );
+    inspect(cell, card);
+  });
+  on("pointerout", "[data-overview-view] canvas", () => { overviewHover = null; uninspect(); });
   /* Clicking a cell copies the address of the system there, or its coordinates when there is none (unexplored or empty). */
   on("click", "[data-overview-view] canvas", async (e, canvas) => {
     const view = canvas.closest("[data-overview-view]");
@@ -886,7 +924,8 @@
   }
 
   function place(anchorEl) {
-    const a = anchorEl.getBoundingClientRect();
+    // An element, or a plain rect for things with no element of their own (a cell on a canvas).
+    const a = anchorEl.getBoundingClientRect ? anchorEl.getBoundingClientRect() : anchorEl;
     const r = layer.getBoundingClientRect();
     // Above by preference, below when there is no room — the top row of a
     // stash grid has nothing above it.
@@ -898,8 +937,8 @@
       "translate(" + Math.round(left) + "px," + Math.round(Math.max(GAP, top)) + "px)";
   }
 
-  function inspect(el) {
-    const body = detail(el);
+  function inspect(el, given) {
+    const body = given || detail(el);
     if (!body) return;
     if (!layer) {
       layer = document.createElement("div");
