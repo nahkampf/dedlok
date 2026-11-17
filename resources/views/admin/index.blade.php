@@ -62,6 +62,16 @@
 
         <div class="card">
             <div class="card__hd">
+                <div class="card__title">{{ Text::get('admin.artisan.title') }}</div>
+            </div>
+            <div class="card__bd">{{ Text::get('admin.artisan.lede') }}</div>
+            <div class="card__ft">
+                <a class="btn btn--sm" href="{{ route('admin.artisan.index') }}">{{ Text::get('admin.artisan.title') }}</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__hd">
                 <div class="card__title">{{ Text::get('admin.supporters.title') }}</div>
             </div>
             <div class="card__bd">{{ Text::get('admin.supporters.lede') }}</div>

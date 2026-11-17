@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Admin\ArchetypeController as AdminArchetypeController;
+use App\Http\Controllers\Admin\ArtisanController as AdminArtisanController;
 use App\Http\Controllers\Admin\BetaKeyController as AdminBetaKeyController;
 use App\Http\Controllers\Admin\CharacterController as AdminCharacterController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -612,6 +613,10 @@ Route::middleware(['auth', 'can:admin'])
         Route::get('characters', [AdminCharacterController::class, 'index'])->name('characters.index');
         Route::post('characters/{character}/creds', [AdminCharacterController::class, 'creds'])->name('characters.creds');
         Route::post('characters/{character}/refill/{resource}', [AdminCharacterController::class, 'refill'])->name('characters.refill');
+
+        // Run a listed Artisan command (config/artisan_actions.php).
+        Route::get('artisan', [AdminArtisanController::class, 'index'])->name('artisan.index');
+        Route::post('artisan/{command}', [AdminArtisanController::class, 'run'])->where('command', '[a-z0-9:_-]+')->name('artisan.run');
 
         // Items into a character's stash.
         Route::get('spawn', [AdminSpawnController::class, 'index'])->name('spawn.index');
