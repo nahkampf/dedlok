@@ -366,6 +366,15 @@ return [
             'secret' => false,
         ],
 
+        // Counts physical fights won, whoever the opponent was. An escape does not count.
+        38 => [
+            'name' => 'Murder Hobo',
+            'description' => 'Killed 150 opponents in combat.',
+            'metric' => 'fights_won',
+            'threshold' => 150,
+            'secret' => true,
+        ],
+
     ],
 
     // Rainmaker (35) only counts people paid once this many credits has been sent in all.

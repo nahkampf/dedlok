@@ -128,4 +128,7 @@ enum Metric: string
 
     /** Journeys taken by Pod, one per fare paid. */
     case PodTrips = 'pod_trips';
+
+    /** Physical fights won: the opponent taken to zero. An escape on either side is not one. */
+    case FightsWon = 'fights_won';
 }

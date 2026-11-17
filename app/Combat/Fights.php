@@ -529,6 +529,8 @@ final class Fights
             return;
         }
 
+        $achievements->record($character, Metric::FightsWon);
+
         // Most of the player's damage in the fight, by hand, decides what it counts for.
         $dealt = ['melee' => 0.0, 'ranged' => 0.0, 'fists' => 0.0];
 

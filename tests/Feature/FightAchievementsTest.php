@@ -107,6 +107,13 @@ final class FightAchievementsTest extends TestCase
         $this->assertSame(1, $this->won(Metric::BladeVsFirearmWins));
     }
 
+    public function test_a_won_fight_counts_once(): void
+    {
+        $this->finish(0);
+
+        $this->assertSame(1, $this->won(Metric::FightsWon));
+    }
+
     public function test_another_blade_counts_for_the_blade_only(): void
     {
         $this->equipMelee($this->wield('sword', WeaponClass::Blade, ['damage' => 20, 'damage_profile' => ['slashing' => 100]]));
