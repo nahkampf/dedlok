@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureCaptchaIsSolved;
 use App\Http\Middleware\EnsureCharacterIsStanding;
 use App\Http\Middleware\EnsureDeckStillRuns;
+use App\Http\Middleware\EnsureDefaultIsFaced;
 use App\Http\Middleware\EnsureEncounterIsResolved;
 use App\Http\Middleware\EnsureFightIsResolved;
 use App\Http\Middleware\EnsureHuntIsResolved;
@@ -63,6 +64,8 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureFightIsResolved::class,
             // An open encounter owns the screen the same way, and waits for the player.
             EnsureEncounterIsResolved::class,
+            // A loan in default calls the player, between things: it waits for any run, fight, hunt or encounter.
+            EnsureDefaultIsFaced::class,
             // A live run owns the screen. Last, because it is the narrowest
             // gate: everything before it decides whether the player may be
             // here at all, and this decides where "here" is.

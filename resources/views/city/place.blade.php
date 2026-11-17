@@ -136,6 +136,11 @@
             @endif
         @endif
 
+        @if ($bank)
+            @include('bank._panel', ['bank' => $bank + ['acts' => $here]])
+            @include('bank._loan', ['loan' => $loan + ['acts' => $here], 'slug' => $place->slug])
+        @endif
+
         @foreach ($policies as $policy)
             <div class="panel">
                 <div class="panel__hd"><span class="micro">{{ Text::get('city.insurance.heading') }} · {{ $policy['kind']->label() }}</span></div>

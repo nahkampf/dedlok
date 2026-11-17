@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Wallet;
 
+use App\Bank\Loans;
 use App\Models\Character;
 use App\Models\WalletEntry;
 
@@ -37,5 +38,10 @@ final class Wallet
             'reason' => $reason,
             'note' => $note === null ? null : mb_substr($note, 0, 255),
         ]);
+
+        // A settlement with Kronos Capital takes its share of what comes in. Inside the one writer, so no inflow can miss it.
+        if ($amount > 0 && $reason->settlesLoans()) {
+            app(Loans::class)->skim($character, $amount);
+        }
     }
 }

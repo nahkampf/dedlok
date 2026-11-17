@@ -170,6 +170,13 @@ final class Renter
         app(SafehouseStorage::class)->burn($locked, $home);
     }
 
+    /** Kronos Capital takes their home over a debt: back in the box, what is stored there left for the caller. The caller holds the lock. */
+    public function seize(Character $locked, Safehouse $home): void
+    {
+        $locked->forceFill(['safehouse_id' => null, 'rent_due_at' => null])->save();
+        $locked->unsetRelation('safehouse');
+    }
+
     public function isFallback(Safehouse $safehouse): bool
     {
         return $safehouse->slug === (string) Config::get('safehouse.fallback');

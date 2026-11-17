@@ -161,6 +161,13 @@ Schedule::command('standing:drift --quiet-when-idle')
     ->withoutOverlapping();
 
 /*
+ * Kronos Capital: a night of interest on every open loan and standing for held balances, after the drift so
+ * a defaulted -5 is put back; and the 15-minute sweep for instalments, grace and default (docs/BANK.md).
+ */
+Schedule::command('bank:nightly --quiet-when-idle')->dailyAt('05:30')->withoutOverlapping();
+Schedule::command('bank:sweep --quiet-when-idle')->everyFifteenMinutes()->withoutOverlapping();
+
+/*
  * A day off both drug figures, and a sweep of what has worn off.
  *
  * Tolerance falls faster than addiction, so a break gives the drug its

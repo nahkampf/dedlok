@@ -615,6 +615,8 @@ return [
             'Directorate of Revenue Enforcement' => 2,
             'Lockjaw' => 3,
             'Golden Path' => 2,
+            // One counter, open to anybody: a bank nobody can find is not a bank.
+            'Kronos Capital' => 1,
         ],
 
         // What each grade of desk wants to think of somebody first. The lower

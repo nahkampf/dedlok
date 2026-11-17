@@ -54,6 +54,18 @@ enum StandingReason: string
     /** An achievement unlocked: every entity thinks a little better of somebody who is getting around. */
     case Achievement = 'achievement';
 
+    /** The balance held overnight at Kronos Capital. The amount is computed, not read from config. */
+    case BankBalance = 'bank_balance';
+
+    /** Interest paid on a Kronos Capital loan. The amount is computed. */
+    case LoanInterest = 'loan_interest';
+
+    /** A Kronos Capital loan defaulted: standing pinned at -5. The amount is the change needed. */
+    case LoanDefault = 'loan_default';
+
+    /** A defaulted loan was cleared: standing back to 0. The amount is the change needed. */
+    case LoanCleared = 'loan_cleared';
+
     /** Time passing. Written by the nightly drift so the sum still checks. */
     case Decay = 'decay';
 
