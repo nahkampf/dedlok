@@ -1139,7 +1139,7 @@ return [
             'insurance_medical_claim' => 'Your :kind claim has been found valid and a payout has now been made into your account. Thank you for being a loyal customer!',
             'insurance_ending' => 'Your insurance policy :kind is running out. Please renew within two days to keep your insurance cover intact.',
             'insurance_lapsed' => 'We have not received a renewal of your insurance policy :kind and it is hereby cancelled.',
-            'darknet_access' => "Wagaan mi bredda? Yuh favor a wicked bredrin, suh wi gi yuh di pass fi dip inna di darknet. Knowledge a power, mi fam. Nuh fuck up di dance. Di spot deh deh: :address. Jah love continuous, keep di livity righteous. // Masta o' arms, di LockJaw kru",
+            'darknet_access' => "Wagwaan mi bredda? Yuh favor a wicked bredrin, suh wi gi yuh di pass fi dip inna di darknet. Knowledge a power, mi fam. Nuh fuck up di dance. Di spot deh deh: :address. Jah love continuous, keep di livity righteous. // Masta o' arms, di LockJaw kru",
             'workout_gain' => "You've been working out. It shows. You gain +1 to :attribute!",
             'tracker_found' => 'Tracker has found the requested node: :address',
             'study_gain' => "You've been reading and studying. You gain +1 to :attribute!",
