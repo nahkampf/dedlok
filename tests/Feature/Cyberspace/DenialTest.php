@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Checks\CheckRoller;
+use App\Cyberspace\Lockdown;
 use App\Cyberspace\Party\PartyTurns;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunEnding;
@@ -88,6 +89,25 @@ final class DenialTest extends TestCase
         $this->assertSame(RunEnding::Completed, $result->ending);
         $this->assertTrue($this->node->fresh()->isLockedDown());
         $this->assertNull($this->character->fresh()->current_run_id);
+    }
+
+    /** A tree run's flood is only noisy when the bar trips; a quiet one that broke the node still shuts it. */
+    public function test_a_broken_node_shuts_even_when_nobody_noticed(): void
+    {
+        $run = $this->start();
+        $run->forceFill(['detected' => false, 'alerted' => false, 'pressure' => 100.0])->save();
+
+        $this->assertTrue(Lockdown::fromConfig()->afterRun($run->fresh()));
+        $this->assertTrue($this->node->fresh()->isLockedDown());
+    }
+
+    public function test_a_node_not_yet_broken_and_unnoticed_stays_open(): void
+    {
+        $run = $this->start();
+        $run->forceFill(['detected' => false, 'alerted' => false, 'pressure' => 60.0])->save();
+
+        $this->assertFalse(Lockdown::fromConfig()->afterRun($run->fresh()));
+        $this->assertFalse($this->node->fresh()->isLockedDown());
     }
 
     public function test_only_a_denial_run_floods(): void

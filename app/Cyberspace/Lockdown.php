@@ -117,6 +117,17 @@ final readonly class Lockdown
             return false;
         }
 
+        /*
+         * A FLOOD THAT BROKE THE NODE SHUTS IT, noticed or not: taking a machine down is the whole of the job, and a tree run's
+         * flood is only noisy when the bar trips, so a quiet one finished with nobody having noticed anything. (A party's
+         * run ends at the same pressure; so does a solo one.) The raid counter is not touched.
+         */
+        if ($run->purpose === RunPurpose::Denial && (float) $run->pressure >= Simulator::denialTarget($run)) {
+            $this->shut($system);
+
+            return true;
+        }
+
         // The counter is read here rather than acted on: the raid ledger says
         // whether the books are spent, and shutting is this class's answer to
         // that — which is what took an immediate relocation out of the ledger.
