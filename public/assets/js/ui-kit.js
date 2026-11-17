@@ -1773,7 +1773,7 @@
   /* --- A running scan pass, ticking ----------------------------------------
      <button data-pass-clock data-remaining="SECONDS" data-total="SECONDS"> holding a [data-pass-bar] meter and a
      [data-pass-left] time. The server renders both once; this moves them every second so a pass visibly runs, and
-     reloads shortly after the end so the page settles it (the next pass begins, or the read is whole). Seconds
+     reloads shortly after the end so the page settles it (the next pass begins, or the read is whole) — or, while the read's own window is open, when that is closed. Seconds
      REMAINING, as with [data-countdown]: never an absolute time, which would trust the browser's clock. */
   function passClocks() {
     document.querySelectorAll("[data-pass-clock]").forEach((el) => {
@@ -1791,7 +1791,12 @@
           text.textContent = (h > 0 ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0");
         }
         if (left > 0) return setTimeout(tick, 1000);
-        setTimeout(() => location.reload(), 1500);
+        // A read being watched keeps its window: the page settles when that is closed instead.
+        setTimeout(() => {
+          const watching = document.querySelector("[data-reading]");
+          if (watching?.open) watching.addEventListener("close", () => location.reload(), { once: true });
+          else location.reload();
+        }, 1500);
       };
       tick();
     });
