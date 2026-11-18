@@ -104,7 +104,7 @@ class CyberspaceController extends Controller
          * than to the next one — a player who arrives to find a scan quietly
          * finished has been told nothing about the minutes they spent.
          */
-        $settled = $probe->settleAll($character);
+        $settled = $probe->settleAll($character, rounds: (int) config('cyberspace.swarm.page_catch_up', 3));
 
         if ($settled !== []) {
             $scan = $scan?->fresh(['operatingSystem']);
@@ -698,7 +698,7 @@ class CyberspaceController extends Controller
             'address' => ['required', 'string', 'max:32'],
         ]);
 
-        $probe->settleAll($character);
+        $probe->settleAll($character, rounds: (int) config('cyberspace.swarm.page_catch_up', 3));
 
         $scan = SystemScan::query()
             ->where('character_id', $character->id)

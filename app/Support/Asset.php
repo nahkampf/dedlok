@@ -8,9 +8,10 @@ namespace App\Support;
  * A public asset URL, stamped with the file's own modification time.
  *
  * There is no bundler here and none is wanted, so nothing rewrites a filename
- * when its contents change — and Apache sends no Cache-Control for
- * public/assets, which leaves browsers free to hold a copy indefinitely
- * without ever asking whether it is still current. That is invisible while a
+ * when its contents change — and Apache used to send no Cache-Control for
+ * public/assets, which left browsers free to hold a copy indefinitely
+ * without ever asking whether it is still current. Now a URL with this stamp is cached for good
+ * (public/assets/.htaccess), which is why the stamp must always be there. That is invisible while a
  * file is stable and then costs a whole afternoon: the markup arrives new, the
  * behaviour that drives it is a week old, and the screen simply does nothing.
  *

@@ -1459,6 +1459,7 @@ return [
                 'hub' => 'Security hub',
                 'relay' => 'Internal relay',
                 'trap' => 'Trap',
+                'tripgate' => 'Tripgate',
                 'log' => 'Log server',
                 'controller' => 'ICE controller',
                 'core' => 'Core',
@@ -2318,6 +2319,7 @@ return [
                 // Run trees. Suggestions, for the user to edit.
                 'not_here' => 'You cannot do that from this node.',
                 'not_a_neighbour' => 'That node is not linked to where you stand.',
+                'one_way' => 'The gate only lets you through the other way.',
                 'no_nmapper' => 'You need an Nmapper running to map the links around you.',
                 'nothing_to_map' => 'There is nothing left within your mapper\'s reach to map.',
                 'no_loopback' => 'You carry no Loopback script.',

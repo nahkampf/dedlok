@@ -26,3 +26,12 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Pages and JSON, compressed as they go out: brotli where the client takes it, gzip otherwise. Done per request at the module's default quality (BrotliCompressionQuality is not allowed in .htaccess; set it in the
+# vhost to tune it). The static assets are precompressed at 11 by bin/precompress.
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>

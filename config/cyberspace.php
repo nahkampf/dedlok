@@ -1391,10 +1391,15 @@ return [
     |
     | `catch_up` is the most systems one settle walks through per instrument: a day away is hundreds of three-minute
     | passes, and the five-minute sweep carries on from where this stops.
+    |
+    | `page_catch_up` is the most rounds a SCREEN (the map, and the scan window's poll) settles before it draws: a round
+    | costs a few hundred queries, so thirty of them were a request of twenty seconds for somebody with a Swarm who had
+    | been away. The rest is the sweep's, or the next look's. Starting a scan still settles everything first.
     */
     'swarm' => [
         'time_factor' => 5,
         'catch_up' => 30,
+        'page_catch_up' => 3,
     ],
 
     /*

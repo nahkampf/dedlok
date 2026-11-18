@@ -86,7 +86,10 @@ final readonly class TreeView
             return Text::get('cyberspace.tree.honeypot_label', ['effect' => $tree->nodes[$node]['trap']->label()]);
         }
 
-        return Text::get('cyberspace.tree.node.'.($kind === NodeKind::Trap ? NodeKind::Conduit : $kind)->value);
+        // A Tripgate shows which way it lets you through: the trees are drawn left to right, entry first.
+        $arrow = $kind === NodeKind::Tripgate ? (in_array([$tree->nodes[$node]['from'], $node], $tree->edges, true) ? ' →' : ' ←') : '';
+
+        return Text::get('cyberspace.tree.node.'.($kind === NodeKind::Trap ? NodeKind::Conduit : $kind)->value).$arrow;
     }
 
     /**
@@ -161,7 +164,7 @@ final readonly class TreeView
             ->whereKeyNot($run->getKey())->pluck('node')->countBy()->all();
         $neighbours = $tree->neighbours($here);
         // A snare still holding (Simulator::refusal reads the same): no way on at all this turn.
-        $moves = $run->snared_until !== null && (int) $run->turn < (int) $run->snared_until ? [] : $neighbours;
+        $moves = $run->snared_until !== null && (int) $run->turn < (int) $run->snared_until ? [] : $tree->steps($here);
         // Sentries are seen where the runner can see: a node they know.
         /** @var Collection<int, array<string, mixed>> $standing */
         $standing = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0);

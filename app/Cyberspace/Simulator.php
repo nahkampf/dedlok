@@ -475,6 +475,7 @@ final readonly class Simulator
         return match ($action) {
             RunAction::Move => match (true) {
                 $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true) => RunRefusal::NotANeighbour,
+                ! $tree->canStep((int) $run->node, $node) => RunRefusal::OneWay,
                 $run->snared_until !== null && $run->turn < $run->snared_until => RunRefusal::Ensnared,
                 // On through a firewall only once it is breached; back the way you came is never blocked.
                 in_array([(int) $run->node, $node], $tree->edges, true) && $this->firewallClosed($run) => RunRefusal::FirewallClosed,

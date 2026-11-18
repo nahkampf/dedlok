@@ -60,6 +60,9 @@ enum RunRefusal: string
     /** A tree run: a Move to a node that is not one edge from where you stand. */
     case NotANeighbour = 'not_a_neighbour';
 
+    /** A tree run: a Move through a Tripgate the wrong way. */
+    case OneWay = 'one_way';
+
     /** A tree run: a Loopback with no Loopback script to hand. */
     case NoLoopback = 'no_loopback';
 

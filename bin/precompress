@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#
+# Write a brotli copy (`<file>.br`) beside each text asset in public/assets, for public/assets/.htaccess to serve.
+#
+# Safe to run at any time and as often as you like: a file whose .br is already newer is left alone, a .br is written
+# to a temporary name and moved into place (a request never sees a half-written one), and a .br whose source has gone
+# is removed. With no `brotli` command it says so and exits 0 — the site then compresses on the fly instead.
+#
+#   bin/precompress
+#
+# Run by the deploy worker after a pull that touched public/assets, as the user PHP runs as.
+
+set -euo pipefail
+cd "$(dirname "$0")/../public/assets"
+
+command -v brotli >/dev/null || { echo "precompress: brotli is not installed, skipping" >&2; exit 0; }
+
+made=0
+while IFS= read -r -d '' file; do
+    [[ -f $file.br && $file.br -nt $file ]] && continue
+    brotli -n -q 11 -f -o "$file.br.tmp" "$file"
+    mv -f "$file.br.tmp" "$file.br"
+    made=$((made + 1))
+done < <(find . -type f \( -name '*.css' -o -name '*.js' -o -name '*.svg' -o -name '*.json' -o -name '*.wasm' -o -name '*.woff' \) -print0)
+
+# A .br whose source is gone would be served for a file that no longer exists.
+while IFS= read -r -d '' packed; do
+    [[ -f ${packed%.br} ]] || rm -f "$packed"
+done < <(find . -type f -name '*.br' -print0)
+
+echo "precompress: $made written"

@@ -473,7 +473,7 @@
     const view = document.querySelector("[data-overview-view]");
     const canvas = view?.querySelector("canvas");
     if (!canvas) return;
-    fetch(btn.dataset.overview, { headers: { Accept: "application/json" }, credentials: "same-origin" })
+    fetch(btn.dataset.overview, { headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => {
         document.querySelector("[data-overview-title]").textContent = d.title;
@@ -1421,9 +1421,10 @@
   });
 
   /* --- Sounds: a click on every button, and the scan's ping -------------------
-     <body data-click-sounds='["url", ...]' data-scan-sound="url" data-checkbox-sound="url" data-scanwindow-sound="url" data-run-sound="url" data-ice-sound="url" data-jack-sound="url" data-jack-in-sound="url" data-failure-sound="url" data-success-sound="url" data-noise-sound="url">: fetched and decoded ONCE, up front, into memory (an
+     <body data-click-sounds='["url", ...]' data-scan-sound="url" data-checkbox-sound="url" data-scanwindow-sound="url" data-run-sound="url" data-ice-sound="url" data-jack-sound="url" data-jack-in-sound="url" data-failure-sound="url" data-success-sound="url" data-noise-sound="url">: fetched and decoded ONCE into memory (an
      <audio> element would fetch and decode on its first play, which is the lag). A press then starts a random click from the
-     buffer. Decoded on an OfflineAudioContext so nothing waits for a gesture, played on a real one made at the first. Mouse and
+     buffer. THE SMALL ONES (clicks, cues) are fetched once the page has settled, or at the first press if that comes first; the
+     two beds (the scan window's and the run screen's, most of the weight) only when something asks for one. Decoded on an OfflineAudioContext so nothing waits for a gesture, played on a real one made at the first. Mouse and
      touch play on pointerdown, the earliest moment; a keyboard press (a click with no pointer, detail 0) plays on click.
      sfx.scan() is the ping for a read that has found something or a map that has: it waits for its buffer if the page has only
      just loaded, and gives up on a browser that will not let a page play before it has been touched. */
@@ -1436,6 +1437,12 @@
     const decoder = new OfflineAudioContext(1, 1, 44100);
     const load = (url) => fetch(url).then((r) => r.arrayBuffer()).then((raw) => decoder.decodeAudioData(raw));
     const buffers = [];
+    const queued = [];
+    const later = (fn) => queued.push(fn);
+    const flush = () => { while (queued.length) queued.shift()(); };
+    const settled = () => ("requestIdleCallback" in window ? requestIdleCallback(flush, { timeout: 4000 }) : setTimeout(flush, 2000));
+    document.readyState === "complete" ? settled() : window.addEventListener("load", settled, { once: true });
+    ["pointerdown", "keydown"].forEach((type) => window.addEventListener(type, flush, { once: true, capture: true }));
     let ctx = null;
     const context = () => {
       ctx = ctx || new Ctx();
@@ -1454,17 +1461,24 @@
     const cue = (url) => {
       let buffer = null;
       let wanted = false;
+      let started = false;
+      // Fetched when the page has settled, or the moment it is wanted, whichever is first.
+      const fetchIt = () => {
+        if (started || !url) return;
+        started = true;
+        load(url).then((b) => { buffer = b; if (wanted) { wanted = false; play(); } }).catch(() => {});
+      };
       // Returns how long the sound will run, in ms, when it starts at once; 0 when it does not (or later).
       const play = () => {
         if (!soundOn()) return 0;
-        if (!buffer) { wanted = true; return 0; }
+        if (!buffer) { wanted = true; fetchIt(); return 0; }
         const c = context();
         if (c.state === "running") return start(buffer);
         const asked = performance.now();
         c.resume().then(() => { if (performance.now() - asked < 300 && c.state === "running") start(buffer); }).catch(() => {});
         return 0;
       };
-      if (url) load(url).then((b) => { buffer = b; if (wanted) { wanted = false; play(); } }).catch(() => {});
+      later(fetchIt);
       return play;
     };
     const scan = cue(document.body.dataset.scanSound);
@@ -1474,7 +1488,7 @@
     const noise = cue(document.body.dataset.noiseSound);
     const jack = cue(document.body.dataset.jackSound);
     const jackIn = cue(document.body.dataset.jackInSound);
-    clicks.forEach((url) => load(url).then((b) => buffers.push(b)).catch(() => {}));
+    later(() => clicks.forEach((url) => load(url).then((b) => buffers.push(b)).catch(() => {})));
     const click = (e) => {
       const hit = e.target.closest?.("button, .btn, [role=button], input[type=submit]");
       if (!hit || hit.disabled || hit.getAttribute("aria-disabled") === "true" || !buffers.length || !soundOn()) return;
@@ -1486,7 +1500,7 @@
     // A checkbox or a radio the player flipped (a change nobody made, such as a script ticking a box, is silent).
     if (document.body.dataset.checkboxSound) {
       let tick = null;
-      load(document.body.dataset.checkboxSound).then((b) => { tick = b; }).catch(() => {});
+      later(() => load(document.body.dataset.checkboxSound).then((b) => { tick = b; }).catch(() => {}));
       document.addEventListener("change", (e) => {
         if (tick && e.isTrusted && e.target.matches?.("input[type=checkbox], input[type=radio]") && soundOn()) {
           if (context().state === "suspended") context().resume();
@@ -1503,8 +1517,16 @@
       let buffer = null;
       let wanted = false;
       let playing = null;
+      let started = false;
+      // A bed is the heavy part: fetched only when something wants it.
+      const fetchBed = () => {
+        if (started || !url) return;
+        started = true;
+        load(url).then((b) => { buffer = b; up(); }).catch(() => {});
+      };
       const up = () => {
-        if (!wanted || playing || !buffer || !soundOn()) return;
+        if (!wanted || playing || !soundOn()) return;
+        if (!buffer) { fetchBed(); return; }
         const c = context();
         const go = () => {
           if (!wanted || playing || c.state !== "running") return;
@@ -1534,7 +1556,6 @@
         src.stop(c.currentTime + FADE);
         src.onended = () => gain.disconnect();
       };
-      if (url) load(url).then((b) => { buffer = b; up(); }).catch(() => {});
       beds.push({ up, playing: () => playing, wanted: () => wanted });
       return { in() { wanted = true; up(); }, out, playing: () => !!playing };
     };
@@ -1583,7 +1604,7 @@
       try {
         const res = await fetch(
           dlg.dataset.readingUrl + "?address=" + encodeURIComponent(address),
-          { headers: { Accept: "application/json" } }
+          { headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" } }   // XHR: else Laravel keeps this JSON URL as the "previous page" a redirect back lands on
         );
         data = await res.json();
       } catch {
@@ -2345,7 +2366,7 @@
       const tick = async () => {
         // Not paused while the tab is hidden: a party waits on people who are often in another window.
         try {
-          const res = await fetch(panel.dataset.partyPoll, { headers: { Accept: "application/json" }, credentials: "same-origin" });
+          const res = await fetch(panel.dataset.partyPoll, { headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" });
           const data = await res.json();
           if (data.state !== "open" || data.role !== panel.dataset.partyRole) return location.reload();
           live.forEach((el) => { if (el.innerHTML.trim() !== data.html.trim()) el.innerHTML = data.html; });

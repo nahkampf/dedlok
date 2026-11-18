@@ -235,7 +235,7 @@ final class Probe
      *
      * @return list<ProbeResult>
      */
-    public function settleAll(Character $character, ?CarbonInterface $now = null): array
+    public function settleAll(Character $character, ?CarbonInterface $now = null, ?int $rounds = null): array
     {
         $now = CarbonImmutable::instance($now ?? CarbonImmutable::now());
 
@@ -243,7 +243,7 @@ final class Probe
 
         // A round settles every read that has matured. A Swarm's finished read starts the next one from the moment it
         // ended, which may itself have matured already, so rounds go on until nothing has (bounded: a day away is hundreds).
-        for ($round = 0; $round < max(1, (int) Config::get('cyberspace.swarm.catch_up', 30)); $round++) {
+        for ($round = 0; $round < max(1, $rounds ?? (int) Config::get('cyberspace.swarm.catch_up', 30)); $round++) {
             $matured = SystemScan::query()
                 ->where('character_id', $character->getKey())
                 ->whereNotNull('pass_ready_at')
