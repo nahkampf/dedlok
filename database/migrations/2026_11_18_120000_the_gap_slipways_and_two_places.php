@@ -14,6 +14,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // The test database (SQLite) is the starter city, which the tests count; this is production's content.
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         $districts = [
             0 => [
                 'slug' => 'the_gap',
