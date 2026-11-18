@@ -3013,6 +3013,14 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 .board--picture .board__box { box-shadow: 0 2px 0 rgb(0 0 0 / .9); }
 .board--picture .frame__label { color: var(--ink-0); text-shadow: 0 2px 0 rgb(0 0 0 / .9); }
 
+/* The traveller: a blinking dot that crosses the wire of the leg being travelled (ui-kit.js moves it). Above the wires, under
+   the boxes, so it vanishes into the box it leaves and arrives at. */
+.board__traveller {
+  position: absolute; z-index: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+  background: var(--ok); border-radius: 50%; box-shadow: 0 0 0 2px rgb(0 0 0 / .9);
+  animation: here-mark 1s ease-in-out infinite;
+}
+
 /* One SVG behind everything. Boxes carry their own background, so a wire
    drawn centre-to-centre vanishes under the box it arrives at and nothing has
    to work out where an edge is. */

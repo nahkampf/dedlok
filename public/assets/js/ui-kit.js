@@ -2681,5 +2681,22 @@
   glitchOnLoad();
   document.addEventListener("DOMContentLoaded", glitchOnLoad);
 
+  /* --- The blinking marker on the City map -----------------------------------
+     <span data-traveller data-x1 data-y1 data-x2 data-y2 data-remaining data-total>: slides from (x1,y1) to (x2,y2), in board
+     percent, finishing when `remaining` seconds are gone of `total`. Remaining, never an absolute time, as [data-countdown]. */
+  function travellers() {
+    document.querySelectorAll("[data-traveller]").forEach((el) => {
+      if (el.dataset.moving) return;
+      el.dataset.moving = "1";
+      const d = el.dataset, total = Math.max(1, Number(d.total)) * 1000, left = Math.max(0, Number(d.remaining)) * 1000;
+      const at = (t) => ({ left: `${Number(d.x1) + (Number(d.x2) - Number(d.x1)) * t}%`, top: `${Number(d.y1) + (Number(d.y2) - Number(d.y1)) * t}%` });
+      Object.assign(el.style, at(1 - left / total));
+      if (!el.animate || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      el.animate([at(1 - left / total), at(1)], { duration: left, easing: "linear", fill: "forwards" });
+    });
+  }
+  travellers();
+  document.addEventListener("DOMContentLoaded", travellers);
+
   window.UI = { glitch, toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
 })();

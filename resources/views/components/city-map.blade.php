@@ -13,6 +13,9 @@
     'edit' => null,
     // A picture URL drawn behind the map (the city's backdrop); the boxes and wires get a 1px drop shadow to stand off it.
     'picture' => null,
+    // array{from: string, to: string, remaining: int, total: int}: a blinking marker crossing the wire from one node key to
+    // another over `remaining` of `total` seconds (ui-kit.js's [data-traveller]).
+    'traveller' => null,
 ])
 
 {{-- The deck board's own classes, laid out the same way: percentage
@@ -37,6 +40,13 @@
                     @endif
                 @endforeach
             </svg>
+
+            @if ($traveller && isset($at[$traveller['from']], $at[$traveller['to']]))
+                <span class="board__traveller" data-traveller aria-hidden="true"
+                      data-x1="{{ $at[$traveller['from']]['x'] }}" data-y1="{{ $at[$traveller['from']]['y'] }}"
+                      data-x2="{{ $at[$traveller['to']]['x'] }}" data-y2="{{ $at[$traveller['to']]['y'] }}"
+                      data-remaining="{{ $traveller['remaining'] }}" data-total="{{ $traveller['total'] }}"></span>
+            @endif
 
             @foreach ($nodes as $node)
                 @php($pin = ! empty($node['pin']))

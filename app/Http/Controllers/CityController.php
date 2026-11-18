@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\City\ActivityKind;
 use App\City\CityClock;
 use App\City\CityRefusal;
 use App\City\Explorer;
@@ -71,8 +72,30 @@ class CityController extends Controller
                 ? $this->quotes($traveller, $character, $districts)
                 : [],
             'exploreSeconds' => $state['activity'] === null ? $explorer->duration($character) : null,
+            // The blinking marker on the map: the leg now being crossed and how much of it is left.
+            'traveller' => $this->traveller($traveller, $character, $state),
             ...$state,
         ]);
+    }
+
+    /**
+     * The leg a travel is on, for the map's marker: from the district being passed to the next on the route.
+     *
+     * @param  array{activity: ?CityActivity, remaining: int}  $state
+     * @return ?array{from: string, to: string, remaining: int, total: int}
+     */
+    private function traveller(Traveller $traveller, Character $character, array $state): ?array
+    {
+        $activity = $state['activity'];
+        $next = $activity?->kind === ActivityKind::Travel ? ((array) $activity->route)[$activity->step + 1] ?? null : null;
+
+        if ($next === null) {
+            return null;
+        }
+
+        $total = $traveller->passSeconds($character, (int) $character->district_id, $activity->mode ?? TravelMode::Walk);
+
+        return ['from' => 'd'.$character->district_id, 'to' => 'd'.$next, 'remaining' => $state['remaining'], 'total' => max($total, $state['remaining'])];
     }
 
     /**

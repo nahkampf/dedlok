@@ -11,7 +11,7 @@
             <x-city-activity :activity="$activity" :remaining="$remaining" :route="$route" :in-pass="$inPass" />
         @endif
 
-        <x-city-map :label="Text::get('city.map')" :picture="\App\Support\Asset::url('images/locations/city_bg.jpg')"
+        <x-city-map :label="Text::get('city.map')" :traveller="$traveller" :picture="\App\Support\Asset::url('images/locations/city_bg.jpg')"
             :links="collect($links)->map(fn ($pair) => ['d'.$pair[0], 'd'.$pair[1]])->all()"
             :nodes="$districts->map(fn ($district) => [
                 'key' => 'd'.$district->id,
@@ -21,7 +21,7 @@
                 'href' => route('city.district', $district),
                 'inspect' => '#district-'.$district->id,
                 'hue' => $district->color->token(),
-                'here' => $district->id === $character->district_id,
+                'here' => ! $traveller && $district->id === $character->district_id,
             ])->all()" />
 
         @foreach ($districts as $district)
