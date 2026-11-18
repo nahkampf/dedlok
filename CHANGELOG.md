@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.101.2] — 2026-11-18
+
+### Changed
+- A survey names 2 to 6 systems (was 3 to 10): `MissionAction::targets()`. Jobs already offered keep their counts.
+- The City map's travelling marker is drawn above the district name plates (`.board__traveller`, z-index 2; hover tips stay above it).
+
+### Fixed
+- Agitation: on a tree run, waking the ICE starts no alert and shuts nothing, so `RunStarter::end()` never counted it. A tree run now agitates when its ICE is awake (`ice_id` set or `ice_damage` > 0) and the runner gets out; older runs keep the noticed-and-shut rule.
+- City map: on a multi-district trip the marker's second leg started from the district already left. `CityController::settle()` only refreshed the character when a message was said, and a leg that matures mid-trip says nothing; it now always refreshes.
+
+### Migrations
+- None.
+
+
 ## [0.101.1] — 2026-11-18
 
 ### Added
@@ -4474,7 +4488,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.2...HEAD
+[0.101.2]: https://github.com/nahkampf/dedlok/compare/v0.101.1...v0.101.2
 [0.101.1]: https://github.com/nahkampf/dedlok/compare/v0.101.0...v0.101.1
 [0.101.0]: https://github.com/nahkampf/dedlok/compare/v0.100.2...v0.101.0
 [0.100.2]: https://github.com/nahkampf/dedlok/compare/v0.100.1...v0.100.2

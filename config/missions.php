@@ -96,7 +96,7 @@ return [
     | worth more to them than intel and more dangerous to be caught at.
     |
     | A figure may also be a table by grade. The survey's creds are one: x3 at grade 1, falling by half a point
-    | a grade to x1 at grade 5, because a survey pays per JOB however many systems it names (3 to 10), which
+    | a grade to x1 at grade 5, because a survey pays per JOB however many systems it names (2 to 6), which
     | made the low desks poor for the scanning they ask. Creds only: grade 1 standing is held low on purpose.
     |
     | Supply is the low-risk half of the board and priced as trade rather than
