@@ -23,6 +23,18 @@
         @csrf
         @unless ($creating) @method('PUT') @endunless
 
+        {{-- THE DISTRICT AS IT WILL LOOK: the chosen district's places, with this one drawn from the fields below and redrawn as they change (ui-kit.js). --}}
+        <details class="panel" data-district-map="{{ json_encode($mapData) }}" data-current="{{ $location?->id }}">
+            <summary class="panel__hd"><span class="micro">{{ Text::get('city.district_map') }}</span></summary>
+            <div class="panel__bd">
+                <div class="board-wrap">
+                    <div class="frame scanlines brackets board" role="group" aria-label="{{ Text::get('city.district_map') }}">
+                        <span class="frame__label">{{ Text::get('city.district_map') }}</span>
+                    </div>
+                </div>
+            </div>
+        </details>
+
         <div class="panel">
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
                 @if ($creating)

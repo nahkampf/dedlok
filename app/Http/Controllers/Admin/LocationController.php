@@ -79,6 +79,11 @@ class LocationController extends Controller
         return [
             'location' => $location,
             'districts' => District::query()->orderBy('name')->get(['id', 'name']),
+            // Every district's places and colour, for the live map on the form (the edited location is drawn from its fields).
+            'mapData' => District::query()->with('locations:id,district_id,name,map_x,map_y')->get()->mapWithKeys(fn (District $d): array => [$d->id => [
+                'hue' => $d->color->token(),
+                'places' => $d->locations->map(fn (Location $l): array => ['id' => $l->id, 'name' => $l->name, 'x' => $l->map_x, 'y' => $l->map_y])->all(),
+            ]])->all(),
             'rules' => DiscoveryRule::cases(),
             'concealments' => Concealment::cases(),
             'items' => ItemOptions::grouped(),

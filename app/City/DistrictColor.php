@@ -19,6 +19,9 @@ enum DistrictColor: string
     case Clay = 'clay';
     case Jade = 'jade';
     case Moss = 'moss';
+    case Rose = 'rose';
+    case Teal = 'teal';
+    case Sand = 'sand';
 
     /** The CSS value, for a `--hue` or `--tier` custom property. */
     public function token(): string

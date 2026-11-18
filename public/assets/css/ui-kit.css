@@ -293,6 +293,12 @@
   --violet: #9F8FCB;  --violet-a: rgba(159, 143, 203, 0.13);
   --clay:   #C4896C;  --clay-a:   rgba(196, 137, 108, 0.13);
   --moss:   #A9BE70;  --moss-a:   rgba(169, 190, 112, 0.13);
+  /* And three more once the City outgrew seven, same register: a dusty rose, a deep teal (darker than jade and cyan, so it
+     does not read as either) and a pale sand. Decoration only, like the three before. */
+  --rose:   #C98A9E;  --rose-a:   rgba(201, 138, 158, 0.13);
+  --teal:   #4FA096;  --teal-a:   rgba(79, 160, 150, 0.13);
+  --teal-hi: #5FD6C4;  /* the same hue, lifted: the wires on a map with a picture behind it */
+  --sand:   #CFC29E;  --sand-a:   rgba(207, 194, 158, 0.13);
 
   /* Semantic aliases. Components speak through these, never through the
      palette directly, so re-pointing --ok re-skins every success state at
@@ -2998,6 +3004,14 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
   margin-inline: auto;
   aspect-ratio: 4 / 3;
 }
+
+/* A map with a picture behind it (--picture: url(...)), as the City's is. The picture is dark, so the wires are teal, and the
+   boxes and wires each stand off it on a 2px shadow. Reversible: drop the class and the map is as it was. */
+.board--picture { background: var(--bg-1) var(--picture) center / cover no-repeat; }
+.board--picture .board__wires { filter: drop-shadow(0 2px 0 rgb(0 0 0 / .9)); }
+.board--picture .board__wire { stroke: var(--teal-hi); }
+.board--picture .board__box { box-shadow: 0 2px 0 rgb(0 0 0 / .9); }
+.board--picture .frame__label { color: var(--ink-0); text-shadow: 0 2px 0 rgb(0 0 0 / .9); }
 
 /* One SVG behind everything. Boxes carry their own background, so a wire
    drawn centre-to-centre vanishes under the box it arrives at and nothing has
