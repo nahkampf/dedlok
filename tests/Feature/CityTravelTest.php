@@ -221,6 +221,19 @@ final class CityTravelTest extends TestCase
         $this->assertSame(1, Notification::query()->where('user_id', $this->character->user_id)->count());
     }
 
+    /** A leg that matured since the last visit says nothing, but the map's marker must start from the district just reached. */
+    public function test_the_marker_on_the_second_leg_starts_from_the_district_just_reached(): void
+    {
+        $this->freezeTime();
+        $this->traveller()->begin($this->character, $this->district('downtown'), TravelMode::Walk);
+        $this->travel(31)->seconds();
+
+        $this->actingAs($this->character->user)->get(route('city.index'))
+            ->assertOk()
+            ->assertViewHas('traveller', fn (array $t): bool => $t['from'] === 'd'.$this->district('old-town')->id
+                && $t['to'] === 'd'.$this->district('downtown')->id);
+    }
+
     public function test_the_screens_start_and_cancel_a_trip(): void
     {
         $this->actingAs($this->character->user)

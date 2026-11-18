@@ -58,7 +58,7 @@ enum MissionAction: string
     public function targets(): array
     {
         return match ($this) {
-            self::Scan => [3, 10],
+            self::Scan => [2, 6],
             self::Burn => [1, 2],
             self::Plant => [1, 3],
             self::Agitate => [1, 2],

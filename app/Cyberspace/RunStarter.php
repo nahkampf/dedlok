@@ -368,8 +368,11 @@ final readonly class RunStarter
                 $shut = ($this->lockdown ?? Lockdown::fromConfig())->afterRun($probe);
             }
 
-            // AGITATE: the ICE was woken (the run was noticed), the runner got out, and the machine shut for it.
-            if ($shut && $run->noticed() && in_array($ending, [RunEnding::Egress, RunEnding::Completed, RunEnding::Jackout], true)) {
+            // AGITATE: the ICE was woken and the runner got out. On a tree run waking it is its own event (it starts no alert and
+            // shuts nothing), so the ICE on the run, or damage dealt to it, is the proof; an older run needs it noticed and the machine shut.
+            $iceWoke = $run->isTreeRun() ? ($run->ice_id !== null || (float) $run->ice_damage > 0) : ($shut && $run->noticed());
+
+            if ($iceWoke && in_array($ending, [RunEnding::Egress, RunEnding::Completed, RunEnding::Jackout], true)) {
                 $woken = System::query()->where('address', $run->address)->first();
 
                 if ($woken !== null && $woken->ice_id !== null) {

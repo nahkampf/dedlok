@@ -108,6 +108,26 @@ final class MissionTest extends TestCase
         $this->assertTrue($target->fresh()->isLockedDown());
     }
 
+    /** On a tree run the ICE wakes without an alert or a lockdown: it still agitates the target. */
+    public function test_an_ice_that_woke_on_a_tree_run_agitates_without_an_alert(): void
+    {
+        $mission = $this->accepted(MissionAction::Agitate);
+        $target = $mission->targets->first()->system;
+        $ice = Ice::query()->firstOrFail();
+        $target->forceFill(['ice_id' => $ice->id])->save();
+
+        $asleep = $this->runAt($target, detected: false);
+        $asleep->forceFill(['node' => 0])->save();
+        app(RunStarter::class)->end($this->character, $asleep, RunEnding::Egress);
+        $this->assertNull($mission->fresh()->targets->first()->satisfied_at, 'asleep: nothing woke');
+
+        $woke = $this->runAt($target, detected: false);
+        $woke->forceFill(['node' => 0, 'ice_id' => $ice->id])->save();
+        app(RunStarter::class)->end($this->character->fresh(), $woke, RunEnding::Egress);
+
+        $this->assertNotNull($mission->fresh()->targets->first()->satisfied_at);
+    }
+
     public function test_a_denial_job_is_ticked_where_the_flood_fills(): void
     {
         $mission = $this->accepted(MissionAction::Denial);

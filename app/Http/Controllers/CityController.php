@@ -229,8 +229,11 @@ class CityController extends Controller
 
         if ($said !== []) {
             session()->now('status', implode(' ', $said));
-            $character->refresh();
         }
+
+        // Always: a leg that matures mid-trip says nothing but moves the character on (settle() saves a locked copy), and the
+        // map's marker starts from `district_id`.
+        $character->refresh();
     }
 
     /**
