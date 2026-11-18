@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+## [0.101.0] — 2026-11-18
+
+### Added
+- Two districts, The Gap (rose) and Slipways (sand), with their roads, and two places: The Greenhouse in Little Moscow (buy list by `greenhouse:sync`) and Pusher Street in Knightsbridge Projects (three wares and four meals). They were made in the development admin; a migration carries them to production.
+- The Greenhouse buys every extracted file and every component at 70% of its own value, and a Scan File for 5 creds. `config/city.php` (`greenhouse`) lists the slugs and prices; `greenhouse:sync` (`App\City\GreenhouseBuys`, also in Admin → Artisan commands) writes the listings and keeps existing counts and other listings. `GreenhouseBuysTest` fails when a component or a kind of extracted file is missing from the list.
+- Admin: a collapsible District map on the location editor (the chosen district's places, the edited one live from its name and across/down), and a collapsible city map on the district editor (every district and road, the edited one live from its name, colour, across/down and link boxes).
+- Three more district colours: rose, teal and sand (`DistrictColor`, tokens in `ui-kit.css`).
+- The city map has a picture behind it (`images/locations/city_bg.jpg`, via `<x-city-map :picture>` / `.board--picture`): teal links (`--teal-hi`), a 2px shadow under the boxes and links, and a white shadowed label. Remove the `picture` prop to go back.
+- While travelling, a blinking marker crosses the wire of the leg being travelled on the city map (`<x-city-map :traveller>`, `.board__traveller`, `[data-traveller]` in `ui-kit.js`), from the seconds left of the pass, so a reload picks it up mid-leg. `Traveller::passSeconds()` is public for it.
+
+### Changed
+- The Scan File item has a list price of 25 (migration), so a shop paying a percentage of list price pays something for one.
+- While travelling, the district being left no longer carries the "you are here" mark on the city map.
+- `action_hint.agitate` reworded.
+
+### Migrations
+- `2026_11_17_160000_scan_file_has_a_price`: `items.base_cost` = 25 for the `scan-file` item.
+- `2026_11_18_100000_three_more_district_colours`: widens `chk_districts_color` (MySQL only) to allow rose, teal and sand.
+
+- `2026_11_18_120000_the_gap_slipways_and_two_places`: inserts those districts, `district_links`, locations, `shop_items` and `location_meals` (data only; each row skipped when its slug is already there, `down()` leaves them).
+
+### Deploy
+- Run the migrations (they create the Greenhouse), then `php artisan greenhouse:sync` once (or press it in Admin → Artisan commands).
+
+
+
 ## [0.100.2] — 2026-11-17
 
 ### Fixed
@@ -4431,7 +4457,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.100.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.0...HEAD
+[0.101.0]: https://github.com/nahkampf/dedlok/compare/v0.100.2...v0.101.0
 [0.100.2]: https://github.com/nahkampf/dedlok/compare/v0.100.1...v0.100.2
 [0.100.1]: https://github.com/nahkampf/dedlok/compare/v0.100.0...v0.100.1
 [0.100.0]: https://github.com/nahkampf/dedlok/compare/v0.99.2...v0.100.0

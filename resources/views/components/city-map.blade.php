@@ -11,6 +11,11 @@
     // A selector for a hidden field: the map becomes a drag editor (ui-kit.js's board editor) that writes every
     // node's position into it as JSON keyed by node key.
     'edit' => null,
+    // A picture URL drawn behind the map (the city's backdrop); the boxes and wires get a 1px drop shadow to stand off it.
+    'picture' => null,
+    // array{from: string, to: string, remaining: int, total: int}: a blinking marker crossing the wire from one node key to
+    // another over `remaining` of `total` seconds (ui-kit.js's [data-traveller]).
+    'traveller' => null,
 ])
 
 {{-- The deck board's own classes, laid out the same way: percentage
@@ -19,7 +24,7 @@
 @php($at = collect($nodes)->keyBy('key'))
 
 <div class="board-wrap">
-    <div class="frame scanlines brackets board" @if ($edit) data-board-edit="{{ $edit }}" data-board-min="25" data-board-max="75" @endif role="group" aria-label="{{ $label }}">
+    <div @class(['frame', 'scanlines', 'brackets', 'board', 'board--picture' => $picture]) @if ($picture) style="--picture:url('{{ $picture }}')" @endif @if ($edit) data-board-edit="{{ $edit }}" data-board-min="25" data-board-max="75" @endif role="group" aria-label="{{ $label }}">
         <span class="frame__label">{{ $label }}</span>
 
         @if (count($nodes) === 0)
@@ -35,6 +40,13 @@
                     @endif
                 @endforeach
             </svg>
+
+            @if ($traveller && isset($at[$traveller['from']], $at[$traveller['to']]))
+                <span class="board__traveller" data-traveller aria-hidden="true"
+                      data-x1="{{ $at[$traveller['from']]['x'] }}" data-y1="{{ $at[$traveller['from']]['y'] }}"
+                      data-x2="{{ $at[$traveller['to']]['x'] }}" data-y2="{{ $at[$traveller['to']]['y'] }}"
+                      data-remaining="{{ $traveller['remaining'] }}" data-total="{{ $traveller['total'] }}"></span>
+            @endif
 
             @foreach ($nodes as $node)
                 @php($pin = ! empty($node['pin']))

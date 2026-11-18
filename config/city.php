@@ -38,6 +38,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | The Greenhouse: what it buys, kept in step by `greenhouse:sync`
+    |--------------------------------------------------------------------------
+    |
+    | EVERY EXTRACTED FILE AND EVERY COMPONENT, at `files_percent` of its own value (a file is priced by its rolled value, a
+    | component by the file it came from). `files` is the list, by item slug, and GreenhouseBuysTest fails when a component or
+    | a kind of extracted file is missing from it: add the slug here and run `greenhouse:sync` (Admin > Artisan commands).
+    |
+    | A SCAN FILE pays a flat `pays` creds, which are the item's list price scaled down (the sync works the percent out, so
+    | 5 creds on a list price of 25 is 20%). It is kept low on purpose: with a scanning swarm, scan files are free money.
+    */
+    'greenhouse' => [
+        'location' => 'greenhouse',
+        'files_percent' => 70,
+        'files' => [
+            // The three kinds of extracted file.
+            'encrypted-data-dump', 'memory-dump', 'text-file',
+            // The components.
+            'kernel-log', 'cipher-fragment', 'temporary-file', 'cache-file', 'error-log', 'stack-trace', 'garbage-collection',
+            'config-file', 'backup', 'customer-record', 'software-manifest', 'project-file', 'security-profile', 'research-data',
+            'design-document', 'experimental-data', 'field-test-data', 'parameterized-dataset', 'vectorized-dataset',
+        ],
+        'scan_file' => ['slug' => 'scan-file', 'pays' => 5],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Implant surgery
     |--------------------------------------------------------------------------
     |

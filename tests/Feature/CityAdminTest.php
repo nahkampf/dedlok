@@ -171,4 +171,23 @@ final class CityAdminTest extends TestCase
             ->assertSee('Chrome Thing')
             ->assertSee('Physical · 1,234 ¤ · market shelf 7 · Rare', false);
     }
+
+    public function test_the_location_form_carries_a_district_map_with_every_districts_places(): void
+    {
+        $location = Location::query()->firstOrFail();
+
+        $html = $this->actingAs($this->admin)->get(route('admin.locations.edit', $location))->assertOk()->assertSee('data-district-map', false)->getContent();
+
+        $this->assertStringContainsString('data-current="'.$location->id.'"', $html);
+        $this->assertStringContainsString(e(json_encode($location->name)), str_replace('&quot;', '&quot;', $html));
+        $this->actingAs($this->admin)->get(route('admin.locations.create'))->assertOk()->assertSee('data-district-map', false);
+    }
+
+    public function test_the_district_form_carries_a_city_map(): void
+    {
+        $district = District::query()->firstOrFail();
+
+        $this->actingAs($this->admin)->get(route('admin.districts.edit', $district))->assertOk()->assertSee('data-city-map', false)->assertSee('&quot;current&quot;:'.$district->id, false);
+        $this->actingAs($this->admin)->get(route('admin.districts.create'))->assertOk()->assertSee('data-city-map', false)->assertSee('&quot;current&quot;:null', false);
+    }
 }

@@ -16,6 +16,7 @@
 
 return [
     'leaderboard:snapshot',
+    'greenhouse:sync',
     'cyberspace:seed',
     'cyberspace:exchanges',
     'cyberspace:restock',

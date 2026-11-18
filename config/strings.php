@@ -1330,7 +1330,7 @@ return [
             'scan' => 'Scan every system named and bring the files back, one for each. The safest work there is, and the slowest.',
             'burn' => 'We want these systems gone. Burned. Shut down.',
             'plant' => 'Leave a backdoor on these systems. The door is ours, not yours - you get paid, and we get the way in.',
-            'agitate' => 'Make a run on these systems and wake their ICE, then get out. We want them locked down. You do not have to take anything.',
+            'agitate' => 'Make a run on these systems and wake their ICE, then get out. We want to test their readiness. You do not have to take anything.',
             'extract' => 'There is a file on this system we want. Run it, pull the file, decrypt it and bring it to us. It will be there.',
             'heist' => 'Raid these systems for cash. What you take is not yours: hand it in at the desk and you get a cut back on top of the pay.',
             'transport' => 'We have some sensitive data that we need a third party to carry to its destination, discretely. Be aware that you might be tracked and intercepted.',

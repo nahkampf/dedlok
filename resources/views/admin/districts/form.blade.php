@@ -23,6 +23,19 @@
         @csrf
         @unless ($creating) @method('PUT') @endunless
 
+        {{-- THE CITY AS IT WILL LOOK: every district and the roads between them, this one drawn from the fields below and
+             redrawn as its name, colour, across/down and links change (ui-kit.js). --}}
+        <details class="panel" data-city-map="{{ json_encode($cityMap) }}">
+            <summary class="panel__hd"><span class="micro">{{ Text::get('city.map') }}</span></summary>
+            <div class="panel__bd">
+                <div class="board-wrap">
+                    <div class="frame scanlines brackets board board--picture" style="--picture:url('{{ \App\Support\Asset::url('images/locations/city_bg.jpg') }}')" role="group" aria-label="{{ Text::get('city.map') }}">
+                        <span class="frame__label">{{ Text::get('city.map') }}</span>
+                    </div>
+                </div>
+            </div>
+        </details>
+
         <div class="panel">
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
                 @if ($creating)

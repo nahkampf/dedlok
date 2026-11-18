@@ -272,7 +272,7 @@ final class Traveller
     }
 
     /** Seconds one pass in this district takes: the base times its weight, resolved, then halved for a pod. */
-    private function passSeconds(Character $character, int $districtId, TravelMode $mode, ?array $modifiers = null, ?float $weight = null): int
+    public function passSeconds(Character $character, int $districtId, TravelMode $mode, ?array $modifiers = null, ?float $weight = null): int
     {
         $weight ??= (float) (District::query()->whereKey($districtId)->value('travel_weight') ?? 1.0);
         $base = (float) Config::get('city.travel.seconds', 30) * $weight;

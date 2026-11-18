@@ -92,6 +92,13 @@ class DistrictController extends Controller
         return [
             'district' => $district,
             'colors' => DistrictColor::cases(),
+            // The whole city, for the live map on the form (the edited district is drawn from its fields and link boxes).
+            'cityMap' => [
+                'current' => $district?->getKey(),
+                'districts' => District::query()->get(['id', 'name', 'map_x', 'map_y', 'color'])->map(fn (District $d): array => ['id' => $d->id, 'name' => $d->name, 'x' => $d->map_x, 'y' => $d->map_y, 'hue' => $d->color->token()])->all(),
+                'links' => District::links(),
+                'hues' => collect(DistrictColor::cases())->mapWithKeys(fn (DistrictColor $c): array => [$c->value => $c->token()])->all(),
+            ],
             'others' => District::query()->when($district, fn ($q) => $q->whereKeyNot($district->getKey()))->orderBy('name')->get(['id', 'name']),
             'linked' => $district === null ? [] : collect(District::links())
                 ->filter(fn (array $pair): bool => in_array($district->getKey(), $pair, true))

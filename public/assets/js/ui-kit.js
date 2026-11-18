@@ -1887,6 +1887,123 @@
     });
   }
   turnForms();
+
+  /* --- The district map on the location editor ---------------------------------
+     [data-district-map] holds every district's places as JSON ({id: {hue, places: [{id, name, x, y}]}}); the map is drawn
+     from the form's district, name and across/down fields, the place being edited as the highlighted pin, and redrawn on every
+     change. Names go in as attributes, never markup. */
+  function districtMaps() {
+    document.querySelectorAll("[data-district-map]").forEach((box) => {
+      if (box.dataset.bound) return;
+      box.dataset.bound = "1";
+      const form = box.closest("form");
+      const frame = box.querySelector(".board");
+      if (!form || !frame) return;
+      let data = {};
+      try { data = JSON.parse(box.dataset.districtMap); } catch (e) { return; }
+      const current = box.dataset.current || "";
+      const pin = (name, x, y, hue, here) => {
+        const node = document.createElement("button");
+        node.type = "button";
+        node.className = "board__node" + (here ? " board__node--here" : "");
+        node.style.left = x + "%";
+        node.style.top = y + "%";
+        node.style.setProperty("--hue", hue);
+        node.setAttribute("data-tip", name);
+        node.setAttribute("aria-label", name);
+        const boxEl = document.createElement("span");
+        boxEl.className = "board__box";
+        const glyph = document.createElement("span");
+        glyph.className = "board__pin";
+        glyph.setAttribute("aria-hidden", "true");
+        glyph.textContent = "\u25C8";
+        boxEl.appendChild(glyph);
+        node.appendChild(boxEl);
+        return node;
+      };
+      const draw = () => {
+        frame.querySelectorAll(".board__node").forEach((n) => n.remove());
+        const district = data[form.elements.district_id?.value];
+        if (!district) return;
+        district.places.filter((p) => String(p.id) !== current)
+          .forEach((p) => frame.appendChild(pin(p.name, p.x, p.y, district.hue, false)));
+        const x = parseFloat(form.elements.map_x?.value);
+        const y = parseFloat(form.elements.map_y?.value);
+        if (!isNaN(x) && !isNaN(y)) frame.appendChild(pin(form.elements.name?.value || "", x, y, district.hue, true));
+      };
+      form.addEventListener("input", draw);
+      form.addEventListener("change", draw);
+      draw();
+    });
+  }
+  districtMaps();
+
+  /* --- The city map on the district editor ---------------------------------------
+     [data-city-map] holds every district and the roads between them as JSON ({current, districts: [{id, name, x, y, hue}],
+     links: [[a, b]], hues: {colour: token}}). The map is drawn from the form's name, colour, across/down and link boxes for
+     the district being edited (the highlighted one; a new district has no id yet), and redrawn on every change. */
+  function cityMaps() {
+    const NS = "http://www.w3.org/2000/svg";
+    document.querySelectorAll("[data-city-map]").forEach((box) => {
+      if (box.dataset.bound) return;
+      box.dataset.bound = "1";
+      const form = box.closest("form");
+      const frame = box.querySelector(".board");
+      if (!form || !frame) return;
+      let data = {};
+      try { data = JSON.parse(box.dataset.cityMap); } catch (e) { return; }
+      const draw = () => {
+        frame.querySelectorAll(".board__node, .board__wires").forEach((n) => n.remove());
+        const me = data.current;
+        const x = parseFloat(form.elements.map_x?.value);
+        const y = parseFloat(form.elements.map_y?.value);
+        const places = data.districts.filter((d) => d.id !== me).map((d) => ({ ...d, mine: false }));
+        if (!isNaN(x) && !isNaN(y)) {
+          places.push({ id: me ?? 0, name: form.elements.name?.value || "", x, y, hue: data.hues[form.elements.color?.value] || "var(--line-2)", mine: true });
+        }
+        const at = new Map(places.map((p) => [p.id, p]));
+        const chosen = [...form.querySelectorAll('input[name="links[]"]:checked')].map((c) => parseInt(c.value, 10));
+        const roads = data.links.filter(([a, b]) => a !== me && b !== me).concat(chosen.map((id) => [me ?? 0, id]));
+        const svg = document.createElementNS(NS, "svg");
+        svg.setAttribute("class", "board__wires");
+        svg.setAttribute("viewBox", "0 0 100 100");
+        svg.setAttribute("preserveAspectRatio", "none");
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("focusable", "false");
+        roads.forEach(([a, b]) => {
+          const from = at.get(a), to = at.get(b);
+          if (!from || !to) return;
+          const line = document.createElementNS(NS, "line");
+          line.setAttribute("class", "board__wire");
+          line.setAttribute("x1", from.x); line.setAttribute("y1", from.y);
+          line.setAttribute("x2", to.x); line.setAttribute("y2", to.y);
+          svg.appendChild(line);
+        });
+        frame.appendChild(svg);
+        places.forEach((p) => {
+          const node = document.createElement("div");
+          node.className = "board__node" + (p.mine ? " board__node--here" : "");
+          node.style.left = p.x + "%";
+          node.style.top = p.y + "%";
+          node.style.setProperty("--hue", p.hue);
+          const boxEl = document.createElement("span");
+          boxEl.className = "board__box";
+          const name = document.createElement("span");
+          name.className = "board__name";
+          name.textContent = p.name;
+          boxEl.appendChild(name);
+          node.appendChild(boxEl);
+          frame.appendChild(node);
+        });
+      };
+      form.addEventListener("input", draw);
+      form.addEventListener("change", draw);
+      draw();
+    });
+  }
+  cityMaps();
+  document.addEventListener("DOMContentLoaded", cityMaps);
+  document.addEventListener("DOMContentLoaded", districtMaps);
   document.addEventListener("DOMContentLoaded", turnForms);
 
   /* --- A run tree, alive ------------------------------------------------------
@@ -2563,6 +2680,23 @@
   on("click", "[data-glitch-demo]", (e, btn) => glitch(btn.dataset.glitchDemo));
   glitchOnLoad();
   document.addEventListener("DOMContentLoaded", glitchOnLoad);
+
+  /* --- The blinking marker on the City map -----------------------------------
+     <span data-traveller data-x1 data-y1 data-x2 data-y2 data-remaining data-total>: slides from (x1,y1) to (x2,y2), in board
+     percent, finishing when `remaining` seconds are gone of `total`. Remaining, never an absolute time, as [data-countdown]. */
+  function travellers() {
+    document.querySelectorAll("[data-traveller]").forEach((el) => {
+      if (el.dataset.moving) return;
+      el.dataset.moving = "1";
+      const d = el.dataset, total = Math.max(1, Number(d.total)) * 1000, left = Math.max(0, Number(d.remaining)) * 1000;
+      const at = (t) => ({ left: `${Number(d.x1) + (Number(d.x2) - Number(d.x1)) * t}%`, top: `${Number(d.y1) + (Number(d.y2) - Number(d.y1)) * t}%` });
+      Object.assign(el.style, at(1 - left / total));
+      if (!el.animate || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      el.animate([at(1 - left / total), at(1)], { duration: left, easing: "linear", fill: "forwards" });
+    });
+  }
+  travellers();
+  document.addEventListener("DOMContentLoaded", travellers);
 
   window.UI = { glitch, toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
 })();
