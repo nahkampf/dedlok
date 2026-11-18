@@ -11,7 +11,7 @@
             <x-city-activity :activity="$activity" :remaining="$remaining" :route="$route" :in-pass="$inPass" />
         @endif
 
-        <x-city-map :label="Text::get('city.map')"
+        <x-city-map :label="Text::get('city.map')" :picture="\App\Support\Asset::url('images/locations/city_bg.jpg')"
             :links="collect($links)->map(fn ($pair) => ['d'.$pair[0], 'd'.$pair[1]])->all()"
             :nodes="$districts->map(fn ($district) => [
                 'key' => 'd'.$district->id,
