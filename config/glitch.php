@@ -37,4 +37,33 @@ return [
         $run.'tree.loopback_fails' => 'tick',
         $run.'tree.trap.disarm_fails' => 'tick',
     ],
+
+    // The failures that also play failure.mp3 when their line is new on the run screen (`data-sound`, ui-kit.js): a firewall
+    // breach, an extract, an egress, a disarm, a loopback or an install that did not take.
+    'failure_sound' => [
+        $run.'tree.firewall_holds',
+        $run.'extract_fails',
+        $run.'egress_held',
+        $run.'tree.trap.disarm_fails',
+        $run.'tree.loopback_fails',
+        $run.'install_fails',
+    ],
+
+    // And the successes that play success.mp3: a firewall breached, a trap disarmed, a file pulled out, a backdoor installed or
+    // planted (`install.<kind>` lines too, see Glitch::playsSuccess()), a system burned, an egress, a loopback wired.
+    'success_sound' => [
+        $run.'tree.firewall_opens',
+        $run.'tree.trap.disarmed',
+        $run.'extract',
+        $run.'planted',
+        $run.'burn',
+        $run.'egress',
+        $run.'tree.loopback',
+    ],
+
+    // The lines that play noise_made.mp3: the player made noise (a failed stealth roll, a noisy action, a trap's alarm).
+    'noise_sound' => [
+        $run.'tree.noise',
+        $run.'tree.trap.alarm',
+    ],
 ];

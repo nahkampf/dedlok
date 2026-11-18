@@ -1245,6 +1245,8 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   background: var(--ink-on-ember); transform: none;
 }
 .check input:focus-visible + .check__box { outline: 2px solid var(--ember); outline-offset: 2px; }
+/* The scan window beneath its instrument, until Start scan is pressed (ui-kit.js sets `inert`). */
+[data-reading-below][inert] { opacity: .45; }
 .check input:disabled ~ * { opacity: .45; }
 
 /* Switch — for things that are ON, i.e. live. Ember earns its place here. */

@@ -30,7 +30,7 @@
                     <x-program-spec :item="$item" />
 
                     <span class="row row--wrap micro num" style="--gap:var(--s-3);color:var(--ink-3)">
-                        <span>{{ Text::get('market.price', ['price' => Number::format($price)]) }}</span>
+                        <span style="color:var(--ok)">{{ Text::get('market.price', ['price' => Number::format($price)]) }}</span>
                         <span data-left-text>{{ Text::plural('market.on_shelf', $shelf->quantity) }}</span>
                     </span>
                 </div>

@@ -1420,6 +1420,138 @@
     if (!open && legend.contains(document.activeElement)) document.activeElement.blur();
   });
 
+  /* --- Sounds: a click on every button, and the scan's ping -------------------
+     <body data-click-sounds='["url", ...]' data-scan-sound="url" data-checkbox-sound="url" data-scanwindow-sound="url" data-run-sound="url" data-ice-sound="url" data-jack-sound="url" data-jack-in-sound="url" data-failure-sound="url" data-success-sound="url" data-noise-sound="url">: fetched and decoded ONCE, up front, into memory (an
+     <audio> element would fetch and decode on its first play, which is the lag). A press then starts a random click from the
+     buffer. Decoded on an OfflineAudioContext so nothing waits for a gesture, played on a real one made at the first. Mouse and
+     touch play on pointerdown, the earliest moment; a keyboard press (a click with no pointer, detail 0) plays on click.
+     sfx.scan() is the ping for a read that has found something or a map that has: it waits for its buffer if the page has only
+     just loaded, and gives up on a browser that will not let a page play before it has been touched. */
+  const sfx = (function sounds() {
+    const none = { scan() {}, ice() {}, failure() {}, success: () => 0, noise() {}, jack: () => 0, jackIn: () => 0, loopIn() {}, loopOut() {}, runOut: () => false };
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx || !window.OfflineAudioContext) return none;
+    let clicks = [];
+    try { clicks = JSON.parse(document.body.dataset.clickSounds || "[]"); } catch (e) { /* none */ }
+    const decoder = new OfflineAudioContext(1, 1, 44100);
+    const load = (url) => fetch(url).then((r) => r.arrayBuffer()).then((raw) => decoder.decodeAudioData(raw));
+    const buffers = [];
+    let ctx = null;
+    const context = () => {
+      ctx = ctx || new Ctx();
+      return ctx;
+    };
+    const start = (buffer) => {
+      const c = context();
+      const src = c.createBufferSource();
+      src.buffer = buffer;
+      src.connect(c.destination);
+      src.start();
+      return buffer.duration * 1000;
+    };
+    // A cue: a sound announcing something that has just happened, played once. Waits for its buffer if the page has only just
+    // loaded; on a page the browser will not yet let play, it gives up rather than sounding long after what it announces.
+    const cue = (url) => {
+      let buffer = null;
+      let wanted = false;
+      // Returns how long the sound will run, in ms, when it starts at once; 0 when it does not (or later).
+      const play = () => {
+        if (!soundOn()) return 0;
+        if (!buffer) { wanted = true; return 0; }
+        const c = context();
+        if (c.state === "running") return start(buffer);
+        const asked = performance.now();
+        c.resume().then(() => { if (performance.now() - asked < 300 && c.state === "running") start(buffer); }).catch(() => {});
+        return 0;
+      };
+      if (url) load(url).then((b) => { buffer = b; if (wanted) { wanted = false; play(); } }).catch(() => {});
+      return play;
+    };
+    const scan = cue(document.body.dataset.scanSound);
+    const ice = cue(document.body.dataset.iceSound);
+    const failure = cue(document.body.dataset.failureSound);
+    const success = cue(document.body.dataset.successSound);
+    const noise = cue(document.body.dataset.noiseSound);
+    const jack = cue(document.body.dataset.jackSound);
+    const jackIn = cue(document.body.dataset.jackInSound);
+    clicks.forEach((url) => load(url).then((b) => buffers.push(b)).catch(() => {}));
+    const click = (e) => {
+      const hit = e.target.closest?.("button, .btn, [role=button], input[type=submit]");
+      if (!hit || hit.disabled || hit.getAttribute("aria-disabled") === "true" || !buffers.length || !soundOn()) return;
+      if (context().state === "suspended") context().resume();
+      start(buffers[Math.floor(Math.random() * buffers.length)]);
+    };
+    document.addEventListener("pointerdown", (e) => { if (e.button === 0) click(e); }, true);
+    document.addEventListener("click", (e) => { if (e.detail === 0) click(e); }, true);
+    // A checkbox or a radio the player flipped (a change nobody made, such as a script ticking a box, is silent).
+    if (document.body.dataset.checkboxSound) {
+      let tick = null;
+      load(document.body.dataset.checkboxSound).then((b) => { tick = b; }).catch(() => {});
+      document.addEventListener("change", (e) => {
+        if (tick && e.isTrusted && e.target.matches?.("input[type=checkbox], input[type=radio]") && soundOn()) {
+          if (context().state === "suspended") context().resume();
+          start(tick);
+        }
+      }, true);
+    }
+    /* A bed: one buffer source on loop (sample-accurate, so no gap at the seam), behind a gain that ramps 0 -> 1 over FADE
+       seconds as it comes in and 1 -> 0 as it goes out, when the source is stopped and let go. The scan window has one, and the
+       run screen another. */
+    const FADE = 0.5;
+    const beds = [];
+    const bed = (url) => {
+      let buffer = null;
+      let wanted = false;
+      let playing = null;
+      const up = () => {
+        if (!wanted || playing || !buffer || !soundOn()) return;
+        const c = context();
+        const go = () => {
+          if (!wanted || playing || c.state !== "running") return;
+          const src = c.createBufferSource();
+          const gain = c.createGain();
+          src.buffer = buffer;
+          src.loop = true;
+          gain.gain.setValueAtTime(0, c.currentTime);
+          gain.gain.linearRampToValueAtTime(1, c.currentTime + FADE);
+          src.connect(gain).connect(c.destination);
+          src.start();
+          playing = { src, gain };
+        };
+        c.state === "running" ? go() : c.resume().then(go).catch(() => {});
+      };
+      const out = () => {
+        wanted = false;
+        if (!playing) return;
+        const { src, gain } = playing;
+        const c = context();
+        playing = null;
+        // Read where the fade-in has got to BEFORE cancelling it: a cancelled ramp leaves the gain at its resting 1.
+        const level = gain.gain.value;
+        gain.gain.cancelScheduledValues(c.currentTime);
+        gain.gain.setValueAtTime(level, c.currentTime);
+        gain.gain.linearRampToValueAtTime(0, c.currentTime + FADE);
+        src.stop(c.currentTime + FADE);
+        src.onended = () => gain.disconnect();
+      };
+      if (url) load(url).then((b) => { buffer = b; up(); }).catch(() => {});
+      beds.push({ up, playing: () => playing, wanted: () => wanted });
+      return { in() { wanted = true; up(); }, out, playing: () => !!playing };
+    };
+    // A bed that opens by itself (a scan just begun, or a run just started, reloads the page) has no press to start sound on,
+    // so the first press or key anywhere while it is wanted does: the browser lets a page play only once it has been touched.
+    ["pointerdown", "keydown"].forEach((type) => document.addEventListener(type, () => beds.forEach((b) => { if (b.wanted() && !b.playing()) b.up(); }), true));
+    const scanBed = bed(document.body.dataset.scanwindowSound);
+    // The run screen carries one for as long as it is up. Leaving the page ends it, as it ends everything on the page.
+    const runBed = bed(document.body.dataset.runSound);
+    if (document.querySelector("[data-run-watch]")) runBed.in();
+    const loopIn = scanBed.in;
+    const loopOut = scanBed.out;
+    // Leaving the run screen for another page: true when there was a loop to fade, so the caller waits out the fade.
+    const runOut = () => { const was = runBed.playing(); runBed.out(); return was; };
+    return { scan, ice, failure, success, noise, jack, jackIn, loopIn, loopOut, runOut };
+  })();
+
   /* --- Watching a read ---------------------------------------------------
      A scan pass takes minutes, so the dialog that shows one has to keep up
      with it. It polls while it is open and stops the moment it is closed —
@@ -1430,10 +1562,14 @@
      answers fill in as soon as one finishes rather than at the next reload. */
   function reading() {
     const dlg = document.querySelector("[data-reading]");
-    if (!dlg) return;
+    // Once: this runs at load and again at DOMContentLoaded, and it registers document handlers, so a second run would answer
+    // every press twice (Start scan posted the scan twice).
+    if (!dlg || dlg.dataset.bound) return;
+    dlg.dataset.bound = "1";
 
     let timer = null;
     let address = null;
+    let heard = {};
 
     const set = (name, value) => {
       const el = dlg.querySelector("[data-reading-" + name + "]");
@@ -1492,6 +1628,11 @@
       /* A row shows only when this scan has the fact: the run tree's rows appear on a system that walks a tree. */
       const keys = (data.facts || []).map((fact) => fact.key);
       dlg.querySelectorAll("[data-reading-facts] [data-fact]").forEach((row) => { row.hidden = !keys.includes(row.dataset.fact); });
+
+      // A pass that finished and revealed something, seen between two polls of the same read.
+      const found = JSON.stringify((data.facts || []).map((fact) => [fact.key, fact.value]));
+      if (heard.address === data.address && heard.found !== found) sfx.scan();
+      heard = { address: data.address, found };
 
       (data.facts || []).forEach((fact) => {
         const value = dlg.querySelector('[data-fact="' + fact.key + '"] [data-fact-value]');
@@ -1552,8 +1693,20 @@
       if (!data.running) stop();
     }
 
-    function start(target) {
+    // `touched`: the window was opened by a press, so the loop may start at once. Opened by itself (a scan just begun reloads
+    // the page) it may not, and the Start scan button waits for the press instead.
+    function start(target, touched) {
       stop();
+      const startBtn = dlg.querySelector("[data-reading-start]");
+      const below = dlg.querySelector("[data-reading-below]");
+      if (touched || !startBtn) {
+        startBtn?.remove();
+        if (below) below.inert = false;
+        sfx.loopIn();
+      } else {
+        startBtn.hidden = false;
+        if (below) below.inert = true;
+      }
       address = target;
       refresh();
       timer = setInterval(refresh, 5000);
@@ -1564,13 +1717,87 @@
       timer = null;
     }
 
-    dlg.addEventListener("close", () => stop());
+    dlg.addEventListener("close", () => {
+      stop();
+      sfx.loopOut();
+      pending = null;
+      // A scan begun from this window: the screen behind it still shows the Scan button. After the fade, so it is heard out.
+      if (dlg.dataset.started) {
+        delete dlg.dataset.started;
+        setTimeout(() => location.reload(), 550);
+      }
+    });
+
+    /* THE SCAN WINDOW, BEFORE ANYTHING IS SPENT. The Scan button opens it on what the page already knows (target, place,
+       instrument) with everything beneath greyed; Start scan is the press that begins the pass (posted from here, answered in
+       JSON) and, being a press, lets the loop play. Nothing is begun on the server until then, and closing the window first
+       leaves it all as it was. Once begun the page is reloaded when the window closes, so the screen behind it says so. */
+    let pending = null;
+    on("click", "[data-scan-open]", (e, btn) => {
+      pending = { url: btn.dataset.scanOpen, address: btn.dataset.scanAddress };
+      set("name", btn.dataset.scanName);
+      set("address", btn.dataset.scanAddress);
+      set("position", btn.dataset.scanPosition);
+      set("instrument", btn.dataset.scanInstrument);
+      set("pass", "—");
+      set("ready", "");
+      set("note", "");
+      const bar = dlg.querySelector("[data-reading-bar]");
+      if (bar) bar.style.setProperty("--v", 0);
+      dlg.querySelectorAll("[data-reading-facts] [data-fact]").forEach((row) => {
+        const value = row.querySelector("[data-fact-value]");
+        if (value) { value.className = "tag"; value.textContent = dlg.dataset.readingUnread; }
+      });
+      const addr = dlg.querySelector("[data-reading-address]");
+      if (addr) addr.dataset.copy = btn.dataset.scanAddress;
+      dlg.querySelectorAll("[data-reading-abandon], [data-reading-export], [data-reading-done]").forEach((el) => { el.hidden = true; });
+      dlg.querySelectorAll("[data-reading-background]").forEach((el) => { el.hidden = false; });
+      const startBtn = dlg.querySelector("[data-reading-start]");
+      if (startBtn) { startBtn.hidden = false; startBtn.disabled = false; }
+      const below = dlg.querySelector("[data-reading-below]");
+      if (below) below.inert = true;
+      if (dlg.showModal && !dlg.open) dlg.showModal();
+    });
+
+    on("click", "[data-reading-start]", async (e, btn) => {
+      // Opened by itself after a reload (no JS scan to begin): the pass is already running, so this only starts the sound.
+      if (!pending) {
+        btn.remove();
+        dlg.querySelector("[data-reading-below]")?.removeAttribute("inert");
+        sfx.loopIn();
+        return;
+      }
+      btn.disabled = true;
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      let answer = null;
+      try {
+        const res = await fetch(pending.url, {
+          method: "POST",
+          headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+          credentials: "same-origin",
+        });
+        answer = await res.json();
+      } catch (err) { /* an answer that is not JSON: handled as a refusal below */ }
+      if (!answer || !answer.ok) {
+        // Refused: nothing was begun, so the window goes and the reason is said where flashes go.
+        pending = null;
+        dlg.close();
+        flash((answer && answer.message) || dlg.dataset.readingGone || "", "crit");
+        return;
+      }
+      const address = pending.address;
+      pending = null;
+      dlg.dataset.started = "1";
+      btn.remove();
+      dlg.querySelector("[data-reading-below]")?.removeAttribute("inert");
+      start(address, true);
+    });
 
     // `:not(dialog)`: right after a scan starts the dialog itself carries data-reading-open (below), and without
     // this every click inside it, Run in background included, matched the dialog, closed it via data-close and
     // then reopened it here.
     on("click", "[data-reading-open]:not(dialog)", (e, btn) => {
-      start(btn.dataset.readingOpen);
+      start(btn.dataset.readingOpen, true);
       if (dlg.showModal) dlg.showModal();
     });
 
@@ -1840,17 +2067,29 @@
     let seen = null;
     try { seen = JSON.parse(sessionStorage.getItem(key) || "null"); } catch (e) { /* storage may be off */ }
     const turn = box ? Number(box.dataset.turn) : 0;
+    const ice = box ? box.dataset.ice === "1" : false;
     const logs = log ? Number(log.dataset.logCount) : 0;
     if (seen) {
+      // The ICE was asleep when this run was last seen and is awake now, however it was woken.
+      if (ice && seen.ice === false) sfx.ice();
       if (box && box.dataset.party === "1" && turn > seen.turn) {
         box.classList.add("round-flash");
         box.addEventListener("animationend", () => box.classList.remove("round-flash"), { once: true });
       }
+      // One sound of each kind per turn, however many of its lines the turn wrote.
+      const cues = new Set();
       if (log) log.querySelectorAll("[data-log-index]").forEach((row) => {
-        if (Number(row.dataset.logIndex) >= seen.logs) row.classList.add("log-new");
+        if (Number(row.dataset.logIndex) >= seen.logs) {
+          row.classList.add("log-new");
+          cues.add(row.dataset.sound);
+        }
       });
+      if (cues.has("scan")) sfx.scan();
+      if (cues.has("failure")) sfx.failure();
+      if (cues.has("success")) sfx.success();
+      if (cues.has("noise")) sfx.noise();
     }
-    try { sessionStorage.setItem(key, JSON.stringify({ turn, logs })); } catch (e) { /* ignore */ }
+    try { sessionStorage.setItem(key, JSON.stringify({ turn, logs, ice })); } catch (e) { /* ignore */ }
   }
   runWatch();
   document.addEventListener("DOMContentLoaded", runWatch);
@@ -2136,7 +2375,7 @@
         const left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
         el.textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
         if (left > 0) return setTimeout(tick, 1000);
-        setTimeout(() => location.reload(), 1500);
+        setTimeout(reloadPage, 1500);
       };
       tick();
     });
@@ -2671,6 +2910,13 @@
   let glitchPlayed = false;
   function glitchOnLoad() {
     if (glitchPlayed) return;
+    // A jack in or out already played its glitch beside its sound, on the page that was leaving (see data-glitch-submit).
+    let skip = false;
+    try {
+      skip = Date.now() - Number(sessionStorage.getItem("glitch-skip") || 0) < 15000;
+      sessionStorage.removeItem("glitch-skip");
+    } catch (err) { /* storage may be off */ }
+    if (skip) delete document.body.dataset.glitch;
     const levels = [document.body.dataset.glitch, ...[...document.querySelectorAll(".log-new[data-fx]")].map((n) => n.dataset.fx)].filter(Boolean);
     if (!levels.length) return;
     glitchPlayed = true;
@@ -2697,6 +2943,107 @@
   }
   travellers();
   document.addEventListener("DOMContentLoaded", travellers);
+
+  /* --- The run screen, without a reload ------------------------------------------
+     A page cannot keep sound playing across a navigation, and the run screen used to navigate after every turn, so its music
+     restarted each time and waited for a press. Here the run screen's own forms (a turn, a move, an install) are sent in the
+     background and the page's header numbers, flash and content are swapped for what the server answers, so the document, its
+     audio context and the loop all stay up. Anything else the answer turns out to be (the run has ended and it is redirecting to
+     the map, an error) is an ordinary navigation to where it went. The screen asking for itself again while a party waits is
+     [data-run-refresh="SECONDS"] on the watch box, in place of a `Refresh` header. */
+  let runTimer = null;
+  let soundHeldUntil = 0;   // when the sound of a press that leaves the page (jacking out) is over
+  const reinit = () => {
+    glitchPlayed = false;
+    [fillPrefixesAll, serverToasts, hotMeters, centreMap, targetPickers, modifierRows, timeFlashes, passClocks, ownerLoadout, runWatch,
+      turnForms, treeLife, countdowns, tabsMore, glitchOnLoad, travellers].forEach((f) => f());
+  };
+  function fillPrefixesAll() { fillPrefixes(document); }
+  async function softLoad(url, init) {
+    clearTimeout(runTimer);
+    let res;
+    let html;
+    try {
+      res = await fetch(url, { credentials: "same-origin", ...init });
+      html = await res.text();
+    } catch (e) {
+      return location.reload();   // No answer: the hard way, which says so itself.
+    }
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    if (!res.ok || new URL(res.url).pathname !== location.pathname || !doc.querySelector("[data-run-watch]")) {
+      if (res.redirected || !init) {
+        // Leaving the run screen: the loop fades out first, as the scan window's does.
+        // The run ended on a success (an egress, a burn, a backdoor landed): the page it lands on says so, and it is heard out.
+        if (doc.body.dataset.cue === "success") soundHeldUntil = performance.now() + Math.min(sfx.success(), 2000);
+        return setTimeout(() => location.assign(res.url), Math.max(sfx.runOut() ? 500 : 0, soundHeldUntil - performance.now()));
+      }
+      document.open();   // A refusal or an error that came straight back: show it.
+      document.write(html);
+      document.close();
+      return;
+    }
+    // The bar's dials and chips, one for one (the sound toggle has handlers of its own and is left alone).
+    const bar = "header.topbar [role=meter], header.topbar .chip-stat:not([data-sound-toggle])";
+    const now = document.querySelectorAll(bar);
+    const next = doc.querySelectorAll(bar);
+    if (now.length === next.length) now.forEach((el, i) => el.replaceWith(next[i]));
+    ["[data-flash-host]", "main"].forEach((sel) => {
+      const a = document.querySelector(sel);
+      const b = doc.querySelector(sel);
+      if (a && b) a.innerHTML = b.innerHTML;
+    });
+    document.title = doc.title;
+    if (doc.body.dataset.glitch) document.body.dataset.glitch = doc.body.dataset.glitch;
+    if (res.url !== location.href) history.replaceState(null, "", res.url);
+    reinit();
+    armRunRefresh();
+  }
+  function reloadPage() {
+    if (document.querySelector("[data-run-watch]")) softLoad(location.href); else location.reload();
+  }
+  function armRunRefresh() {
+    clearTimeout(runTimer);
+    const secs = Number(document.querySelector("[data-run-refresh]")?.dataset.runRefresh);
+    if (secs > 0) runTimer = setTimeout(() => softLoad(location.href), secs * 1000);
+  }
+  /* A form that LEAVES the page with a sound of its own (<form data-sound-submit="jack"> jacking out, "jack-in" jacking in): the sound starts on the
+     press and the page waits it out, up to two seconds, since a navigation would cut it off. On the run screen the soft submit
+     below does the waiting; anywhere else this holds the submit back and sends it again when the sound is done. */
+  document.addEventListener("submit", (e) => {
+    const form = e.target;
+    const cue = { jack: sfx.jack, "jack-in": sfx.jackIn }[form.dataset.soundSubmit];
+    if (!cue || form.dataset.soundDone) return;
+    const ms = Math.min(cue(), 2000);
+    soundHeldUntil = performance.now() + ms;
+    // The page's glitch starts WITH the sound, not after it: the server would draw it on the next page, once the sound had
+    // ended, so the next page is told (sessionStorage, read by glitchOnLoad) that it has been played. Only when the press is
+    // being held for a sound: a submit that goes straight through leaves the glitch to the next page, as ever.
+    if (ms > 0 && form.dataset.glitchSubmit) {
+      try { sessionStorage.setItem("glitch-skip", String(Date.now())); } catch (err) { /* then it plays twice; no harm */ }
+      glitch(form.dataset.glitchSubmit);
+    }
+    if (document.querySelector("[data-run-watch]") && form.closest("main")) return;
+    if (ms <= 0) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    form.dataset.soundDone = "1";
+    setTimeout(() => form.requestSubmit(e.submitter), ms);
+  }, true);
+  document.addEventListener("submit", (e) => {
+    const form = e.target;
+    // Attributes, not form.action / .method / .target: a field NAMED `action` (the turn buttons') shadows the property.
+    // The pressed button's own `formaction` wins (Disarm and Install carry their node and kind in it), as it does in a real submit.
+    const action = e.submitter?.getAttribute("formaction") || form.getAttribute("action");
+    if (e.defaultPrevented || !document.querySelector("[data-run-watch]") || !form.closest("main") || form.getAttribute("target")
+      || (form.getAttribute("method") || "").toLowerCase() !== "post" || !action || new URL(action, location.href).origin !== location.origin) return;
+    e.preventDefault();
+    const body = new FormData(form);
+    if (e.submitter?.name) body.append(e.submitter.name, e.submitter.value);
+    // Held while it is away: a second press would be a second turn.
+    setTimeout(() => form.querySelectorAll("button, input[type=submit]").forEach((b) => { b.disabled = true; }), 0);
+    softLoad(new URL(action, location.href).href, { method: "POST", body });
+  });
+  armRunRefresh();
 
   window.UI = { glitch, toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
 })();

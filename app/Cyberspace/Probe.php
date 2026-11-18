@@ -22,6 +22,7 @@ use App\Support\Trace;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -141,7 +142,12 @@ final class Probe
      */
     public function scan(Character $character, ?CarbonInterface $now = null): ProbeResult
     {
-        return Trace::scope($character, 'scan.start', fn () => $this->scanTraced($character, $now), []);
+        try {
+            return Trace::scope($character, 'scan.start', fn () => $this->scanTraced($character, $now), []);
+        } catch (UniqueConstraintViolationException) {
+            // Two presses at once (a double click, a second tab) both made the same file: the second one finds it already running.
+            return ProbeResult::refused(ProbeRefusal::Busy);
+        }
     }
 
     private function scanTraced(Character $character, ?CarbonInterface $now = null): ProbeResult

@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="{{ Asset::url('assets/css/ui-kit.css') }}">
     @stack('head')
 </head>
-<body @if ($glitch = \App\Support\Glitch::pull()) data-glitch="{{ $glitch }}" @endif>
+<body data-noise-sound="{{ Asset::url('assets/sound/noise_made.mp3') }}" @if (session('cue')) data-cue="{{ session('cue') }}" @endif data-success-sound="{{ Asset::url('assets/sound/success.mp3') }}" data-failure-sound="{{ Asset::url('assets/sound/failure.mp3') }}" data-jack-in-sound="{{ Asset::url('assets/sound/jack_in.mp3') }}" data-jack-sound="{{ Asset::url('assets/sound/jack_out.mp3') }}" data-ice-sound="{{ Asset::url('assets/sound/ice_wakes.mp3') }}" data-run-sound="{{ Asset::url('assets/sound/run_loop.mp3') }}" data-scanwindow-sound="{{ Asset::url('assets/sound/scanwindow_loop.mp3') }}" data-checkbox-sound="{{ Asset::url('assets/sound/checkbox.wav') }}" data-scan-sound="{{ Asset::url('assets/sound/scan.wav') }}" data-click-sounds="{{ json_encode(collect(glob(public_path('assets/sound/click*.wav')))->map(fn ($f) => Asset::url('assets/sound/'.basename($f)))->values()) }}" @if ($glitch = \App\Support\Glitch::pull()) data-glitch="{{ $glitch }}" @endif>
 
 {{-- The character behind the HUD. Named apart from the $character a view may
      already have been given, so the layout can never shadow it. An admin who
@@ -556,11 +556,19 @@
                     </p>
                 </div>
 
-                <div>
-                    <span class="micro">{{ Text::get('cyberspace.reading.instrument') }}</span>
-                    <p style="margin:0" data-reading-instrument>—</p>
+                {{-- The button on the right is only there to catch a press: a scan just begun opens this window by itself after a
+                     reload, and a browser lets a page play sound only once it has been touched. ui-kit.js shows it then, and
+                     deletes it when pressed, starting the loop. --}}
+                <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s-3)">
+                    <div>
+                        <span class="micro">{{ Text::get('cyberspace.reading.instrument') }}</span>
+                        <p style="margin:0" data-reading-instrument>—</p>
+                    </div>
+                    <button type="button" class="btn btn--sm btn--go cut" data-reading-start hidden>{{ Text::get('cyberspace.reading.start') }}</button>
                 </div>
 
+                {{-- Everything beneath the instrument is greyed and inert until Start scan is pressed (ui-kit.js). --}}
+                <div class="stack" style="--gap:var(--s-3)" data-reading-below>
                 {{-- How far in. The bar is the kit's own, driven by --v, and it is
                      the same fraction the cell on the map is drawing. --}}
                 <div>
@@ -599,6 +607,7 @@
                 {{-- Once the read has the Layout: the tree, in #tree-view. The poll sets where it is fetched from. --}}
                 <div data-reading-tree hidden>
                     <button type="button" class="btn btn--sm btn--ghost cut" data-listing="" data-dialog="#tree-view">{{ Text::get('cyberspace.tree.view') }}</button>
+                </div>
                 </div>
             </div>
         </div>

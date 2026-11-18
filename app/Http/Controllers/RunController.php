@@ -36,6 +36,7 @@ use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
 use App\Stats\Resolver;
+use App\Support\Glitch;
 use App\Support\Text;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -466,6 +467,9 @@ class RunController extends Controller
             'character' => $character,
             'run' => $run,
             'waiting' => $waiting,
+            // Seconds until the screen asks for itself again (a party waiting, a pull running): ui-kit.js's soft load does it, since
+            // a `Refresh` header would reload the page and with it the run's music.
+            'refresh' => $refresh ? 5 : 0,
             'shared' => $shared,
             // The others have all dropped out: this runner is the last of a party that was more than one.
             'alone' => $run->run_party_id !== null && ! $shared && Run::query()->where('run_party_id', $run->run_party_id)->count() > 1,
@@ -507,7 +511,7 @@ class RunController extends Controller
                 : (int) round($chance * 100),
         ]);
 
-        return $refresh ? $response->header('Refresh', '5') : $response;
+        return $response;
     }
 
     /**
@@ -669,8 +673,14 @@ class RunController extends Controller
             $run->refresh(),
         ));
 
-        return redirect()->route($opened === null ? 'cyberspace.index' : 'encounter.show')
+        $redirect = redirect()->route($opened === null ? 'cyberspace.index' : 'encounter.show')
             ->with($result->ending->isBad() ? 'error' : 'status', implode(' ', [...$notices, $result->ending->message()]));
+
+        // The turn that ended the run may have been a success (an egress, a burn, a backdoor landing): the run screen is leaving, so
+        // it is the next page that says so (`data-cue` on the body), and the run screen plays it before it goes (ui-kit.js).
+        return collect($result->log)->contains(static fn (array $line): bool => Glitch::playsSuccess($line['key'] ?? null))
+            ? $redirect->with('cue', 'success')
+            : $redirect;
     }
 
     /**
