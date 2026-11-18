@@ -1,3 +1,11 @@
+## 0.101.0 (2026-11-18)
+
+- Two new districts: The Gap and Slipways
+- Two new locations: The Greenhouse in Little Moscow (buys data) and Pusher Street in Knightsbridge (sells drugs).
+- City map got some makeup
+- Look at that little marker moving along the connectors when you travel! Weee!
+- Updated the Agitaiton mission description
+
 ## 0.100.2 (2026-11-17)
 - A Denial run didn't cause a lockdown after the switch to tree runs. Fixed now.
 
