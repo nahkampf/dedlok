@@ -1,3 +1,8 @@
+## 0.101.2 (2026-11-18)
+- Changed the number of required scans for Survey missions from 3-10 to 2-6. 
+- Bug fixes for the City Map travelling marker: render above the nameplates, and update the last district  position so that it animates correctly 
+- Agitation had a tendency of not triggering with the switch to the new tree run system, fixed now -
+
 ## 0.101.1 (2026-11-18)
 - Sales orders on the market are now grouped as well
 - An edge case with double scans if you pressed fast enough
