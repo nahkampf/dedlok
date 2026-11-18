@@ -87,7 +87,7 @@
     @php($contracts = $offers->whereNotNull('recipient_character_id'))
     @php($orders = $offers->whereNull('recipient_character_id'))
 
-    @foreach ([['market.offers.heading', 'market.offers.empty', $orders], ['market.contracts.heading', 'market.contracts.empty', $contracts]] as [$heading, $empty, $list])
+    @foreach ([['market.offers.heading', 'market.offers.empty', $orders, true], ['market.contracts.heading', 'market.contracts.empty', $contracts, false]] as [$heading, $empty, $list, $byKind])
         <details class="panel" style="margin-top:var(--s-4)">
             <summary class="panel__hd">
                 <span class="micro">{{ Text::get($heading) }}</span>
@@ -98,6 +98,9 @@
             <div class="panel__bd">
                 @if (count($list) === 0)
                     <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get($empty) }}</p>
+                @elseif ($byKind)
+                    {{-- Sales orders: accordions by kind, as the shelf above is, with a search of their own. --}}
+                    @include('market._grouped', ['entries' => $list, 'itemOf' => fn ($o) => $o->row->item, 'card' => 'market._order-card', 'id' => 'order-shelves'])
                 @else
                     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
                         @foreach ($list as $offer)

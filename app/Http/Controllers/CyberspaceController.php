@@ -215,6 +215,8 @@ class CyberspaceController extends Controller
             // being read and two instruments going, the button is dead for a
             // third and the screen should know it.
             'canScan' => $probe->freeAnalyser($character) !== null,
+            // The scan window opens on this before anything is spent (Start scan, in the window, begins the pass).
+            'analyserName' => $probe->freeAnalyser($character)?->item?->displayName(),
             // Told apart from having none at all: a scanner that is busy reading is running, and "you have no
             // scanner running" would be false the moment a read begins.
             'analyserRunning' => $probe->hasAnalyserRunning($character),
@@ -540,33 +542,42 @@ class CyberspaceController extends Controller
      * pass, and a pass that learns nothing still spends one — see
      * App\Cyberspace\Probe.
      */
-    public function scan(Request $request, Probe $probe): RedirectResponse
+    public function scan(Request $request, Probe $probe): RedirectResponse|JsonResponse
     {
         $result = $probe->scan($this->character($request));
 
+        // The scan window's Start scan asks for JSON: it stays on the page, so what happened comes back as a line to show.
+        $say = static function (string $kind, string $message, ?string $address = null) use ($request): RedirectResponse|JsonResponse {
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => $kind === 'running', 'message' => $message, 'address' => $address], $kind === 'error' ? 422 : 200);
+            }
+
+            $back = back()->with($kind === 'error' ? 'error' : 'status', $message);
+
+            return $kind === 'running' ? $back->with('reading', $address) : $back;
+        };
+
         if (! $result->succeeded()) {
-            return back()->with('error', $result->refusal->message());
+            return $say('error', $result->refusal->message());
         }
 
         if ($result->voided) {
             // WHICH way it was lost. The instrument and the machine are two
             // different things to have gone wrong, and one message for both
             // sent players to inspect a deck that was working.
-            return back()->with('error', $result->cause?->message() ?? Text::get('cyberspace.scan.voided'));
+            return $say('error', $result->cause?->message() ?? Text::get('cyberspace.scan.voided'));
         }
 
         // A pass just begun has found nothing yet and says when it will have.
         if ($result->isRunning()) {
             // The screen opens on the machine just pointed at, so a player sees
             // the read start rather than a sentence about it having started.
-            return back()
-                ->with('reading', $result->scan->address)
-                ->with('status', Text::get('cyberspace.scan.begun', [
-                    'when' => $result->scan->pass_ready_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
-                ]));
+            return $say('running', Text::get('cyberspace.scan.begun', [
+                'when' => $result->scan->pass_ready_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
+            ]), $result->scan->address);
         }
 
-        return back()->with('status', $result->found === [] || $result->scan === null
+        return $say('status', $result->found === [] || $result->scan === null
             ? Text::get('cyberspace.scan.nothing_new')
             : $this->newDataLine($result->scan));
     }

@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.101.1] — 2026-11-18
+
+### Added
+- Sound: click sounds, jack in and out, a scan loop, a run loop, and cues on the run screen for success, failure, noise made and ICE waking (`public/assets/sound/`, `data-sound*` attributes read by `ui-kit.js`). Which log lines play which cue is listed in `config/glitch.php` (`failure_sound`, `success_sound`, `noise_sound`; `Glitch::playsSuccess()`). A turn that ends the run on a success carries the cue to the next page (`data-cue`).
+- The scan button now opens the scan window and spends nothing; **Start scan**, in the window, posts the scan as JSON (`CyberspaceController::scan` answers `JsonResponse` when the request expects JSON). Everything under the instrument is inert until it is pressed; a scan just begun reopens the window after a reload with a button that catches the press browsers need before they play sound.
+- Market: sales orders are grouped in accordions by kind, with a search, as the shelf is (`market/_order-card`); prices are shown in the ok colour.
+
+### Changed
+- The run screen no longer reloads itself by a `Refresh` header while a party waits or a pull runs: the page carries `data-run-refresh` and `ui-kit.js` does a soft load, so the run's music is not cut.
+
+### Fixed
+- A double press of Scan (or a second tab) hit the unique constraint on the scan; the second press now gets the "busy" refusal (`Probe::scan`).
+
+### Migrations
+- None.
+
+
 ## [0.101.0] — 2026-11-18
 
 ### Added
@@ -4457,7 +4474,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.1...HEAD
+[0.101.1]: https://github.com/nahkampf/dedlok/compare/v0.101.0...v0.101.1
 [0.101.0]: https://github.com/nahkampf/dedlok/compare/v0.100.2...v0.101.0
 [0.100.2]: https://github.com/nahkampf/dedlok/compare/v0.100.1...v0.100.2
 [0.100.1]: https://github.com/nahkampf/dedlok/compare/v0.100.0...v0.100.1

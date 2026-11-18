@@ -1104,6 +1104,17 @@ final class TreeRunTest extends TestCase
         $this->assertSame(1, $run->floodedTurns());
     }
 
+    public function test_a_run_screen_that_must_ask_again_says_so_in_the_page_and_not_in_a_refresh_header(): void
+    {
+        $run = $this->begin();
+        $user = $this->character->fresh()->user;
+
+        $this->actingAs($user)->get(route('run.show'))->assertOk()->assertDontSee('data-run-refresh', false)->assertHeaderMissing('Refresh');
+
+        $run->forceFill(['pull_at' => now()->addMinute()])->save();
+        $this->actingAs($user)->get(route('run.show'))->assertOk()->assertSee('data-run-refresh="5"', false)->assertHeaderMissing('Refresh');
+    }
+
     public function test_a_runner_on_a_node_the_cordon_cuts_is_thrown_to_the_neighbour_nearest_an_exit(): void
     {
         $tree = $this->grade7();

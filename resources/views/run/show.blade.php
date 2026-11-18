@@ -201,7 +201,7 @@
      ONE FORM AND ONE DOOR. Every action costs the same turn, which is the economy the whole run rests
      on — so they are one button each on one form rather than a route apiece. LEAVING IS ALWAYS ON THE
      LIST and never disabled: a run with no exit is a character deleted by a door they could not see. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)" data-run-watch="{{ $run->id }}" data-turn="{{ $run->turn }}" data-party="{{ $shared ? 1 : 0 }}">
+<div class="panel panel--snug" style="margin-top:var(--s-4)" data-run-watch="{{ $run->id }}" data-ice="{{ $run->ice_id !== null ? 1 : 0 }}" @if ($refresh) data-run-refresh="{{ $refresh }}" @endif data-turn="{{ $run->turn }}" data-party="{{ $shared ? 1 : 0 }}">
     {{-- ON OR PAST A THRESHOLD: the next turn pulls them out whatever they press. The loud thing on the
          panel, because it is the one fact that changes what the buttons below will do. --}}
     {{-- A TREE RUN'S THRESHOLD ONLY WARNS: leaving takes the entry, so nothing pulls them out where they stand. --}}
@@ -463,7 +463,7 @@
         </div>
         <div class="panel__bd">
             <p style="margin:0 0 var(--s-4)">{{ Text::get('cyberspace.tree.jackout_warning') }}</p>
-            <form method="POST" action="{{ route('run.act') }}" class="row row--wrap" style="--gap:var(--s-2)">
+            <form data-sound-submit="jack" data-glitch-submit="crash" method="POST" action="{{ route('run.act') }}" class="row row--wrap" style="--gap:var(--s-2)">
                 @csrf
                 <button type="submit" name="action" value="jackout" class="btn btn--danger cut">{{ Text::get('cyberspace.run.action.jackout_confirm') }}</button>
                 <button type="button" class="btn btn--ghost cut" data-close>{{ Text::get('cyberspace.run.action.jackout_cancel') }}</button>
@@ -649,7 +649,7 @@
                     @php($shownTurn = $line['turn'])
                     <div class="rule rule--center">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</div>
                 @endif
-                <p class="micro" data-log-index="{{ $loop->count - $loop->iteration }}" @if ($fx = \App\Support\Glitch::forLogKey($line['key'] ?? null)) data-fx="{{ $fx }}" @endif style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
+                <p class="micro" data-log-index="{{ $loop->count - $loop->iteration }}" @if (($line['key'] ?? null) === 'cyberspace.run.log.tree.nmap' && (int) ($line['replace']['count'] ?? 0) > 0) data-sound="scan" @elseif (in_array($line['key'] ?? null, config('glitch.failure_sound'), true)) data-sound="failure" @elseif (\App\Support\Glitch::playsSuccess($line['key'] ?? null)) data-sound="success" @elseif (in_array($line['key'] ?? null, config('glitch.noise_sound'), true)) data-sound="noise" @endif @if ($fx = \App\Support\Glitch::forLogKey($line['key'] ?? null)) data-fx="{{ $fx }}" @endif style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
                     {{-- A line may carry a tag naming who did it ("ICE VII lands a code payload…"), and
                          words before it ("Your [icebreaker] finds…"). The tag's colour is stored with it:
                          `crit` for the ICE hitting you (also what a line from before the colour was kept

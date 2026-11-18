@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Support\Glitch;
+use App\Support\Text;
 use Illuminate\Support\Arr;
 use Tests\TestCase;
 
@@ -30,5 +31,34 @@ class GlitchTest extends TestCase
         $this->assertNull(Glitch::strongest([['text' => 'nothing']]));
         $this->assertSame('hit', Glitch::strongest([['fx' => 'tick'], ['fx' => 'hit'], ['fx' => 'tick']]));
         $this->assertSame('crash', Glitch::strongest([['fx' => 'hit'], ['fx' => 'crash']]));
+    }
+
+    /** Every line that plays the failure sound is a real log line of yours that fails (so it also ticks the page). */
+    public function test_the_failure_sound_is_only_for_failures_the_log_knows(): void
+    {
+        foreach (config('glitch.failure_sound') as $key) {
+            $this->assertSame('tick', Glitch::forLogKey($key), $key);
+            $this->assertNotSame($key, Text::get($key), $key);
+        }
+    }
+
+    public function test_the_success_sound_is_for_the_listed_successes_and_every_backdoor_kind(): void
+    {
+        foreach (config('glitch.success_sound') as $key) {
+            $this->assertTrue(Glitch::playsSuccess($key));
+            $this->assertNotSame($key, Text::get($key), $key);
+        }
+
+        $this->assertTrue(Glitch::playsSuccess('cyberspace.run.log.install.routing'));
+        $this->assertFalse(Glitch::playsSuccess('cyberspace.run.log.install_fails'));
+        $this->assertFalse(Glitch::playsSuccess('cyberspace.run.log.install_already'));
+        $this->assertFalse(Glitch::playsSuccess(null));
+    }
+
+    public function test_the_noise_sound_is_for_noise_lines_the_log_knows(): void
+    {
+        foreach (config('glitch.noise_sound') as $key) {
+            $this->assertNotSame($key, Text::get($key), $key);
+        }
     }
 }

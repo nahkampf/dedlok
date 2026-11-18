@@ -138,14 +138,14 @@
             {{-- The one filled button on the screen. .btn--go means BEGIN, and
                  jacking in is the only thing here that begins anything. --}}
             @if ($map->jackedIn)
-                <form method="POST" action="{{ route('cyberspace.jack_out') }}">
+                <form method="POST" action="{{ route('cyberspace.jack_out') }}" data-sound-submit="jack" data-glitch-submit="hit">
                     @csrf
                     {{-- A plain button, not --warn. Jacking out undoes no work:
                          terrain, contacts and bookmarks all survive it. --}}
                     <button type="submit" class="btn cut">{{ Text::get('cyberspace.map.jack_out') }}</button>
                 </form>
             @else
-                <form method="POST" action="{{ route('cyberspace.jack_in') }}">
+                <form method="POST" action="{{ route('cyberspace.jack_in') }}" data-sound-submit="jack-in" data-glitch-submit="hit">
                     @csrf
                     <button type="submit" class="btn btn--go cut">{{ Text::get('cyberspace.map.jack_in') }}</button>
                 </form>
@@ -394,13 +394,14 @@
                                         {{ Text::get('cyberspace.scan.show') }}
                                     </button>
                                 @else
-                                    <form method="POST" action="{{ route('cyberspace.scan') }}">
-                                        @csrf
-                                        <button type="submit" class="btn cut"
-                                                @disabled(! $here || ! $canScan || ($scan?->isComplete() && $scan->filed_at === null))>
-                                            {{ Text::get($scan?->isComplete() ? 'cyberspace.scan.rescan' : 'cyberspace.scan.action') }}
-                                        </button>
-                                    </form>
+                                    {{-- It opens the scan window and spends nothing: the pass is begun by Start scan, in the window
+                                         (ui-kit.js posts it), so the press that starts the music is the press that starts the scan. --}}
+                                    <button type="button" class="btn cut" data-scan-open="{{ route('cyberspace.scan') }}"
+                                            data-scan-address="{{ $target->address }}" data-scan-name="{{ $target->displayName() }}"
+                                            data-scan-position="{{ $target->position() }}" data-scan-instrument="{{ $analyserName }}"
+                                            @disabled(! $here || ! $canScan || ($scan?->isComplete() && $scan->filed_at === null))>
+                                        {{ Text::get($scan?->isComplete() ? 'cyberspace.scan.rescan' : 'cyberspace.scan.action') }}
+                                    </button>
                                 @endif
                             @endif
                         </div>

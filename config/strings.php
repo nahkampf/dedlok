@@ -2377,6 +2377,7 @@ return [
         'reading' => [
             'title' => 'Scanning a system',
             'open' => 'Show the scan',
+            'start' => 'Start scan',
             'instrument' => 'Instrument',
             'target' => 'Target',
             'pass_of' => 'Pass :pass',

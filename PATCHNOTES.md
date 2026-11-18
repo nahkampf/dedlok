@@ -1,3 +1,9 @@
+## 0.101.1 (2026-11-18)
+- Sales orders on the market are now grouped as well
+- An edge case with double scans if you pressed fast enough
+- Lots of new interface sounds, check them out in runs and scans!
+- Slight changes to how scans and runs update the screen/browser due to sounds
+
 ## 0.101.0 (2026-11-18)
 
 - Two new districts: The Gap and Slipways

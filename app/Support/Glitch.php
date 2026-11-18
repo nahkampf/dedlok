@@ -49,6 +49,12 @@ final class Glitch
         return request()->hasSession() ? session()->pull(self::KEY) : null;
     }
 
+    /** Does this log line play success.mp3? The listed ones, and every kind of backdoor installed (`install.routing` and so on). */
+    public static function playsSuccess(?string $key): bool
+    {
+        return $key !== null && (in_array($key, config('glitch.success_sound'), true) || str_starts_with($key, 'cyberspace.run.log.install.'));
+    }
+
     /** The effect for one line of a run's log (`config/glitch.php`), by the key it was written with. */
     public static function forLogKey(?string $key): ?string
     {

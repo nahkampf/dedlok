@@ -557,6 +557,21 @@ final class ProbeTest extends TestCase
             ->assertSessionHas('error', ProbeRefusal::NothingThere->message());
     }
 
+    /** The scan window's Start scan asks for JSON and stays on the page: a begun pass says so, a refusal begins nothing. */
+    public function test_start_scan_in_the_window_answers_in_json(): void
+    {
+        $this->actingAs($this->character->user)->postJson(route('cyberspace.scan'))
+            ->assertStatus(422)->assertJson(['ok' => false, 'message' => ProbeRefusal::NothingThere->message()]);
+        $this->assertSame(0, SystemScan::query()->count());
+
+        $this->machine(grade: 1);
+        $this->sweep();
+
+        $this->actingAs($this->character->user)->postJson(route('cyberspace.scan'))
+            ->assertOk()->assertJson(['ok' => true, 'address' => 'DEADBEEF']);
+        $this->assertSame(1, SystemScan::query()->sole()->passes);
+    }
+
     // ---- a pass takes time -------------------------------------------------
 
     /**

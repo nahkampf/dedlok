@@ -162,11 +162,12 @@ final class InteractBoxTest extends TestCase
 
     public function test_the_scan_button_is_not_in_the_top_bar_any_more(): void
     {
-        // One scan form on the page, and it comes after the Interact heading, not before it.
+        // One scan button on the page (it opens the scan window; the pass begins there), and it comes after the Interact heading.
         $html = $this->page()->getContent();
+        $button = 'data-scan-open="'.route('cyberspace.scan').'"';
 
-        $this->assertSame(1, substr_count($html, 'action="'.route('cyberspace.scan').'"'));
-        $this->assertGreaterThan(strpos($html, 'Interact'), strpos($html, 'action="'.route('cyberspace.scan').'"'));
+        $this->assertSame(1, substr_count($html, $button));
+        $this->assertGreaterThan(strpos($html, 'Interact'), strpos($html, $button));
     }
 
     public function test_the_thresholds_panel_is_headed_thresholds_with_its_values_as_tags(): void

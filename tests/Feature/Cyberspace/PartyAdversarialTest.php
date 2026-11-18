@@ -478,7 +478,9 @@ final class PartyAdversarialTest extends TestCase
 
         $response = $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk();
 
-        $response->assertHeader('Refresh', '5');
+        // The page asks again by itself (ui-kit.js, [data-run-refresh]) rather than by a Refresh header, which would reload it.
+        $response->assertHeaderMissing('Refresh');
+        $response->assertSee('data-run-refresh="5"', false);
         $response->assertSee('data-countdown', false);
 
         $this->travel(PartyTurns::DEADLINE_SECONDS + 1)->seconds();
