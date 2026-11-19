@@ -1,3 +1,11 @@
+## 0.101.3 (2026-11-19)
+- New subnode type: Tripgate. Lets runners pass only in one direction.
+- Sounds reencoded for a 10x reduction in size
+- Starting on optimization efforts:
+  - Brotli now compresses assets
+  - A few bottlenecks with Swarm scanning removed
+  - An error when returning to a scan window could sometimes occur
+
 ## 0.101.2 (2026-11-18)
 - Changed the number of required scans for Survey missions from 3-10 to 2-6. 
 - Bug fixes for the City Map travelling marker: render above the nameplates, and update the last district  position so that it animates correctly 
