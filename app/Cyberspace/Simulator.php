@@ -318,21 +318,23 @@ final readonly class Simulator
                     }
                 }
 
-                // LEAVING THE CORE MID-FIGHT costs a parting hit: the ICE swings before they are out of its reach.
-                if ($run->inAFight() && $run->iceReachesHere()) {
-                    [$line, $parting, $extra] = $this->iceStrikes($character, $run);
-                    $log = [...$log, $line, ...($extra === null ? [] : [$extra])];
-
-                    if ($parting !== null) {
-                        $run->save();
-                        $this->appendLog($run, $log);
-
-                        return TurnResult::resolved($run, $log, $parting);
-                    }
+                // LEAVING THE CORE MID-FIGHT IS A ROLL, the egress one: the same stat, the same difficulty (grade and the ICE's level) and
+                // the same Ensnare multiplier as pulling out of the system. Passed, they step away clean and the ICE cannot reach them.
+                // Failed, they stay where they are and the machine takes its half of the turn below: one more round of the fight.
+                if ($run->inAFight() && $run->iceReachesHere() && ! $this->checks->roll(
+                    $character->stat('egress')->value,
+                    $this->egressDifficulty($run),
+                    'egress',
+                    $this->egressMultiplier($character, $run),
+                )->passed) {
+                    $log[] = $this->line('cyberspace.run.log.egress_held', tone: 'warn');
+                    $node = null;
                 }
 
                 // A TRAP nobody has dealt with goes off as they step on it; a Node Disconnect leaves them where they were.
-                if ($this->liveTrap($run, (int) $node) !== null && ! $this->treeOf($run)?->isHoneypot((int) $node)) {
+                if ($node === null) {
+                    // Held at the core: nothing moves.
+                } elseif ($this->liveTrap($run, (int) $node) !== null && ! $this->treeOf($run)?->isHoneypot((int) $node)) {
                     [$tripped, $stays] = $this->trip($character, $run, (int) $node);
                     $log = [...$log, ...($stays ? [] : $this->move($run, (int) $node)), ...$tripped];
                 } else {
@@ -340,7 +342,9 @@ final readonly class Simulator
                 }
 
                 // Stepping onto a sleeping sentry's node: their stealth against its detection.
-                $log = [...$log, ...$this->sentriesLook($character, $run)];
+                if ($node !== null) {
+                    $log = [...$log, ...$this->sentriesLook($character, $run)];
+                }
             } elseif ($action === RunAction::Shutdown) {
                 [$downLog, $breachTier] = $this->shutDown($character, $run);
                 $log = [...$log, ...$downLog];
@@ -438,7 +442,8 @@ final readonly class Simulator
 
             // The node shakes a solo flooder off after enough turns (a party's round does it, in PartyTurns).
             if ($ending === null && $run->purpose === RunPurpose::Denial && ! PartyTurns::shared($run) && $run->floodedTurns() >= (int) Config::get('cyberspace.denial.turns', 12)) {
-                $log[] = $this->line('cyberspace.run.log.flood_shaken_off', tone: 'warn');
+                // `notice`: the run screen is gone once this ends the run, so the map has to say why.
+                $log[] = $this->line('cyberspace.run.log.flood_shaken_off', tone: 'warn') + ['notice' => true];
                 $run->save();
                 $this->appendLog($run, $log);
                 $this->runs->end($character, $run, RunEnding::Egress);

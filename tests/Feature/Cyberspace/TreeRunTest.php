@@ -1226,21 +1226,60 @@ final class TreeRunTest extends TestCase
         $this->assertFalse($run->fresh()->iceReachesHere());
     }
 
-    public function test_leaving_the_core_mid_fight_costs_a_parting_hit_and_the_ice_keeps_its_damage(): void
+    /** A run at the core with an ICE awake and a neighbour to step to; returns the run and that neighbour. */
+    private function fightAtTheCore(): array
     {
         $run = $this->begin();
         $ice = Ice::query()->where('level', 1)->sole();
         $run->forceFill(['node' => $this->tree->core, 'ice_id' => $ice->id, 'ice_integrity' => 3, 'ice_damage' => 5])->save();
-        $away = $this->tree->neighbours($this->tree->core)[0];
+
+        return [$run, $this->tree->neighbours($this->tree->core)[0]];
+    }
+
+    public function test_leaving_the_core_mid_fight_is_an_evasion_roll_and_a_pass_is_clean(): void
+    {
+        [$run, $away] = $this->fightAtTheCore();
         $si = (float) $this->character->fresh()->current_synaptic_integrity;
 
-        // The die at its low end: the ICE's skill roll lands.
+        // The die at its low end: the evasion passes.
         $this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $away);
         $run = $run->fresh();
 
         $this->assertSame($away, $run->node);
-        $this->assertLessThan($si, (float) $this->character->fresh()->current_synaptic_integrity, 'one parting hit');
+        $this->assertSame($si, (float) $this->character->fresh()->current_synaptic_integrity, 'no parting hit');
         $this->assertSame(3.0, (float) $run->ice_integrity, 'as damaged as it was left');
+    }
+
+    public function test_a_failed_evasion_keeps_them_at_the_core_for_one_more_round(): void
+    {
+        [$run, $away] = $this->fightAtTheCore();
+        $si = (float) $this->character->fresh()->current_synaptic_integrity;
+
+        // The first roll is the evasion and fails; every later one (the ICE's skill roll) lands.
+        $rolls = 0;
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static function () use (&$rolls): float {
+            return $rolls++ === 0 ? 1.0 : 0.0;
+        }));
+        $simulator = Simulator::fromConfig(static fn (int $min, int $max): int => $min, app(Resolver::class));
+
+        $result = $simulator->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $away);
+        $run = $run->fresh();
+
+        $this->assertSame($this->tree->core, $run->node, 'held where they were');
+        $this->assertLessThan($si, (float) $this->character->fresh()->current_synaptic_integrity, 'the ICE had its round');
+        $this->assertTrue(collect($result->log)->contains(fn (array $line): bool => ($line['key'] ?? null) === 'cyberspace.run.log.egress_held'));
+    }
+
+    public function test_moving_off_the_core_with_the_ice_asleep_rolls_nothing(): void
+    {
+        $run = $this->begin();
+        $run->forceFill(['node' => $this->tree->core])->save();
+        $away = $this->tree->neighbours($this->tree->core)[0];
+
+        // The die at its high end would fail any roll.
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $away);
+
+        $this->assertSame($away, $run->fresh()->node);
     }
 
     public function test_a_threshold_only_warns_on_a_tree_run(): void
