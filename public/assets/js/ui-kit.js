@@ -1738,6 +1738,9 @@
         if (below) below.inert = true;
       }
       address = target;
+      // The forms need the address before the first poll comes back: abandoning during a slow first load posted none (a 400).
+      dlg.querySelectorAll("[data-reading-abandon-address], [data-reading-export-address], [data-reading-jump-address]")
+        .forEach((field) => { field.value = target; });
       refresh();
       timer = setInterval(refresh, 5000);
     }
