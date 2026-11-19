@@ -17,7 +17,10 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Sentry\Laravel\Integration;
+use Symfony\Component\HttpFoundation\Exception\RequestExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -92,6 +95,27 @@ return Application::configure(basePath: dirname(__DIR__))
          * X-RateLimit-* pair are the machine-readable half of a 429, and
          * dropping them would break any client that backs off politely.
          */
+        /*
+         * A 400 says nothing about why, and Laravel reports none of them. Symfony raises one for a request it cannot read (a
+         * non-scalar value where a scalar is wanted, a bad method override, a body that will not decode): this logs which, and what
+         * the request carried, then returns null so the page renders as before.
+         */
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! $e instanceof RequestExceptionInterface && ! ($e instanceof HttpExceptionInterface && $e->getStatusCode() === 400)) {
+                return null;
+            }
+
+            Log::warning('400: '.$e->getMessage(), [
+                'exception' => $e::class,
+                'method' => $request->getRealMethod(),
+                'path' => $request->path(),
+                'fields' => collect($request->except(['_token', 'password', 'password_confirmation']))->map(fn ($v) => is_scalar($v) ? mb_substr((string) $v, 0, 60) : gettype($v))->all(),
+                'content_type' => $request->header('Content-Type'),
+            ]);
+
+            return null;
+        });
+
         $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
             $headers = $e->getHeaders();
             $seconds = (int) ($headers['Retry-After'] ?? 60);
