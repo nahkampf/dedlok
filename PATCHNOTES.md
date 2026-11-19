@@ -1,3 +1,6 @@
+## 0.103.1 (2026-11-19)
+- Maybe a fix for a slow "Show scan" fill-in?
+
 ## 0.103.0 (2026-11-19)
 - We now have craftable Firewall Exploits, to bypass a firewall silently and without spending a turn.
   - Firewall Exploits come in grades I-III, that unlocks different firewall grades.
