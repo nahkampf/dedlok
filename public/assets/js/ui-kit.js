@@ -1842,15 +1842,16 @@
     // this every click inside it, Run in background included, matched the dialog, closed it via data-close and
     // then reopened it here.
     on("click", "[data-reading-open]:not(dialog)", (e, btn) => {
+      // Open first: refresh() does nothing for a window that is not open, and the first answer would be the timer's, five seconds on.
+      if (dlg.showModal && !dlg.open) dlg.showModal();
       start(btn.dataset.readingOpen, true);
-      if (dlg.showModal) dlg.showModal();
     });
 
     // A read just begun opens the screen on it, so a player sees the
     // instrument start rather than a sentence saying it did.
     if (dlg.dataset.readingOpen) {
+      if (dlg.showModal && !dlg.open) dlg.showModal();
       start(dlg.dataset.readingOpen);
-      if (dlg.showModal) dlg.showModal();
     }
   }
 
