@@ -1590,6 +1590,9 @@
 
     let timer = null;
     let address = null;
+    // The window is up but nothing has begun, because Start scan is waiting for its press: there is no pass to leave running or
+    // to abandon, so the one way out is "Close window".
+    let waiting = false;
     let heard = {};
 
     const set = (name, value) => {
@@ -1703,9 +1706,9 @@
          as something you can carry and sell, or shut the window. */
       const done = !!data.complete;
       dlg.querySelectorAll("[data-reading-abandon], [data-reading-background]")
-        .forEach((el) => { el.hidden = done; });
+        .forEach((el) => { el.hidden = done || (waiting && el.matches("[data-reading-background]")); });
       dlg.querySelectorAll("[data-reading-export], [data-reading-done]")
-        .forEach((el) => { el.hidden = !done; });
+        .forEach((el) => { el.hidden = !(done || (waiting && el.matches("[data-reading-done]"))); });
       // A read that filed itself has nothing left to save.
       dlg.querySelectorAll("[data-reading-export]").forEach((el) => { el.hidden = !done || !!data.filed; });
 
@@ -1715,16 +1718,19 @@
     }
 
     // `touched`: the window was opened by a press, so the loop may start at once. Opened by itself (a scan just begun reloads
-    // the page) it may not, and the Start scan button waits for the press instead.
+    // the page) it may not, and the Start scan button waits for the press instead. With sound off there is nothing to unlock,
+    // so the button is not shown at all (and a Scan pressed with sound off begins the pass at once, in the scan-open handler).
     function start(target, touched) {
       stop();
       const startBtn = dlg.querySelector("[data-reading-start]");
       const below = dlg.querySelector("[data-reading-below]");
-      if (touched || !startBtn) {
+      if (touched || !startBtn || !soundOn()) {
+        waiting = false;
         startBtn?.remove();
         if (below) below.inert = false;
         sfx.loopIn();
       } else {
+        waiting = true;
         startBtn.hidden = false;
         if (below) below.inert = true;
       }
@@ -1771,18 +1777,30 @@
       });
       const addr = dlg.querySelector("[data-reading-address]");
       if (addr) addr.dataset.copy = btn.dataset.scanAddress;
-      dlg.querySelectorAll("[data-reading-abandon], [data-reading-export], [data-reading-done]").forEach((el) => { el.hidden = true; });
-      dlg.querySelectorAll("[data-reading-background]").forEach((el) => { el.hidden = false; });
+      waiting = true;
+      dlg.querySelectorAll("[data-reading-abandon], [data-reading-export], [data-reading-background]").forEach((el) => { el.hidden = true; });
+      dlg.querySelectorAll("[data-reading-done]").forEach((el) => { el.hidden = false; });
       const startBtn = dlg.querySelector("[data-reading-start]");
       if (startBtn) { startBtn.hidden = false; startBtn.disabled = false; }
       const below = dlg.querySelector("[data-reading-below]");
       if (below) below.inert = true;
       if (dlg.showModal && !dlg.open) dlg.showModal();
+      // Sound off: there is no sound for the press to unlock, so the pass begins at once, by the same handler Start scan runs.
+      if (!soundOn() && startBtn) {
+        waiting = false;
+        startBtn.hidden = true;
+        dlg.querySelectorAll("[data-reading-background]").forEach((el) => { el.hidden = false; });
+        dlg.querySelectorAll("[data-reading-done]").forEach((el) => { el.hidden = true; });
+        startBtn.click();
+      }
     });
 
     on("click", "[data-reading-start]", async (e, btn) => {
       // Opened by itself after a reload (no JS scan to begin): the pass is already running, so this only starts the sound.
       if (!pending) {
+        waiting = false;
+        dlg.querySelectorAll("[data-reading-background]").forEach((el) => { el.hidden = false; });
+        dlg.querySelectorAll("[data-reading-done]").forEach((el) => { el.hidden = true; });
         btn.remove();
         dlg.querySelector("[data-reading-below]")?.removeAttribute("inert");
         sfx.loopIn();

@@ -205,7 +205,7 @@ Decided 2026-11-13, replacing the per-action detection chances.
 - **A firewall one runner opens stays open for the whole party.**
 - **A backdoor holder chooses their start on their own screen**: solo on the briefing, a party member beside their
   loadout before launch. Shown only to a runner holding a backdoor on that system. **The core is the default.**
-- **Leaving the core mid-fight costs one parting hit** from the awake ICE; after that they are out of its reach.
+- **Leaving the core mid-fight is an evasion roll**: the egress one (`egress` stat, `egressDifficulty()`, the ICE's Ensnare multiplier). Passed, they step away clean and are out of the ICE's reach; failed, they stay on the core, the move is not made, and the ICE takes its half of the turn (one more round, logged as `egress_held`). With the ICE asleep there is nothing to roll. A hunting sentry's parting hit (below) is unchanged.
 - **The ICE keeps its damage**: coming back to the core finds it as damaged as it was left, for the rest of the run.
 - **Built (step 3)**: a firewall guards the edges leading on from it, never the way back; a system that speaks no OS has
   nothing for its firewalls to ask. The run screen shows the chance to pass a closed firewall you stand on, and the

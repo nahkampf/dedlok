@@ -263,5 +263,7 @@ final class DenialTest extends TestCase
 
         $this->assertSame(RunEnding::Egress, $result->ending);
         $this->assertNull($this->character->fresh()->current_run_id);
+        // The run screen is gone, so the reason has to reach the map: the line is marked `notice`.
+        $this->assertTrue(collect($result->log)->contains(fn (array $line): bool => $line['key'] === 'cyberspace.run.log.flood_shaken_off' && ! empty($line['notice'])));
     }
 }
