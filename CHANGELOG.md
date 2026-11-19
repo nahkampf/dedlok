@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.103.1] — 2026-11-19
+
+### Fixed
+- Show scan (and a read just begun) opened the reading window only after `start()`, whose first `refresh()` returns for a window that is not open, so the first data came with the 5-second timer and the window sat blank for that long. The window now opens first (`ui-kit.js`).
+
+### Migrations
+- None.
+
+
 ## [0.103.0] — 2026-11-19
 
 ### Added
@@ -4582,7 +4591,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.103.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.103.1...HEAD
+[0.103.1]: https://github.com/nahkampf/dedlok/compare/v0.103.0...v0.103.1
 [0.103.0]: https://github.com/nahkampf/dedlok/compare/v0.102.1...v0.103.0
 [0.102.1]: https://github.com/nahkampf/dedlok/compare/v0.102.0...v0.102.1
 [0.102.0]: https://github.com/nahkampf/dedlok/compare/v0.101.5...v0.102.0
