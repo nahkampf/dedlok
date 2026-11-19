@@ -24,7 +24,7 @@ final readonly class RunTree
     private const CROSSOVERS = [1 => 0, 2 => 0, 3 => .5, 4 => .5, 5 => 1.4, 6 => 1.4, 7 => 2, 8 => 2, 9 => 2.5];
 
     /**
-     * @param  list<array{kind: NodeKind, path: ?string, trap?: TrapEffect}>  $nodes  Indexed by node id; a trap carries its effect.
+     * @param  list<array{kind: NodeKind, path: ?string, trap?: TrapEffect, from?: int, to?: int}>  $nodes  Indexed by node id; a trap carries its effect, a Tripgate the sides it is entered and left by.
      * @param  list<array{0: int, 1: int}>  $edges
      * @param  list<array{post: int, fast: bool, cordon?: bool}>  $sentries  Where each sentry is posted, whether it is Fast, and whether it carries the Cordon tag.
      */
@@ -376,7 +376,107 @@ final readonly class RunTree
             ? (array_values(array_filter($own[$fast]['ids'], static fn (int $id): bool => $nodes[$id]['kind'] === NodeKind::Firewall))[0] ?? null)
             : null;
 
-        return new self($nodes, $edges, $entry, $core, $sentries, $barrier);
+        $tree = new self($nodes, $edges, $entry, $core, $sentries, $barrier);
+
+        return $g >= 5 ? $tree->withTripgates($address, $paths) : $tree;
+    }
+
+    /**
+     * Tripgates, from grade 5: one or two plain conduits of the quiet or rich path (never the fast one, never a sentry's
+     * post) that only let you through one way, the direction rolled per gate. A gate is kept only if the tree is still
+     * `sound()` with it, so nobody can be left unable to reach an exit. Rolled from a seed of its own, last, so every
+     * other node of a tree stays where it was.
+     *
+     * @param  list<string>  $paths
+     */
+    private function withTripgates(string $address, array $paths): self
+    {
+        $r = new Randomizer(new Mt19937(crc32($address.'|tripgate')));
+        $posts = array_column($this->sentries, 'post');
+        $free = array_values(array_filter(array_keys($this->nodes), fn (int $n): bool => $this->nodes[$n]['kind'] === NodeKind::Conduit
+            && in_array($this->nodes[$n]['path'], ['quiet', 'rich'], true) && ! in_array($n, $posts, true) && count($this->neighbours($n)) === 2));
+        $want = 1 + ($r->nextFloat() < .5 ? 1 : 0);
+        $tree = $this;
+
+        foreach ($r->shuffleArray($free) as $at) {
+            if ($want === 0) {
+                break;
+            }
+
+            // Edges point away from the entry, so the node's one in-edge is the side toward it.
+            $in = array_values(array_filter($this->edges, static fn (array $e): bool => $e[1] === $at))[0][0] ?? null;
+            $out = array_values(array_filter($this->edges, static fn (array $e): bool => $e[0] === $at))[0][1] ?? null;
+
+            // Never two in a row: the second would only turn the first into a wall.
+            if ($in === null || $out === null || $tree->nodes[$in]['kind'] === NodeKind::Tripgate || $tree->nodes[$out]['kind'] === NodeKind::Tripgate) {
+                continue;
+            }
+
+            $forward = $r->nextFloat() < .5;
+            $nodes = $tree->nodes;
+            $nodes[$at] = ['kind' => NodeKind::Tripgate, 'path' => $nodes[$at]['path'], 'from' => $forward ? $in : $out, 'to' => $forward ? $out : $in];
+            $trial = new self($nodes, $this->edges, $this->entry, $this->core, $this->sentries, $this->barrier);
+
+            if ($trial->sound()) {
+                $tree = $trial;
+                $want--;
+            }
+        }
+
+        return $tree;
+    }
+
+    /** Can a runner on `$from` move to the adjacent `$to`? A Tripgate is entered from its `from` side and left to its `to` side. */
+    public function canStep(int $from, int $to): bool
+    {
+        return (($this->nodes[$to]['kind'] ?? null) !== NodeKind::Tripgate || $this->nodes[$to]['from'] === $from)
+            && (($this->nodes[$from]['kind'] ?? null) !== NodeKind::Tripgate || $this->nodes[$from]['to'] === $to);
+    }
+
+    /** @return list<int> The nodes a runner on this one may move to: its neighbours, less the way a Tripgate forbids. */
+    public function steps(int $node): array
+    {
+        return array_values(array_filter($this->neighbours($node), fn (int $n): bool => $this->canStep($node, $n)));
+    }
+
+    /**
+     * Can every node (but those torn out) still reach an exit by legal moves, and the entry the core? What a tree with
+     * Tripgates must stay: nobody is left with no way out.
+     *
+     * @param  list<int>  $gone
+     */
+    public function sound(array $gone = []): bool
+    {
+        $exits = [$this->entry, ...$this->nodesOf(NodeKind::Port)];
+        $reaches = function (int $from, array $goals): bool {
+            $seen = [$from => true];
+            $queue = [$from];
+
+            while ($queue !== []) {
+                $at = array_shift($queue);
+
+                if (in_array($at, $goals, true)) {
+                    return true;
+                }
+
+                foreach ($this->steps($at) as $next) {
+                    if (! isset($seen[$next])) {
+                        $seen[$next] = true;
+                        $queue[] = $next;
+                    }
+                }
+            }
+
+            return false;
+        };
+
+        foreach (array_diff(array_keys($this->nodes), $gone) as $node) {
+            if (! $reaches($node, $exits)) {
+                return false;
+            }
+        }
+
+        return $reaches($this->entry, [$this->core]);
     }
 
     /** A honeypot: a vault that is a trap with bait. */

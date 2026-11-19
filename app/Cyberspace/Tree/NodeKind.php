@@ -46,6 +46,9 @@ enum NodeKind: string
     /** An ICE controller, a dead end off the core from grade 6: after the alert it posts a sentry every 3 turns, up to 3, until shut down. */
     case Controller = 'controller';
 
+    /** A one-way gate on a quiet or rich path from grade 5: it is entered from one side only and left to the other (`from`, `to` on the node). */
+    case Tripgate = 'tripgate';
+
     /** What the run is for. A firewall too, and where the system's ICE stands. */
     case Core = 'core';
 }

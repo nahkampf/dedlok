@@ -121,14 +121,18 @@ final class Swarm
     /** A random system this character has no complete scan of, on the main grid, that nothing of theirs is reading. */
     public function pick(Character $character): ?System
     {
+        // Only files that can still count are loaded (a read in progress, or a live unused one): of hundreds a character
+        // has made over time most are spent or stale, and `isComplete()` is the costly part. The rule is unchanged.
         $skip = SystemScan::query()
             ->where('character_id', $character->getKey())
+            ->where(static fn ($query) => $query
+                ->whereNotNull('pass_ready_at')
+                ->orWhere(static fn ($live) => $live->whereNull('used_at')->where(static fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))))
             ->get()
             ->filter(static fn (SystemScan $scan): bool => $scan->pass_ready_at !== null || ($scan->isComplete() && ! $scan->hasExpired() && $scan->used_at === null))
             ->pluck('address')
             ->all();
 
-        // A file they hold is a complete scan, whether or not the read it came from is still on the books.
         $held = InventoryItem::query()
             ->where('character_id', $character->getKey())
             ->whereNotNull('scan_file')
@@ -142,11 +146,23 @@ final class Swarm
             array_values(array_filter(SystemType::cases(), static fn (SystemType $type): bool => $type->isScannable() && $type !== SystemType::Fortress)),
         );
 
-        return System::query()
-            ->where('grid_id', 1)
-            ->whereIn('type', $types)
-            ->whereNotIn('address', array_merge($skip, $held))
-            ->inRandomOrder()
-            ->first();
+        // The candidates' addresses, less what is skipped, and one picked at random in PHP: `ORDER BY RAND()` over the whole
+        // main grid with a few hundred excluded addresses cost more than everything else here. Retried in case the system
+        // moved (its address changed) between the list and the lookup.
+        $pool = System::query()->where('grid_id', 1)->whereIn('type', $types)->pluck('address')->all();
+        $free = array_values(array_diff($pool, array_merge($skip, $held)));
+
+        for ($try = 0; $try < 3 && $free !== []; $try++) {
+            $at = array_rand($free);
+            $system = System::query()->where('grid_id', 1)->where('address', $free[$at])->first();
+
+            if ($system !== null) {
+                return $system;
+            }
+
+            unset($free[$at]);
+        }
+
+        return null;
     }
 }

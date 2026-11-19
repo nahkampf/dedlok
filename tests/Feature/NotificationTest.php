@@ -321,9 +321,9 @@ final class NotificationTest extends TestCase
         $this->actingAs($this->user)->get(route('notifications.index'))->assertOk()
             ->assertSee('data-inbox="'.route('notifications.unread').'"', false)
             ->assertSee('data-inbox-latest="'.$m->id.'"', false)
-            ->assertSee('assets/sound/message.wav', false);
+            ->assertSee('assets/sound/message.mp3', false);
 
-        $this->assertFileExists(public_path('assets/sound/message.wav'));
+        $this->assertFileExists(public_path('assets/sound/message.mp3'));
     }
 
     /** The badge must keep moving while the player is locked into a screen of their own. */

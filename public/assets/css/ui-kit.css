@@ -3171,6 +3171,7 @@ button.board__node[name="node"]:focus-visible .board__box { border-color: var(--
 .board--tree .board__node[data-kind="entry"] .board__box,
 .board--tree .board__node[data-kind="port"] .board__box { border-color: var(--brass); }
 .board--tree .board__node[data-kind="vault"] .board__box { border-color: var(--violet); }
+.board--tree .board__node[data-kind="tripgate"] .board__box { border-color: var(--sand); }
 .board--tree .board__node[data-kind="firewall"] .board__box,
 .board--tree .board__node[data-kind="hub"] .board__box,
 .board--tree .board__node[data-kind="trap"] .board__box { border-color: var(--crit); border-style: dashed; }

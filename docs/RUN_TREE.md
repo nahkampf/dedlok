@@ -311,6 +311,22 @@ the Cordon tag**, each designed and built on its own, traps first.
   noise); failed, it goes off on the runner where they stand (a Node Disconnect still only takes its own node), and
   that is loud.
 
+### Tripgate
+
+Decided 2026-11-18.
+
+- **A one-way node** (`NodeKind::Tripgate`), from grade 5, one or two per tree: a plain conduit of the quiet or rich path (never
+  the fast one, a sentry's post, or next to another gate). It is entered from one side (`from`) and left to the other (`to`); the
+  direction is rolled per gate. Moving the wrong way is refused (`RunRefusal::OneWay`, no turn spent) and the map draws it
+  blocked. Its label carries an arrow (→ toward the core, ← toward the entry).
+- **A gate is kept only if the tree stays `sound()`**: every node can still reach an exit (the entry or a maintenance port) by
+  legal moves, and the entry the core. `RunTree::withTripgates` tries each candidate and drops the ones that fail; it is drawn
+  from a seed of its own, last, so no other node of any tree moved.
+- **A cut never opens a gate** (decided 2026-11-18): Node Disconnect and a Cordon's cut leave the gates as they are; the
+  legal way out is guaranteed when the system is generated, not repaired at runtime.
+- **Not directed**: sentries and the Cordon's reckoning of the way out still walk the tree both ways (`neighbours`, `distance`);
+  only a runner's own Move uses `steps`/`canStep`.
+
 ### Honeypots
 
 - **From grade 5, a vault other than the tree's first is sometimes a honeypot** (a quarter of the time, two in five on

@@ -73,6 +73,27 @@ configuration.)
   * * * * * cd /var/www/dedlok && php artisan schedule:run >> /dev/null 2>&1
   ```
 
+### Compression
+
+Decided 2026-11-18. **Static assets are served brotli-precompressed; pages and JSON are compressed as they go out.**
+
+- **`public/assets/.htaccess`** hands a client that accepts brotli the `<file>.br` beside a `.css`, `.js`, `.svg`, `.json`,
+  `.wasm` or `.woff`, under the original type, and sets the caching: `immutable` for a URL carrying `?v=<digits>`
+  (`Asset::url()` stamps every one) and for the fonts' versioned file names, an hour for anything else. Delete that file and
+  the `*.br` files and everything is as it was.
+- **`bin/precompress`** writes the `.br` files (quality 11, temp file then `mv`, orphans removed, a file whose `.br` is newer
+  is skipped). `*.br` is gitignored. **`git_worker.php` runs it after any pull that touched `public/assets/`**, and first
+  deletes the `.br` of every changed asset, so for the seconds between pull and rebuild the plain file is sent (a stale `.br`
+  under a new `?v=` would be cached for a year). With no `brotli` command it says so and exits 0.
+- **`public/.htaccess`** compresses HTML and JSON per request, brotli then gzip (`mod_brotli`, `mod_deflate`).
+  `BrotliCompressionQuality` is not allowed in `.htaccess` (it took the whole site down with a 500 in development): set it in
+  the vhost if the default (5) needs tuning.
+- **The `.br` blocks set `no-brotli` and `no-gzip`**, or the output filters compress the file a second time.
+- **On the server**: `brotli` installed and `mod_brotli`, `mod_deflate`, `mod_headers`, `mod_rewrite`, `mod_env` enabled, and
+  `AllowOverride All` on the DocumentRoot. A change to `git_worker.php` takes effect on the worker's next restart.
+- **Check it** with `curl -sI -H 'Accept-Encoding: br' https://dedlok.online/assets/css/ui-kit.css`: `Content-Encoding: br`,
+  `Content-Length` equal to the `.br` file's size.
+
 ### The deploy itself: a daemon that pulls
 
 **NOBODY DEPLOYS. `git_worker.php` does**, running daemonised on the server as

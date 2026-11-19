@@ -112,6 +112,16 @@ while (true) {
             $needsComposer = $touched('composer.lock');
             $needsMigrate = $touched('database/migrations/');
 
+            // A brotli copy (public/assets/*.br, bin/precompress) of a file this pull changes would be served, under the NEW
+            // version's URL, until it is rebuilt. Drop it first: for the seconds in between, the plain file is sent.
+            $assetsChanged = $touched('public/assets/');
+
+            foreach ($changed as $path) {
+                if (str_starts_with($path, 'public/assets/') && is_file($repoPath.'/'.$path.'.br')) {
+                    @unlink($repoPath.'/'.$path.'.br');
+                }
+            }
+
             $pullOutput = [];
             $pullCode = 0;
             exec('git -C '.escapeshellarg($repoPath)." pull origin {$branch} 2>&1", $pullOutput, $pullCode);
@@ -138,6 +148,11 @@ while (true) {
                 // 2. Caches. Every pull, because compiled Blade from the
                 //    previous commit is stale on every one of them.
                 $run('cache clear', escapeshellarg(PHP_BINARY).' artisan optimize:clear');
+
+                // 2b. Brotli copies of the static assets, when any changed (bin/precompress is safe to run any time).
+                if ($assetsChanged) {
+                    $run('precompress', escapeshellarg($repoPath.'/bin/precompress'));
+                }
 
                 // 3. The schema, last, and only when a migration arrived.
                 //    NOTE: production and development share one database

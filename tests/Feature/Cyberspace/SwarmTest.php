@@ -129,6 +129,26 @@ final class SwarmTest extends TestCase
         $this->assertSame($fatigue, $this->character->fresh()->fatigue ?? null);
     }
 
+    /** A screen settles only the rounds it is given (`swarm.page_catch_up`): one round is one system read and the next begun. */
+    public function test_a_capped_settle_walks_a_few_systems_and_an_uncapped_one_the_rest(): void
+    {
+        $this->sure();
+
+        foreach ([1, 2, 3, 4] as $i) {
+            $this->system($i, 'AAAA000'.$i);
+        }
+
+        $this->startIt($this->wotan());
+        $this->travel(2)->hours();
+
+        app(Probe::class)->settleAll($this->character->fresh(), null, 1);
+        $this->assertSame(2, SystemScan::query()->count(), 'one round: the first read done, the second begun');
+
+        app(Probe::class)->settleAll($this->character->fresh());
+        $this->assertSame(4, SystemScan::query()->count());
+        $this->assertSame(4, SystemScan::query()->get()->filter(fn (SystemScan $scan): bool => $scan->isComplete())->count());
+    }
+
     public function test_it_skips_what_is_already_known_and_what_is_being_read(): void
     {
         $this->system(1, 'AAAA0001');

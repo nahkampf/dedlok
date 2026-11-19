@@ -1,0 +1,73 @@
+# Static assets: precompressed brotli, and caching. See docs/deploying.md ("Compression").
+#
+# bin/precompress writes `<file>.br` beside each text asset (never committed: *.br is ignored). A client that
+# accepts brotli is handed it; everyone else gets the plain file, which mod_deflate may gzip on the way out.
+# Removing this file and the *.br files puts everything back as it was.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{HTTP:Accept-Encoding} \bbr\b
+    RewriteCond %{REQUEST_FILENAME}.br -f
+    RewriteRule ^(.+\.(?:css|js|svg|json|wasm|woff))$ $1.br [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # (no-brotli / no-gzip: the output filters would otherwise compress the .br a second time.)
+    # The .br file is served under the original file's type, marked as brotli.
+    <FilesMatch "\.css\.br$">
+        ForceType text/css
+        Header set Content-Encoding br
+        SetEnv no-brotli 1
+        SetEnv no-gzip 1
+        Header append Vary Accept-Encoding
+    </FilesMatch>
+    <FilesMatch "\.js\.br$">
+        ForceType text/javascript
+        Header set Content-Encoding br
+        SetEnv no-brotli 1
+        SetEnv no-gzip 1
+        Header append Vary Accept-Encoding
+    </FilesMatch>
+    <FilesMatch "\.svg\.br$">
+        ForceType image/svg+xml
+        Header set Content-Encoding br
+        SetEnv no-brotli 1
+        SetEnv no-gzip 1
+        Header append Vary Accept-Encoding
+    </FilesMatch>
+    <FilesMatch "\.json\.br$">
+        ForceType application/json
+        Header set Content-Encoding br
+        SetEnv no-brotli 1
+        SetEnv no-gzip 1
+        Header append Vary Accept-Encoding
+    </FilesMatch>
+    <FilesMatch "\.wasm\.br$">
+        ForceType application/wasm
+        Header set Content-Encoding br
+        SetEnv no-brotli 1
+        SetEnv no-gzip 1
+        Header append Vary Accept-Encoding
+    </FilesMatch>
+    <FilesMatch "\.woff\.br$">
+        ForceType font/woff
+        Header set Content-Encoding br
+        SetEnv no-brotli 1
+        SetEnv no-gzip 1
+        Header append Vary Accept-Encoding
+    </FilesMatch>
+
+    # The plain file varies on what the client accepts too, or a cache hands the wrong one to somebody.
+    <FilesMatch "\.(?:css|js|svg|json|wasm|woff)$">
+        Header append Vary Accept-Encoding
+    </FilesMatch>
+
+    # Asset::url() stamps every URL with ?v=<mtime>, so a URL carrying one never changes meaning: cache it for good.
+    # The fonts' own file names carry a version (-v20-). Anything else asks again within the hour.
+    Header set Cache-Control "public, max-age=31536000, immutable" "expr=%{QUERY_STRING} =~ /^v=[0-9]+$/"
+    <FilesMatch "-v[0-9]+-.*\.woff2$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    Header setIfEmpty Cache-Control "public, max-age=3600"
+</IfModule>

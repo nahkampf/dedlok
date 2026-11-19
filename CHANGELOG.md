@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+## [0.101.3] — 2026-11-19
+
+### Added
+- **Tripgate**, a one-way node in the run tree (`NodeKind::Tripgate`), from grade 5, one or two per tree on a plain conduit of the quiet or rich path (never the fast path, a sentry's post, or next to another gate). It is entered from one side and left to the other, the direction rolled per gate; going the wrong way is refused with no turn spent (`RunRefusal::OneWay`) and the map draws the link blocked. Its label carries an arrow, and its box a sand border. `RunTree::withTripgates` keeps a gate only if every node can still reach an exit by legal moves and the entry the core (`RunTree::sound()`), from a seed of its own, last, so no other node of any tree moved. A Node Disconnect or a Cordon's cut leaves the gates as they are. `docs/RUN_TREE.md` has the rules. The two new strings (`cyberspace.tree.node.tripgate`, `cyberspace.run.refused.one_way`) are suggestions.
+- **Brotli.** `public/assets/.htaccess` serves `<file>.br` beside each `.css`, `.js`, `.svg`, `.json`, `.wasm` and `.woff` to a client that accepts it, and caches a URL carrying `?v=<digits>` (every `Asset::url()`) and the versioned fonts for a year, anything else for an hour. `bin/precompress` writes the `.br` files (gitignored); `git_worker.php` deletes the `.br` of every changed asset before a pull and runs it after any pull that touched `public/assets/`. `public/.htaccess` compresses pages and JSON per request, brotli then gzip. Needs the `brotli` command, `mod_brotli`, `mod_headers`, `mod_rewrite` and `mod_env`; see `docs/deploying.md` ("Compression").
+
+### Changed
+- **Sound.** The click sounds, the checkbox, the scan ping and the inbox ping are mp3 (192k CBR, 48 kHz) instead of wav: 1.3 MB became 143 KB. The small sounds load once the page is idle or at the first press; the two loops (the scan window's and the run screen's, about 950 KB) only when something asks for one.
+- A survey names 2 to 6 systems (was 3 to 10; `MissionAction::targets()`). Jobs already offered keep their counts.
+- The City map's travelling marker is drawn above the district name plates.
+- The `Dockerfile` installs `brotli` and enables `mod_brotli`.
+
+### Fixed
+- Agitation: on a tree run, waking the ICE starts no alert and shuts nothing, so `RunStarter::end()` never counted it. A tree run now agitates when its ICE is awake (`ice_id` set or `ice_damage` > 0) and the runner gets out; older runs keep the noticed-and-shut rule.
+- City map: on a multi-district trip the marker's second leg started from the district already left (`CityController::settle()` only refreshed the character when a message was said).
+- The scan window's poll, the overview and the party poll now send `X-Requested-With`, so Laravel no longer remembers `/cyberspace/reading` as the previous page for a redirect back.
+- Swarm: `Swarm::pick()` no longer loads and tests every scan the character has ever made or runs `ORDER BY RAND()` with a long `NOT IN` (175-310 ms became 35-47 ms). A screen (the map and the scan window's poll) settles at most `cyberspace.swarm.page_catch_up` (3) rounds instead of up to 30: a returning Swarm user's page load took 16-22 s in a simulation and now about 1 s. Starting a scan and the sweep still settle everything.
+
+### Migrations
+- None.
+
+### Deploy
+- On the server, once, by hand: `brotli` installed, `mod_brotli`, `mod_deflate`, `mod_headers`, `mod_rewrite` and `mod_env` enabled, `AllowOverride All` on the DocumentRoot, then `sudo -u dedlok bin/precompress`. Restart `git_worker.php` so the precompress step takes effect. Without them the site still works, uncompressed or compressed on the fly.
+- Optional, separately: unload the unused `mod_php`, switch to `mpm_event` and add `Protocols h2 http/1.1` to the HTTPS vhost (HTTP/2).
+
+
 ## [0.101.2] — 2026-11-18
 
 ### Changed
@@ -4488,7 +4514,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.3...HEAD
+[0.101.3]: https://github.com/nahkampf/dedlok/compare/v0.101.2...v0.101.3
 [0.101.2]: https://github.com/nahkampf/dedlok/compare/v0.101.1...v0.101.2
 [0.101.1]: https://github.com/nahkampf/dedlok/compare/v0.101.0...v0.101.1
 [0.101.0]: https://github.com/nahkampf/dedlok/compare/v0.100.2...v0.101.0

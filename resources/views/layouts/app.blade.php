@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="{{ Asset::url('assets/css/ui-kit.css') }}">
     @stack('head')
 </head>
-<body data-noise-sound="{{ Asset::url('assets/sound/noise_made.mp3') }}" @if (session('cue')) data-cue="{{ session('cue') }}" @endif data-success-sound="{{ Asset::url('assets/sound/success.mp3') }}" data-failure-sound="{{ Asset::url('assets/sound/failure.mp3') }}" data-jack-in-sound="{{ Asset::url('assets/sound/jack_in.mp3') }}" data-jack-sound="{{ Asset::url('assets/sound/jack_out.mp3') }}" data-ice-sound="{{ Asset::url('assets/sound/ice_wakes.mp3') }}" data-run-sound="{{ Asset::url('assets/sound/run_loop.mp3') }}" data-scanwindow-sound="{{ Asset::url('assets/sound/scanwindow_loop.mp3') }}" data-checkbox-sound="{{ Asset::url('assets/sound/checkbox.wav') }}" data-scan-sound="{{ Asset::url('assets/sound/scan.wav') }}" data-click-sounds="{{ json_encode(collect(glob(public_path('assets/sound/click*.wav')))->map(fn ($f) => Asset::url('assets/sound/'.basename($f)))->values()) }}" @if ($glitch = \App\Support\Glitch::pull()) data-glitch="{{ $glitch }}" @endif>
+<body data-noise-sound="{{ Asset::url('assets/sound/noise_made.mp3') }}" @if (session('cue')) data-cue="{{ session('cue') }}" @endif data-success-sound="{{ Asset::url('assets/sound/success.mp3') }}" data-failure-sound="{{ Asset::url('assets/sound/failure.mp3') }}" data-jack-in-sound="{{ Asset::url('assets/sound/jack_in.mp3') }}" data-jack-sound="{{ Asset::url('assets/sound/jack_out.mp3') }}" data-ice-sound="{{ Asset::url('assets/sound/ice_wakes.mp3') }}" data-run-sound="{{ Asset::url('assets/sound/run_loop.mp3') }}" data-scanwindow-sound="{{ Asset::url('assets/sound/scanwindow_loop.mp3') }}" data-checkbox-sound="{{ Asset::url('assets/sound/checkbox.mp3') }}" data-scan-sound="{{ Asset::url('assets/sound/scan.mp3') }}" data-click-sounds="{{ json_encode(collect(glob(public_path('assets/sound/click*.mp3')))->map(fn ($f) => Asset::url('assets/sound/'.basename($f)))->values()) }}" @if ($glitch = \App\Support\Glitch::pull()) data-glitch="{{ $glitch }}" @endif>
 
 {{-- The character behind the HUD. Named apart from the $character a view may
      already have been given, so the layout can never shadow it. An admin who
@@ -152,7 +152,7 @@
                  the sound for a new one. --}}
             <a class="dock__item" href="{{ route('notifications.index') }}"
                data-inbox="{{ route('notifications.unread') }}" data-inbox-latest="{{ $latestMessage }}"
-               data-inbox-sound="{{ Asset::url('assets/sound/message.wav') }}"
+               data-inbox-sound="{{ Asset::url('assets/sound/message.mp3') }}"
                @if (request()->routeIs('notifications.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9993;&#65038;</span>
                 @if ($unread > 0)

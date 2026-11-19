@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     imagemagick \
     cron \
+    brotli \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure git to trust the workspace directory to prevent dubious ownership errors
@@ -66,4 +67,4 @@ RUN chmod 0644 /etc/cron.d/cyberpunk
 ENV COMPOSER_MEMORY_LIMIT=-1
 
 # Apache mods (rewrite for clean URLs, the rest for content negotiation/caching)
-RUN a2enmod rewrite negotiation headers deflate expires
+RUN a2enmod rewrite negotiation headers deflate expires brotli
