@@ -37,7 +37,7 @@ class HomePageTest extends TestCase
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('images/logo-560.png', false)
+            ->assertSee('images/logo-560.webp', false)
             ->assertSee('320w', false)
             ->assertSee('class="grid grid--pair"', false)
             ->assertSee('grid__wide', false)

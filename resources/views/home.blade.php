@@ -12,13 +12,15 @@
          images/logo.png is the master and is not served — regenerate the four
          from it, transparency and all, with:
 
-           for w in 320 560 840 1120; do convert logo.png -resize ${w}x \
-             -strip -define png:compression-level=9 logo-${w}.png; done --}}
-    <img src="{{ Asset::url('images/logo-560.png') }}" alt="{{ config('app.name') }}"
-         srcset="{{ Asset::url('images/logo-320.png') }} 320w,
-                 {{ Asset::url('images/logo-560.png') }} 560w,
-                 {{ Asset::url('images/logo-840.png') }} 840w,
-                 {{ Asset::url('images/logo-1120.png') }} 1120w"
+           for w in 320 560 840 1120; do convert logo.png -resize ${w}x -strip \
+             -quality 90 -define webp:alpha-quality=100 -define webp:method=6 logo-${w}.webp; done
+
+         The logo-*.png widths stay in the repo, unused. --}}
+    <img src="{{ Asset::url('images/logo-560.webp') }}" alt="{{ config('app.name') }}"
+         srcset="{{ Asset::url('images/logo-320.webp') }} 320w,
+                 {{ Asset::url('images/logo-560.webp') }} 560w,
+                 {{ Asset::url('images/logo-840.webp') }} 840w,
+                 {{ Asset::url('images/logo-1120.webp') }} 1120w"
          sizes="(max-width: 640px) 100vw, 560px"
          width="1120" height="448"
          style="display:block;width:min(560px,100%);height:auto;margin:0 auto var(--s-5)">
