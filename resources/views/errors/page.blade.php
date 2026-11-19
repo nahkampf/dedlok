@@ -18,11 +18,11 @@
 
 <div style="width:min(560px,100%)">
     <a href="{{ url('/') }}">
-        <img src="{{ Asset::url('images/logo-560.png') }}" alt="{{ config('app.name') }}"
-             srcset="{{ Asset::url('images/logo-320.png') }} 320w,
-                     {{ Asset::url('images/logo-560.png') }} 560w,
-                     {{ Asset::url('images/logo-840.png') }} 840w,
-                     {{ Asset::url('images/logo-1120.png') }} 1120w"
+        <img src="{{ Asset::url('images/logo-560.webp') }}" alt="{{ config('app.name') }}"
+             srcset="{{ Asset::url('images/logo-320.webp') }} 320w,
+                     {{ Asset::url('images/logo-560.webp') }} 560w,
+                     {{ Asset::url('images/logo-840.webp') }} 840w,
+                     {{ Asset::url('images/logo-1120.webp') }} 1120w"
              sizes="(max-width: 640px) 100vw, 560px"
              width="1120" height="448"
              style="display:block;width:min(560px,100%);height:auto;margin:0 auto var(--s-5)">
