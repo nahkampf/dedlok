@@ -1507,7 +1507,7 @@ button.tag:hover, button.tag:focus-visible { border-color: var(--crit); }
 /* Tags in a chain (a routing network's hops): joined by a hairline wire, and wrapping as a whole hop at a time. */
 .tag-chain { display: inline-flex; flex-wrap: wrap; align-items: center; row-gap: var(--s-1); }
 .tag-chain__wire { width: var(--s-3); height: var(--hair); background: var(--line-2); }
-.tag--info  { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
+.tag--info  { color: color-mix(in srgb, var(--info) 90%, var(--ink-0)); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
 /* A tag whose text may be longer than the room it has (a system's name, a scan's reading): it wraps and grows
    rather than running out of its box. After .tag, which it overrides at the same weight. */
 .tag--wrap, .card__stat > .tag { white-space: normal; max-width: 100%; min-width: 0; height: auto; min-height: 20px; padding-block: 3px; line-height: 1.35; }

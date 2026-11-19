@@ -101,7 +101,7 @@
                     {{-- Hover floats the working, a click opens it: the
                          inspector's one <template>, written once. --}}
                     <button type="button" class="btn btn--sm btn--ghost cut num" data-inspect="#view-range-calc"
-                            aria-label="{{ Text::get('cyberspace.map.view_range_calc') }}">{{ $viewRange }}</button>
+                            aria-label="{{ $viewRange }} - {{ Text::get('cyberspace.map.view_range_calc') }}">{{ $viewRange }}</button>
                 </span>
 
                 <template id="view-range-calc">
