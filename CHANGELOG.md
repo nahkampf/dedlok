@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.102.1] — 2026-11-19
+
+### Changed
+- **Leaving the core mid-fight is an evasion roll**, not a sure parting hit. Moving off the core with the ICE awake rolls the egress check (`egress` stat, `egressDifficulty()`, the ICE's Ensnare multiplier through `egressMultiplier()`). Passed, they step away clean and out of the ICE's reach; failed, they stay on the core, the move is not made, and the ICE takes its half of the turn (one more round), logged with the existing `egress_held` line. With the ICE asleep nothing is rolled. A hunting sentry's parting hit and the Ensnare trap's refusal are unchanged. `docs/RUN_TREE.md` has the rule.
+- **The scan window, with sound off:** pressing Scan begins the pass at once, with no Start scan button (it exists only to give the browser the press it needs before sound plays), and a window reopened after a reload skips it too. With sound on, the window waits for the press and offers **Close window** (the existing `cyberspace.reading.close`) instead of Run in background until the pass has begun.
+
+### Fixed
+- Denial: when the node shakes a solo flooder off after `cyberspace.denial.turns`, the reason ("The system shrugs off the last of the traffic and cuts you loose.") is marked `notice`, so the map says it; the run screen is gone by then and only the generic egress message showed. A party's shake-off still sends only the generic notification.
+
+### Migrations
+- None.
+
+
 ## [0.102.0] — 2026-11-19
 
 ### Fixed
@@ -4549,7 +4562,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.102.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.102.1...HEAD
+[0.102.1]: https://github.com/nahkampf/dedlok/compare/v0.102.0...v0.102.1
 [0.102.0]: https://github.com/nahkampf/dedlok/compare/v0.101.5...v0.102.0
 [0.101.5]: https://github.com/nahkampf/dedlok/compare/v0.101.4...v0.101.5
 [0.101.4]: https://github.com/nahkampf/dedlok/compare/v0.101.3...v0.101.4

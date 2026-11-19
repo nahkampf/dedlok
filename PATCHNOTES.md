@@ -1,3 +1,8 @@
+## 0.102.1 (2026-11-19)
+- Leaving a core with an active ICE now needs an evasion roll. This differs from Ensnare by the fact that Ensnare is _much_ harder to evade.
+- If sound is off we don't need to display the "start scan" button.
+- Give a notice when you time out (25 turns) on a Denial run.
+
 ## 0.102.0 (2026-11-19)
 - The Kalashtec Vigor-M was missing it's implant_region
 - fatigue_recovery had no string data, so it didn't display
