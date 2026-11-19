@@ -3,6 +3,7 @@
 {{-- What a link unfurls as (Facebook, Twitter/X, Discord, Slack): the page's own title plus the tagline, and the square
      picture. Absolute URLs, because a crawler has no page to resolve a relative one against. --}}
 @php($unfurlTitle = trim($__env->yieldContent('title', config('app.name'))).' - '.Text::get('unfurl.tagline'))
+<meta name="description" content="{{ Text::get('unfurl.description') }}">
 <meta property="og:site_name" content="{{ config('app.name') }}">
 <meta property="og:type" content="website">
 <meta property="og:title" content="{{ $unfurlTitle }}">
