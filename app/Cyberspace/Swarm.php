@@ -11,6 +11,7 @@ use App\Models\SystemScan;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -149,7 +150,9 @@ final class Swarm
         // The candidates' addresses, less what is skipped, and one picked at random in PHP: `ORDER BY RAND()` over the whole
         // main grid with a few hundred excluded addresses cost more than everything else here. Retried in case the system
         // moved (its address changed) between the list and the lookup.
-        $pool = System::query()->where('grid_id', 1)->whereIn('type', $types)->pluck('address')->all();
+        // Cached for a minute: the same eleven thousand addresses for everyone, read on every poll of the scan window. A system
+        // gone since is dealt with by the lookup below, which retries.
+        $pool = Cache::remember('swarm.pool', 60, static fn (): array => System::query()->where('grid_id', 1)->whereIn('type', $types)->pluck('address')->all());
         $free = array_values(array_diff($pool, array_merge($skip, $held)));
 
         for ($try = 0; $try < 3 && $free !== []; $try++) {
