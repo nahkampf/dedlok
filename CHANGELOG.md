@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.102.0] — 2026-11-19
+
+### Fixed
+- The Kalashtec Vigor-M (`placeholder_implant_head_focus`) had no `implant_region`, so New Flesh Studio never offered it. It is a head implant now.
+- Its +10% `fatigue_recovery` showed nothing: `character.names` had no entry for the stat. It reads `fatigue recovery/min` (`config/strings.php`, written by the user).
+
+### Migrations
+- `2026_11_19_120000_the_vigor_m_goes_in_the_head` sets `items.implant_region` to `head` on that slug while it is still empty. No schema changes.
+
+### Deploy
+- Run the migration.
+
+
 ## [0.101.5] — 2026-11-19
 
 ### Changed
@@ -4536,7 +4549,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.5...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.102.0...HEAD
+[0.102.0]: https://github.com/nahkampf/dedlok/compare/v0.101.5...v0.102.0
 [0.101.5]: https://github.com/nahkampf/dedlok/compare/v0.101.4...v0.101.5
 [0.101.4]: https://github.com/nahkampf/dedlok/compare/v0.101.3...v0.101.4
 [0.101.3]: https://github.com/nahkampf/dedlok/compare/v0.101.2...v0.101.3

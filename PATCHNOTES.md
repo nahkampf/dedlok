@@ -1,3 +1,7 @@
+## 0.102.0 (2026-11-19)
+- The Kalashtec Vigor-M was missing it's implant_region
+- fatigue_recovery had no string data, so it didn't display
+
 ## 0.101.5 (2026-11-19)
 - Final lighthouse touch: Serve logo as webp
 
