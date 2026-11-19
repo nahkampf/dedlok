@@ -358,6 +358,9 @@ final readonly class Simulator
                 $log[] = $this->nmap($character, $run);
             } elseif ($action === RunAction::Breach) {
                 [$log[], $breachTier] = $this->breach($character, $run);
+            } elseif ($action === RunAction::Unlock) {
+                // No tier: a key makes no noise at all, and rolls nothing to make any.
+                $log[] = $this->unlock($character, $run);
             } elseif ($action === RunAction::Subvert) {
                 [$log[], $breachTier] = $this->subvert($character, $run);
             } elseif ($action === RunAction::Loopback) {
@@ -468,7 +471,7 @@ final readonly class Simulator
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
         if (! $run->isTreeRun()) {
-            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Tunnel, RunAction::Disarm, RunAction::Wipe, RunAction::Shutdown, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
+            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Unlock, RunAction::Subvert, RunAction::Loopback, RunAction::Tunnel, RunAction::Disarm, RunAction::Wipe, RunAction::Shutdown, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
         }
 
         $tree = $this->treeOf($run);
@@ -489,6 +492,11 @@ final readonly class Simulator
                 default => null,
             },
             RunAction::Breach => $this->firewallClosed($run) ? null : RunRefusal::NotHere,
+            RunAction::Unlock => match (true) {
+                ! $this->firewallClosed($run) => RunRefusal::NotHere,
+                $this->keyToHand($character, $run) === null => RunRefusal::NoKey,
+                default => null,
+            },
             RunAction::Subvert => $this->hubOpen($run) ? null : RunRefusal::NotHere,
             RunAction::Wipe => $this->logOpen($run) ? null : RunRefusal::NotHere,
             RunAction::Shutdown => $this->controllerOpen($run) ? null : RunRefusal::NotHere,
@@ -1465,6 +1473,43 @@ final readonly class Simulator
         $run->opened = array_values(array_unique([...array_map('intval', $run->opened ?? []), (int) $run->node]));
 
         return [$this->line('cyberspace.run.log.tree.firewall_opens', tone: 'ok'), 'act'];
+    }
+
+    /**
+     * The Firewall Exploit (a file with `items.key_grade`) a firewall here would take: the weakest in the stash that still opens a
+     * system of this grade (its `key_grade` is at least the grade), loose and not listed. Null when there is none.
+     */
+    public function keyToHand(Character $character, Run $run): ?InventoryItem
+    {
+        $grade = (int) ($run->system()?->grade ?? 1);
+
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->join('items', 'items.id', '=', 'inventory_items.item_id')
+            ->where('items.key_grade', '>=', $grade)
+            ->orderBy('items.key_grade')
+            ->select('inventory_items.*')
+            ->get()
+            ->first(static fn (InventoryItem $row): bool => ! $row->isElsewhere() && ! $row->isListed());
+    }
+
+    /**
+     * UNLOCK: a Firewall Exploit opens the firewall you stand on. No OS roll and no noise (nothing here touches the IDS), so it
+     * cannot fail; the key is spent. The node opens for the whole party, as a breached one does.
+     */
+    private function unlock(Character $character, Run $run): array
+    {
+        $key = $this->keyToHand($character, $run);
+
+        // Refused before the turn was taken (refusal()), so a missing key here is only a race: the turn is wasted.
+        if ($key === null) {
+            return $this->line('cyberspace.run.log.hold');
+        }
+
+        $key->consumeOne();
+        $run->opened = array_values(array_unique([...array_map('intval', $run->opened ?? []), (int) $run->node]));
+
+        return $this->line('cyberspace.run.log.tree.firewall_unlocked', tone: 'ok');
     }
 
     /** @return array{text: string, tone: string} */

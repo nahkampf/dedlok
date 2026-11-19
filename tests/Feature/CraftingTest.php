@@ -92,6 +92,33 @@ final class CraftingTest extends TestCase
         $this->assertSame(558, $craft->required_seconds, 'Code Crafting 1 (-4%) and Script Crafting 1 (-3%) take 7% off, worked out when the build started');
     }
 
+    /** A Firewall Exploit is a FILE, not a program: a data item with a size and a `key_grade`, built under its own skill. */
+    public function test_a_firewall_exploit_is_crafted_as_a_file_under_its_own_skill(): void
+    {
+        $skill = Skill::query()->create(['slug' => 'firewall_exploit_crafting', 'title' => 'Firewall Exploit Crafting', 'category' => 'Code Crafting', 'rank' => 16, 'primary_attribute' => 'memory', 'secondary_attribute' => 'intellect', 'base_cost' => 3500, 'on_market' => false]);
+        $key = Item::factory()->create(['container' => Item::CONTAINER_DATA, 'size' => 4.0, 'key_grade' => 4]);
+        $design = Item::factory()->create(['container' => Item::CONTAINER_DATA, 'stackable' => false]);
+        $designId = \DB::table('designs')->insertGetId([
+            'item_id' => $design->id, 'product_item_id' => $key->id, 'craft_seconds' => 3600, 'single_use' => false,
+            'skill_id' => $skill->id, 'skill_level' => 1, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        \DB::table('design_components')->insert([
+            'design_id' => $designId, 'position' => 1, 'component_item_id' => $this->item('config-file')->id, 'quantity' => 1,
+            'grade_min' => null, 'grade_max' => null, 'os_slug' => null, 'owner_id' => null, 'system_type' => null, 'ice_min' => null, 'ids_min' => null,
+        ]);
+        $this->file('config-file');
+        $row = InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $design->id, 'quantity' => 1]);
+
+        $this->assertSame(CraftingRefusal::NoSkill, $this->crafting->plan($this->character, $row)->blocked, 'without the skill, a Firewall Exploit is not built');
+
+        app(SkillInjector::class)->grant($this->character, $skill, 1);
+        $this->assertInstanceOf(Craft::class, $this->crafting->start($this->character->fresh(), $row));
+
+        $this->travel(2)->hours();
+        $this->crafting->settle($this->character->fresh());
+        $this->assertSame(1, (int) InventoryItem::query()->where('character_id', $this->character->id)->where('item_id', $key->id)->sum('quantity'), 'the file is in the stash');
+    }
+
     public function test_a_design_copy_is_spent_by_the_craft(): void
     {
         $this->stockRecipe();

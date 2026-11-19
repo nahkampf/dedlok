@@ -97,6 +97,9 @@ enum RunAction: string
     /** A tree run: breach the firewall you stand on, with its OS roll. Moving on through it is the next turn. */
     case Breach = 'breach';
 
+    /** A tree run: open the firewall you stand on with a Firewall Exploit from the stash: no roll, no noise, the key is spent. */
+    case Unlock = 'unlock';
+
     /** A tree run: subvert the security hub you stand on, with the OS roll. Landed, no alert can go off for the run. */
     case Subvert = 'subvert';
 

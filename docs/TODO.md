@@ -5,6 +5,17 @@ what will break if it is left alone.
 
 ---
 
+## Leechers in the run pool (noted 2026-11-19)
+
+The run pool (the *Trade* accordion on the co-op setup screen) leaves **Leechers** out on purpose. A Leecher is spent by installing
+it, and `Leeches::install()` feeds a fortress owned by whoever installs it, so a lent one would be a gift to the claimant's fortress,
+and nothing could be returned. To come back to: when offering a Leecher, **choose how it is shared for the run**, either
+**for the run owner's benefit** (the offerer picks one of their own fortresses before it goes into the pool, and the claimant's
+install feeds *that* one) or **for the claimant's** (free for them to use however they wish, as now). Needs the install to take a
+fortress other than the installer's, and the pool entry to remember the choice.
+
+---
+
 ## Ramdisk: a Utility that turns RAM into storage (noted 2026-11-14)
 
 A new Utility program, **Ramdisk**: while it runs it takes an amount of the deck's RAM (memory) and gives it back as storage.

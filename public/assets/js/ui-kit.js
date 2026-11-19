@@ -1566,6 +1566,9 @@
     // The run screen carries one for as long as it is up. Leaving the page ends it, as it ends everything on the page.
     const runBed = bed(document.body.dataset.runSound);
     if (document.querySelector("[data-run-watch]")) runBed.in();
+    // A district or place carries its own, named by an element on the page.
+    const placeBed = document.querySelector("[data-bed-sound]");
+    if (placeBed) bed(placeBed.dataset.bedSound).in();
     const loopIn = scanBed.in;
     const loopOut = scanBed.out;
     // Leaving the run screen for another page: true when there was a loop to fade, so the caller waits out the fade.
@@ -1735,6 +1738,9 @@
         if (below) below.inert = true;
       }
       address = target;
+      // The forms need the address before the first poll comes back: abandoning during a slow first load posted none (a 400).
+      dlg.querySelectorAll("[data-reading-abandon-address], [data-reading-export-address], [data-reading-jump-address]")
+        .forEach((field) => { field.value = target; });
       refresh();
       timer = setInterval(refresh, 5000);
     }
@@ -2388,6 +2394,9 @@
           const data = await res.json();
           if (data.state !== "open" || data.role !== panel.dataset.partyRole) return location.reload();
           live.forEach((el) => { if (el.innerHTML.trim() !== data.html.trim()) el.innerHTML = data.html; });
+          // The Trade box shows only while somebody else is in the party, and its table follows who offered and claimed what.
+          document.querySelectorAll("[data-party-pool-box]").forEach((el) => { el.hidden = !data.pool_open; });
+          document.querySelectorAll("[data-party-pool]").forEach((el) => { if (data.pool !== undefined && el.innerHTML.trim() !== data.pool.trim()) el.innerHTML = data.pool; });
           document.querySelectorAll("[data-party-gate]").forEach((b) => { b.disabled = !data.ready; });
           document.querySelectorAll("[data-party-hint]").forEach((p) => { p.hidden = data.ready; });
         } catch (e) { /* a missed beat is fine: the next one asks again */ }

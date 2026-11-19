@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Stats;
 
 use App\Models\Character;
+use App\Models\Item;
 use App\Models\Skill;
 use App\Programs\ProgramKind;
 use App\Skills\SkillProgression;
@@ -277,8 +278,8 @@ final class SkillStats
          * tag set and one that speeds a kind targets its id. The base is the design's own (handed in at the call site), so
          * the generic base is nothing; rounded up, at least a second.
          */
-        foreach (ProgramKind::cases() as $kind) {
-            $definitions[self::CRAFTING_PREFIX.$kind->value] = [
+        foreach ([...array_column(ProgramKind::cases(), 'value'), Item::KEY_CRAFT_KIND] as $kind) {
+            $definitions[self::CRAFTING_PREFIX.$kind] = [
                 'tags' => ['crafting_time'],
                 'min' => 1,
                 'max' => null,

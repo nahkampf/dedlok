@@ -4,6 +4,7 @@
 @section('title', $district->name)
 
 @section('content')
+    @include('city._bed', ['kind' => 'districts', 'slug' => $district->slug])
     <p style="margin:0"><a href="{{ route('city.index') }}">{{ Text::get('city.back') }}</a></p>
     <h1 style="margin-top:var(--s-2)"><span aria-hidden="true" style="color:{{ $district->color->token() }}">&#9672;</span> {{ $district->name }}</h1>
     @if ($district->description)

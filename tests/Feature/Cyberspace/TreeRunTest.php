@@ -439,6 +439,63 @@ final class TreeRunTest extends TestCase
         $this->assertSame($before, $run->fresh()->node);
     }
 
+    /** A Firewall Exploit: a data file of this grade (and a size, as the real ones have) in the stash. */
+    private function giveKey(int $grade, int $quantity = 1): InventoryItem
+    {
+        $item = Item::factory()->create(['container' => Item::CONTAINER_DATA, 'size' => 4.0, 'key_grade' => $grade]);
+
+        return InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => $quantity]);
+    }
+
+    public function test_a_firewall_exploit_opens_the_firewall_with_no_roll_and_no_noise_and_is_spent(): void
+    {
+        [, $wall, $after] = $this->firewall();
+        $key = $this->giveKey(4);
+        $run = $this->begin();
+        $run->forceFill(['node' => $wall])->save();
+
+        // The die at its high end fails every roll there is, and a failed stealth roll against the IDS is what makes noise.
+        $this->simulator(1.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Unlock);
+        $run = $run->fresh();
+
+        $this->assertSame([$wall], $run->openedFirewalls());
+        $this->assertSame($wall, $run->node, 'an unlock does not move');
+        $this->assertSame(0.0, (float) $run->noise, 'silent');
+        $this->assertNull(InventoryItem::query()->find($key->id), 'the key is spent');
+
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run, RunAction::Move, node: $after);
+        $this->assertSame($after, $run->fresh()->node, 'and moving on is the next turn');
+    }
+
+    public function test_an_unlock_needs_a_key_strong_enough_for_the_grade_and_a_firewall_to_open(): void
+    {
+        [, $wall] = $this->firewall();
+        $run = $this->begin();
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Unlock)->refusal, 'only on a firewall');
+
+        $run->forceFill(['node' => $wall])->save();
+        $this->assertSame(RunRefusal::NoKey, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Unlock)->refusal, 'none to hand');
+
+        // The system is grade 3: a key of grade 2 does not reach it.
+        $this->giveKey(2);
+        $this->assertSame(RunRefusal::NoKey, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Unlock)->refusal);
+        $this->assertSame([], $run->fresh()->openedFirewalls());
+    }
+
+    public function test_an_unlock_spends_the_weakest_key_that_reaches(): void
+    {
+        [, $wall] = $this->firewall();
+        $strong = $this->giveKey(9);
+        $weak = $this->giveKey(4);
+        $run = $this->begin();
+        $run->forceFill(['node' => $wall])->save();
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Unlock);
+
+        $this->assertNull(InventoryItem::query()->find($weak->id));
+        $this->assertNotNull(InventoryItem::query()->find($strong->id));
+    }
+
     public function test_egress_is_only_from_the_entry(): void
     {
         $run = $this->begin();
@@ -1489,6 +1546,19 @@ final class TreeRunTest extends TestCase
 
         $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
             ->assertSee('name="action" value="extract"', false);
+    }
+
+    public function test_the_run_screen_offers_unlock_on_a_firewall_only_with_a_key(): void
+    {
+        [, $wall] = $this->firewall();
+        $run = $this->begin();
+        $run->forceFill(['node' => $wall])->save();
+        $screen = fn () => $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk();
+
+        $screen()->assertSee('name="action" value="breach"', false)->assertDontSee('name="action" value="unlock"', false);
+
+        $this->giveKey(4);
+        $screen()->assertSee('name="action" value="breach"', false)->assertSee('name="action" value="unlock"', false);
     }
 
     /** @return array{0: Run, 1: Run} The owner's run and the mate's, launched together. */

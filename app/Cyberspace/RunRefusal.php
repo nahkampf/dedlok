@@ -87,6 +87,9 @@ enum RunRefusal: string
     /** A tree run: Nmap with no Nmapper running. */
     case NoNmapper = 'no_nmapper';
 
+    /** A tree run: an Unlock with no Firewall Exploit to hand that is strong enough for this system's grade. */
+    case NoKey = 'no_key';
+
     /** A tree run: a Move on through a firewall nobody has breached yet. */
     case FirewallClosed = 'firewall_closed';
 

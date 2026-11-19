@@ -371,6 +371,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/run/party/{party}/join', [RunPartyController::class, 'join'])->name('run.party.join');
     Route::post('/run/party/accept', [RunPartyController::class, 'accept'])->name('run.party.accept');
     Route::post('/run/party/leave', [RunPartyController::class, 'leave'])->name('run.party.leave');
+    Route::post('/run/party/pool', [RunPartyController::class, 'poolOffer'])->name('run.party.pool.offer');
+    Route::post('/run/party/pool/{entry}/claim', [RunPartyController::class, 'poolClaim'])->name('run.party.pool.claim');
+    Route::post('/run/party/pool/{entry}/return', [RunPartyController::class, 'poolReturn'])->name('run.party.pool.return');
     Route::get('/run', [RunController::class, 'show'])->name('run.show');
     Route::post('/run/act', [RunController::class, 'act'])->name('run.act');
     Route::post('/run/egress', [RunController::class, 'egress'])->name('run.egress');

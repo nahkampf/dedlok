@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.103.0] — 2026-11-19
+
+### Added
+- **Firewall Exploit I–III**: data files (4 / 8 / 11 QB, `items.key_grade` 4 / 6 / 9), not programs. A closed Firewall subnode shows an **Unlock** action when the runner holds a file whose grade covers the system's (lowest sufficient grade is spent). Silent, a guaranteed success, one file consumed (`Simulator::unlock()`, `keyToHand()`, `RunAction::Unlock`, `RunRefusal::NoKey`, `TreeView::$canUnlock`). Admin item form gains a `key_grade` field.
+- **Firewall Exploit Crafting**: skill (rank 16, Memory + Intellect, 3500, off market, stock 25), gating `crafting.gate.firewall_exploit`; recipes at levels 1 / 3 / 5 (`Item::KEY_CRAFT_KIND`, `Item::craftKind()`, `SkillStats` crafting-seconds stat). Loyalty offers at Ninth Circle Security, Lockjaw and TAO, 75 loyalty, grades 1–5, standing 1.
+- **The run pool ("Trade")** on the co-op planning screen: closed by default, shown only with at least one other joined runner. Scripts, run-only programs and Firewall Exploits not in use can be offered ("Add to run pool") and claimed or returned by crew (`RunPool`, `RunPoolItem`, `PoolRefusal`, `run.party.pool.*` routes, `_party_pool*` views, polled by `ui-kit.js`). Unclaimed items go back at launch, a withdrawn one on Return, and a bad ending destroys what was claimed and unused. Leechers excluded for now (`docs/TODO.md`).
+- **District and location sound beds**: `public/assets/sound/{districts,locations}/<slug>.mp3` loops on that page (slug `-` → `_`, leading `the_` dropped), behind the sound toggle (`city/_bed.blade.php`).
+
+### Fixed
+- Abandoning a scan from the reading window before its first status poll had come back posted no address and got a 400: the abandon, export and jump forms now take the address when the window opens (`ui-kit.js`).
+
+### Migrations
+- `2026_11_19_130000_firewall_exploits` — `items.key_grade`; the skill, its imprint, loyalty offers, three items and designs (data skipped under tests).
+- `2026_11_19_150000_the_run_pool` — table `run_pool_items`.
+
+### Notes
+- `avtomata.mp3` renamed `automata_vending.mp3` to match its location's slug.
+- Any new code that deletes a `RunParty` must call `RunPool::refundParty()` first.
+
+
 ## [0.102.1] — 2026-11-19
 
 ### Changed
@@ -4562,7 +4582,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.102.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.103.0...HEAD
+[0.103.0]: https://github.com/nahkampf/dedlok/compare/v0.102.1...v0.103.0
 [0.102.1]: https://github.com/nahkampf/dedlok/compare/v0.102.0...v0.102.1
 [0.102.0]: https://github.com/nahkampf/dedlok/compare/v0.101.5...v0.102.0
 [0.101.5]: https://github.com/nahkampf/dedlok/compare/v0.101.4...v0.101.5

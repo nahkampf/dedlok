@@ -208,6 +208,15 @@
                     @error('size') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
 
+                {{-- A Firewall Exploit is a file of this size whose grade is set here: the highest grade of system whose firewalls it opens. --}}
+                <div class="field" @error('key_grade') data-invalid @enderror>
+                    <label class="field__label" for="key_grade">{{ Text::get('admin.items.fields.key_grade') }}</label>
+                    <input class="input num" id="key_grade" name="key_grade" type="number" min="1" max="9" step="1"
+                           value="{{ old('key_grade', $item?->key_grade) }}">
+                    <span class="field__hint">{{ Text::get('admin.items.fields.key_grade_hint') }}</span>
+                    @error('key_grade') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
                 <div class="field" @error('capacity') data-invalid @enderror>
                     <label class="field__label" for="capacity">{{ Text::get('admin.items.fields.capacity') }}</label>
                     <input class="input num" id="capacity" name="capacity" type="number" min="0" step="0.1"

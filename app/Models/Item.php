@@ -36,7 +36,7 @@ use Illuminate\Support\Str;
 #[Fillable([
     'slug', 'name', 'flavor', 'container', 'tier', 'rarity', 'stackable', 'use_op', 'use_skill_id',
     'weight', 'size', 'capacity', 'accepts', 'hardware', 'board_layout', 'onboard_storage', 'base_cost', 'on_market', 'seed_quantity',
-    'implant_region', 'modifiers',
+    'implant_region', 'modifiers', 'key_grade',
 ])]
 class Item extends Model
 {
@@ -46,6 +46,9 @@ class Item extends Model
     public const CONTAINER_PHYSICAL = 'physical';
 
     public const CONTAINER_DATA = 'data';
+
+    /** The crafting kind of a Firewall Exploit: a file, not a program, so it has no `ProgramKind` (`crafting.gate`, `crafting_seconds.firewall_exploit`). */
+    public const KEY_CRAFT_KIND = 'firewall_exploit';
 
     /** @var list<string> */
     public const CONTAINERS = [self::CONTAINER_PHYSICAL, self::CONTAINER_DATA];
@@ -75,10 +78,17 @@ class Item extends Model
      */
     public const MAX_TIER = 2;
 
+    /** What a Design of this product is built as: its program's kind, or the Firewall Exploit's own; null when it cannot be crafted. */
+    public function craftKind(): ?string
+    {
+        return $this->program?->kind->value ?? ($this->key_grade !== null ? self::KEY_CRAFT_KIND : null);
+    }
+
     protected function casts(): array
     {
         return [
             'implant_region' => BodyRegion::class,
+            'key_grade' => 'integer',
             'modifiers' => 'array',
             'tier' => 'integer',
             'rarity' => Rarity::class,

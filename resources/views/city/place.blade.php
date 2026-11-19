@@ -4,6 +4,7 @@
 @section('title', $place->name)
 
 @section('content')
+    @include('city._bed', ['kind' => 'locations', 'slug' => $place->slug])
     <p style="margin:0"><a href="{{ route('city.district', $place->district) }}">← {{ $place->district->name }}</a></p>
     <h1 style="margin-top:var(--s-2)"><span aria-hidden="true" style="color:{{ $place->district->color->token() }}">&#9672;</span> {{ $place->name }}</h1>
     @if ($place->description)

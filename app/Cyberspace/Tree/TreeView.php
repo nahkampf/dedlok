@@ -70,6 +70,8 @@ final readonly class TreeView
         public bool $tunnelling = false,
         // Standing on a log server before the alert: Wipe shows, greyed out, with nothing yet to wipe.
         public bool $logQuiet = false,
+        // Standing on a closed firewall with a Firewall Exploit that opens it: Unlock is offered beside Breach.
+        public bool $canUnlock = false,
     ) {}
 
     /** What a node is called on the map: a trap reads as a conduit until it is found, and as one again once spent. */
@@ -267,6 +269,7 @@ final readonly class TreeView
             $simulator->refusal($character, $run, RunAction::Tunnel, null) === null,
             $run->tunnel !== null,
             $tree->nodes[$here]['kind'] === NodeKind::Log && ! $run->alerted && $system->os_skill_id !== null,
+            $simulator->refusal($character, $run, RunAction::Unlock, null) === null,
         );
     }
 

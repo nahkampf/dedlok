@@ -7,6 +7,7 @@ namespace App\Cyberspace;
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Cyberspace\Party\Parties;
+use App\Cyberspace\Party\RunPool;
 use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
 use App\Decks\DeckTotals;
@@ -315,6 +316,11 @@ final readonly class RunStarter
             // somehow moved on is not dragged back by an old row finishing.
             if ($character->current_run_id === $run->getKey()) {
                 $character->forceFill(['current_run_id' => null])->save();
+            }
+
+            // What a co-op runner claimed from the run pool and has not used goes back to its offerer, or is destroyed on a bad ending.
+            if ($run->run_party_id !== null) {
+                app(RunPool::class)->settleRun($character, $run, $ending);
             }
 
             // A Loopback or an Egress Tunnel still holding is spent with the run.
