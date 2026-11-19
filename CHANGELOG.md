@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.101.4] — 2026-11-19
+
+### Fixed
+- Lighthouse accessibility: `.tag--info` text is 90% `--info` mixed with `--ink-0` (it was 4.35:1 on the panel, now about 4.9:1; only that tag changes, `--steel` is untouched). The view-range button's `aria-label` now begins with its visible number (`label-content-name-mismatch`).
+- Lighthouse SEO: both layouts carry `<meta name="description">`, reusing `unfurl.description` (`layouts/social-meta.blade.php`).
+
+### Migrations
+- None.
+
+### Deploy
+- Production now runs `mpm_event` with `mod_php` disabled (PHP through the FPM pool socket, as `docs/deploying.md` describes) and `Protocols h2 http/1.1` in the HTTPS vhost, so the site is served over HTTP/2. Done by hand on the server, nothing to repeat.
+
+
 ## [0.101.3] — 2026-11-19
 
 ### Added
@@ -4514,7 +4527,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.3...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.4...HEAD
+[0.101.4]: https://github.com/nahkampf/dedlok/compare/v0.101.3...v0.101.4
 [0.101.3]: https://github.com/nahkampf/dedlok/compare/v0.101.2...v0.101.3
 [0.101.2]: https://github.com/nahkampf/dedlok/compare/v0.101.1...v0.101.2
 [0.101.1]: https://github.com/nahkampf/dedlok/compare/v0.101.0...v0.101.1

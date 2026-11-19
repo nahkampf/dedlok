@@ -1,3 +1,7 @@
+## 0.101.4 (2026-11-19)
+- Some backend details fixed for the switch to http/2 on the production server
+- A few lighthouse issues fixed
+
 ## 0.101.3 (2026-11-19)
 - New subnode type: Tripgate. Lets runners pass only in one direction.
 - Sounds reencoded for a 10x reduction in size
