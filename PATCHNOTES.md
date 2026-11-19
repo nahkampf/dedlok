@@ -1,3 +1,12 @@
+## 0.103.0 (2026-11-19)
+- We now have craftable Firewall Exploits, to bypass a firewall silently and without spending a turn.
+  - Firewall Exploits come in grades I-III, that unlocks different firewall grades.
+  - Exploits are files, that get consumed if you use them.
+  - To craft a Firewall Exploit you need the Firewall Exploit Crafting skill + a few components. Skills are available at a few exchanges.
+- The co-op run planning screen now has a Trade box (when you have one or more runners joined), where you can trade programs, files and scripts before a run. If they are unused at the end of the run they get returned to the player who put them in the pool. A bad ending to a run can destroy them.
+- A few district and locations now have ambient sound
+- A fix for an error 400 when abandon a scan before its first status poll had come back.
+
 ## 0.102.1 (2026-11-19)
 - Leaving a core with an active ICE now needs an evasion roll. This differs from Ensnare by the fact that Ensnare is _much_ harder to evade.
 - If sound is off we don't need to display the "start scan" button.
