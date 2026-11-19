@@ -3675,6 +3675,7 @@ return [
             'kernel_demand' => 'Fortress Kernel resource demand (%)',
             'hitpoints_regen' => 'HP regeneration (per hour)',
             'addiction_recovery' => 'Addiction recovery (per minute)',
+            'fatigue_recovery' => 'fatigue recovery/min',
 
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
             // The key is the tags in alphabetical order, because a set has no
