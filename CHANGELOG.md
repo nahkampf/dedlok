@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.101.5] — 2026-11-19
+
+### Changed
+- The logo is served as WebP: `public/images/logo-{320,560,840,1120}.webp` (lossy, quality 90, alpha kept at full quality; the 1120 copy is 72 KB, the PNG was 283 KB) replace the PNG widths in `home.blade.php` and `errors/page.blade.php`. The `logo-*.png` widths and the `logo.png` master stay in the repo, unused; the command in `home.blade.php` regenerates the WebP set from the master.
+
+### Migrations
+- None.
+
+
 ## [0.101.4] — 2026-11-19
 
 ### Fixed
@@ -4527,7 +4536,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.4...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.101.5...HEAD
+[0.101.5]: https://github.com/nahkampf/dedlok/compare/v0.101.4...v0.101.5
 [0.101.4]: https://github.com/nahkampf/dedlok/compare/v0.101.3...v0.101.4
 [0.101.3]: https://github.com/nahkampf/dedlok/compare/v0.101.2...v0.101.3
 [0.101.2]: https://github.com/nahkampf/dedlok/compare/v0.101.1...v0.101.2

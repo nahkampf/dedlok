@@ -1,3 +1,6 @@
+## 0.101.5 (2026-11-19)
+- Final lighthouse touch: Serve logo as webp
+
 ## 0.101.4 (2026-11-19)
 - Some backend details fixed for the switch to http/2 on the production server
 - A few lighthouse issues fixed
