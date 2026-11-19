@@ -41,6 +41,7 @@
             </div>
 
             <div data-party-live>@include('run._party_members')</div>
+            @include('run._party_pool')
 
             @if ($party->members->count() < $coopSlots)
                 <form method="POST" action="{{ route('run.party.invite') }}" class="row row--wrap" style="--gap:var(--s-2);align-items:center">
@@ -57,6 +58,7 @@
             </form>
         @else
             <div data-party-live>@include('run._party_me')</div>
+            @if ($mine?->joined_at) @include('run._party_pool') @endif
             <p class="micro" style="margin:0;color:var(--ink-3)">
                 {{ Text::get('cyberspace.party.terms', ['credits' => $party->share_credits->label(), 'extraction' => $party->share_extraction->label()]) }}
             </p>

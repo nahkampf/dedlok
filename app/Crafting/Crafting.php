@@ -94,14 +94,14 @@ final class Crafting
         }
 
         $design->loadMissing('components.component', 'product.program');
-        $program = $design->product?->program;
+        $kind = $design->product?->craftKind();
 
-        if ($program === null) {
+        if ($kind === null) {
             return new CraftPlan($row, $design, [], 0, CraftingRefusal::ProductGone);
         }
 
         $seconds = app(Resolver::class)
-            ->resolve(SkillStats::CRAFTING_PREFIX.$program->kind->value, (float) $design->craft_seconds, $character->modifiers())
+            ->resolve(SkillStats::CRAFTING_PREFIX.$kind, (float) $design->craft_seconds, $character->modifiers())
             ->toInt();
 
         $percent = $character->stat('crafting_cost')->value;
@@ -109,8 +109,8 @@ final class Crafting
 
         return new CraftPlan(
             $row, $design, $lines, $seconds,
-            $this->blockedBy($character, $design, $program->kind->value, $lines),
-            $this->missingSkills($character, $design, $program->kind->value),
+            $this->blockedBy($character, $design, $kind, $lines),
+            $this->missingSkills($character, $design, $kind),
         );
     }
 

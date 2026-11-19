@@ -336,9 +336,18 @@ final class Parties
     /** Declining an invitation, leaving the party, or (for the owner) disbanding it: all one door. */
     public function leave(Character $character): void
     {
+        $pool = app(RunPool::class);
+
         // A party with runs still inside stays until the last is out: the others' rounds are settled through it.
-        RunParty::query()->where('owner_character_id', $character->getKey())
-            ->whereNotIn('id', Run::query()->live()->whereNotNull('run_party_id')->select('run_party_id'))->delete();
+        $going = RunParty::query()->where('owner_character_id', $character->getKey())
+            ->whereNotIn('id', Run::query()->live()->whereNotNull('run_party_id')->select('run_party_id'));
+        // What was put in the run pool goes back to its offerers before the party goes, or the cascade would eat it.
+        (clone $going)->pluck('id')->each(fn (int $id) => $pool->refundParty($id));
+        $going->delete();
+
+        // Leaving a party still at the door takes back what you offered, and hands back what you hold.
+        RunPartyMember::query()->where('character_id', $character->getKey())->whereNull('dropped_at')->with('party')->get()
+            ->each(fn (RunPartyMember $m) => $m->party !== null && $m->party->started_at === null ? $pool->refundMember($m->party, $character) : null);
         // A member the launch left out stays until the party is over, so they cannot start a run of their own beside it.
         RunPartyMember::query()->where('character_id', $character->getKey())->whereNull('dropped_at')->delete();
         // A party still at the door whose trace network was theirs falls back to the owner's.
@@ -349,7 +358,9 @@ final class Parties
     /** The owner left cyberspace: a party still forming at the door goes with them, invitations and all. */
     public function abandon(Character $owner): void
     {
-        RunParty::query()->where('owner_character_id', $owner->getKey())->whereNull('started_at')->delete();
+        $forming = RunParty::query()->where('owner_character_id', $owner->getKey())->whereNull('started_at');
+        $forming->pluck('id')->each(fn (int $id) => app(RunPool::class)->refundParty($id));
+        $forming->delete();
     }
 
     /** The party this character owns or is invited to / in, if any. */
@@ -477,6 +488,9 @@ final class Parties
                 (new Notifier)->send($runner, Category::Cyberspace, 'party_started', ['owner' => $owner->handle]);
             }
         }
+
+        // The pool is a planning thing: what nobody claimed (or only a member left out did) goes back to its offerers now.
+        app(RunPool::class)->settleLaunch($party, array_map(static fn (Character $c): int => (int) $c->getKey(), $in));
 
         // Detection is the party's: everybody goes in seeing the same state, not each their own approach roll until round one.
         $partyTurns = app(PartyTurns::class);

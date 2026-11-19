@@ -90,6 +90,17 @@ proposal disagree, this file wins. Decided with the user, 2026-11-13.
   noise) and moving on is the next turn; failed, it holds and it is loud. Until then the nodes past it are not move
   targets (`RunRefusal::FirewallClosed`); back the way you came is always open. (Changed from opening by moving on,
   which offered no action on the firewall itself.)
+- **A firewall also takes a Firewall Exploit** (`RunAction::Unlock`, a button beside Breach, shown only while a key that reaches is
+  in the stash). **No roll, no noise (no tier is passed to `noiseOf()`, so nothing touches the IDS), a guaranteed success, and the key
+  is spent**; the node opens for the whole party as a breached one does. It still costs the turn (the machine's half happens).
+  **A key is a FILE, not a program**: a data item with a size (counted against the deck's storage) and `items.key_grade`, the highest
+  grade of system whose firewalls it opens. `Simulator::keyToHand()` takes the weakest loose, unlisted one that reaches.
+  Only `NodeKind::Firewall` nodes: not the core's OS lock, a barrier, or a hub. It is crafted: `Item::craftKind()` is
+  `firewall_exploit` for such a product (a program's own kind otherwise), gated by Firewall Exploit Crafting
+  (`crafting.gate.firewall_exploit`) at level 1 and each design's own level. Migration `2026_11_19_130000` made the skill and
+  Firewall Exploit I (grade 4, 4 QB, level 1: 2 Config Files), II (grade 6, 8 QB, level 3: a Cipher Fragment and a Config File,
+  both from grade 5) and III (grade 9, 11 QB, level 5: a Cipher Fragment and a Security Profile, both from grade 7), each with its
+  Design Original and Copy.
 
 ## Crash Jackout
 
@@ -107,6 +118,16 @@ proposal disagree, this file wins. Decided with the user, 2026-11-13.
 - **The tree also appears** on the run briefing, in the scanner window, in the map's Interact box, and as a *View* modal
   when inspecting a scan file in the stash.
 - **Allies are marked on the tree**, and reveals are shared: one runner's Nmap clears the fog for the party.
+- **The run pool** (the *Trade* accordion on the co-op setup screen, `App\Cyberspace\Party\RunPool`, the only writer of
+  `run_pool_items`). Closed by default and shown only while somebody else has joined. A runner offers **one copy** of a Script, an
+  icebreaker, an evasion program or a Firewall Exploit file (loose, unlisted, not running, not ticked in their saved loadout; **not
+  Leechers**, see `docs/TODO.md`): it leaves their stash and sits in the pool. Anyone else in the party claims it (it needs room on the
+  claimant's deck), and the claimant can put it back into the pool; the offerer's Return withdraws an unclaimed copy. The table is
+  Handle, Item, Type, Claimed by, Claim/Return. **Unclaimed copies go back to their offerers when the party launches**, and everything
+  goes back when a member leaves or the party is disbanded (refunded BEFORE the party row is deleted: it cascades). A claimant's copy
+  that is still unused when their run ends goes back to the offerer, and is **destroyed if the run ended badly** (`RunEnding::isBad()`:
+  defeat, burnout, ejected); a copy that was used up has nothing to return. Hooks: `RunStarter::endTraced` (`settleRun`),
+  `Parties::launch` (`settleLaunch`), `Parties::leave` and `abandon`, and the lockdown branch of `RunPartyController::status`.
 - **The tree's view in the Interact box is a *View tree* button**, opening the same modal as the stash's scan file.
 - **Everywhere outside a run it is a *View tree* button and one modal** (`#tree-view`, fetched from `cyberspace.tree` or
   `inventory.tree`): in the scanner window, the Interact box, the briefing and on a scan file. It appears once the scan
@@ -497,4 +518,4 @@ Kept up to date as the work grows. Released in 0.97.0 with the flag off; all of 
 - **Loopback and Egress Tunnel items**: none exist yet (Scripts with a strength, 1–20); the user creates and prices them.
   The Loopback's hold roll is flat (spread 8): strength 10 with no skill holds about 47% at grade 5.
 - **The nmap item in the Deck Jockey loadout**: added in the archetype editor at release.
-- **Firewall keys** (C6 in the proposal): crafted one-off items that pass a firewall without its OS roll, consumed on use. To design and build.
+- **Firewall keys** (C6 in the proposal): built, as the Firewall Exploit (see *Backdoors and firewalls*).

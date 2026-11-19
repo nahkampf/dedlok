@@ -20,6 +20,7 @@ return [
         'analyser' => 'analyser_crafting',
         'decryptor' => 'decryptor_crafting',
         'script' => 'script_crafting',
+        'firewall_exploit' => 'firewall_exploit_crafting',
         'leecher' => 'leecher_crafting',
         'kernel' => 'kernel_crafting',
         'fortress_ice' => 'fortress_ice_crafting',

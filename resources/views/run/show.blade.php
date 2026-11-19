@@ -286,6 +286,12 @@
                     {{ Text::get('cyberspace.run.action.breach') }}
                 </button>
             @endif
+            {{-- The same firewall, with a Firewall Exploit in the stash that opens it: no roll, no noise. --}}
+            @if ($tree && $tree->canUnlock)
+                <button type="submit" name="action" value="unlock" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.unlock') }}
+                </button>
+            @endif
             {{-- AN INTERNAL RELAY: a Loopback from the stash holds the trace while they stay. --}}
             @if ($tree && $tree->atRelay)
                 <button type="submit" name="action" value="loopback" class="btn cut btn--go" @if ($tree->loopbackChance === null) disabled @endif>

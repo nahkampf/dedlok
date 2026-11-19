@@ -242,6 +242,8 @@ class ItemRequest extends FormRequest
             // where an implant's effects live.
             'modifiers' => ModifierField::normalise($this->input('modifiers')),
             'implant_region' => $this->filled('implant_region') ? $this->input('implant_region') : null,
+            // A Firewall Exploit's grade: the highest grade of system whose firewalls this file opens. Blank is not one.
+            'key_grade' => $this->numberOrNull('key_grade'),
             // Armour: the slots ticked. An item is armour because it covers at least one, the same
             // way it is a drug because it has a family. An unticked box is simply absent.
             'armour_slots' => array_values(array_filter((array) $this->input('armour_slots', []), static fn ($slot): bool => is_string($slot) && $slot !== '')),
@@ -521,10 +523,10 @@ class ItemRequest extends FormRequest
              */
             'design_product' => $hardware !== null || $isProgram || $isImprint || $isGear || $isDrug || $this->filled('implant_region')
                 ? ['prohibited']
-                : ['nullable', 'integer', Rule::exists('programs', 'item_id'), function (string $attribute, mixed $value, \Closure $fail): void {
-                    $kind = Program::query()->where('item_id', (int) $value)->value('kind');
+                : ['nullable', 'integer', Rule::exists('items', 'id'), function (string $attribute, mixed $value, \Closure $fail): void {
+                    $product = Item::query()->with('program')->find((int) $value);
 
-                    if (! Crafting::builds($kind instanceof ProgramKind ? $kind->value : (string) $kind)) {
+                    if ($product === null || ! Crafting::builds((string) $product->craftKind())) {
                         $fail(Text::get('crafting.refused.uncraftable'));
                     }
                 }],
@@ -608,6 +610,7 @@ class ItemRequest extends FormRequest
              * arrive by migration — which is how the placeholders got in.
              */
             'implant_region' => ['nullable', Rule::enum(BodyRegion::class)],
+            'key_grade' => $isProgram || $hardware !== null ? ['prohibited'] : ['nullable', 'integer', 'min:1', 'max:9'],
         ], $this->slotCountRules(), $this->moduleRules($hardware));
     }
 

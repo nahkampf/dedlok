@@ -6,6 +6,8 @@ namespace App\Http\Controllers;
 
 use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyRefusal;
+use App\Cyberspace\Party\PoolRefusal;
+use App\Cyberspace\Party\RunPool;
 use App\Cyberspace\Party\ShareMode;
 use App\Cyberspace\Position;
 use App\Cyberspace\RunStarter;
@@ -120,6 +122,7 @@ class RunPartyController extends Controller
         // The system shut under the party while it was forming: nothing to go in to. The party is gone for everybody, and
         // the page that asked reloads into the setup screen, which turns the runner away with the reason.
         if (System::query()->at(new Position((int) $party->x, (int) $party->y, (int) ($party->grid_id ?? 1)))->first()?->isLockedDown()) {
+            app(RunPool::class)->refundParty((int) $party->getKey());
             RunParty::query()->whereKey($party->getKey())->delete();
 
             return response()->json(['state' => 'gone']);
@@ -134,6 +137,9 @@ class RunPartyController extends Controller
             'role' => $isOwner ? 'owner' : 'member',
             'ready' => $parties->someoneIsReady($party, $starter),
             'html' => view($isOwner ? 'run._party_members' : 'run._party_me', compact('party', 'character', 'obstacles', 'mine'))->render(),
+            // The Trade box: shown only once somebody else has joined, and its table kept current.
+            'pool_open' => app(RunPool::class)->open($party),
+            'pool' => view('run._party_pool_table', ['party' => $party, 'character' => $character])->render(),
         ]);
     }
 
@@ -173,11 +179,30 @@ class RunPartyController extends Controller
         return [ShareMode::from($data['share_credits']), ShareMode::from($data['share_extraction'])];
     }
 
+    /** Put one copy of a stash item into the run pool. */
+    public function poolOffer(Request $request, RunPool $pool): RedirectResponse
+    {
+        $data = $request->validate(['item' => ['required', 'integer']]);
+
+        return $this->back($pool->offer($this->character($request), (int) $data['item']));
+    }
+
+    public function poolClaim(Request $request, RunPool $pool, int $entry): RedirectResponse
+    {
+        return $this->back($pool->claim($this->character($request), $entry));
+    }
+
+    /** The offerer takes an unclaimed copy back; the claimant puts a claimed one back into the pool. */
+    public function poolReturn(Request $request, RunPool $pool, int $entry): RedirectResponse
+    {
+        return $this->back($pool->release($this->character($request), $entry));
+    }
+
     private function back(mixed $result): RedirectResponse
     {
         $response = redirect()->route('run.setup');
 
-        return $result instanceof PartyRefusal ? $response->with('error', $result->message()) : $response;
+        return $result instanceof PartyRefusal || $result instanceof PoolRefusal ? $response->with('error', $result->message()) : $response;
     }
 
     private function character(Request $request): Character
