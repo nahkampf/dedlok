@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.104.1] — 2026-11-20
+
+### Fixed
+- Abandon scan in the scan window answered 400 in Firefox. The window's forms carry hidden fields that `ui-kit.js` fills in (the address); after a reload Firefox restored a changed hidden field by position and put the address into `_method`, which Laravel refuses. The abandon, export and jump forms in the window are now `autocomplete="off"`. The panel's abandon form, whose address is rendered by the server, was never affected.
+
+### Migrations
+- None.
+
+
 ## [0.104.0] — 2026-11-20
 
 ### Changed
@@ -4601,7 +4610,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.104.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.104.1...HEAD
+[0.104.1]: https://github.com/nahkampf/dedlok/compare/v0.104.0...v0.104.1
 [0.104.0]: https://github.com/nahkampf/dedlok/compare/v0.103.1...v0.104.0
 [0.103.1]: https://github.com/nahkampf/dedlok/compare/v0.103.0...v0.103.1
 [0.103.0]: https://github.com/nahkampf/dedlok/compare/v0.102.1...v0.103.0
