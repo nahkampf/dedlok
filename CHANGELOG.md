@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.104.2] — 2026-11-20
+
+### Changed
+- The runner dot on the cyberspace map names who is there: its tooltip and label read the handles of the runners on that square (`Noodle, flvx`) instead of "Another runner". The legend entry is unchanged, and the dot still opens the list with faces and activity.
+
+### Migrations
+- None.
+
+
 ## [0.104.1] — 2026-11-20
 
 ### Fixed
@@ -4610,7 +4619,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.104.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.104.2...HEAD
+[0.104.2]: https://github.com/nahkampf/dedlok/compare/v0.104.1...v0.104.2
 [0.104.1]: https://github.com/nahkampf/dedlok/compare/v0.104.0...v0.104.1
 [0.104.0]: https://github.com/nahkampf/dedlok/compare/v0.103.1...v0.104.0
 [0.103.1]: https://github.com/nahkampf/dedlok/compare/v0.103.0...v0.103.1
