@@ -1156,6 +1156,9 @@ final class ProbeTest extends TestCase
             ->get(route('cyberspace.index'))
             ->assertOk()
             ->assertSee('data-reading-open="DEADBEEF"', false)
+            // Firefox restores a changed hidden field after a reload, by position: the address landed in _method (a 400).
+            ->assertSee('data-reading-abandon autocomplete="off"', false)
+            ->assertSee('data-reading-export hidden autocomplete="off"', false)
             ->assertSee(Text::get('cyberspace.reading.title'));
     }
 
