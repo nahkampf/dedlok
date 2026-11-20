@@ -198,6 +198,8 @@ final class WardenTest extends TestCase
         $other = Character::factory()->create();
         Character::query()->whereKey($other->id)->update(['grid_id' => 2, 'grid_x' => 4, 'grid_y' => 3]);
         $this->assertStringContainsString('class="cell__runner"', $page());
+        // The dot's tooltip names who is there, not just that somebody is.
+        $this->assertStringContainsString('title="'.$other->handle.'"', $page());
 
         Character::query()->whereKey($other->id)->update(['grid_x' => null, 'grid_y' => null]);
         $this->assertStringNotContainsString('class="cell__runner"', $page());

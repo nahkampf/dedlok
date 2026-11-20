@@ -1,3 +1,6 @@
+## 0.104.2 (2026-11-20)
+- Show the handles of the runners when hovering over "other players here" on the cyberspace map
+
 ## 0.104.1 (2026-11-20)
 - A quirk in how firefox handles restoring hidden fields might have been the problem with the scan 400s, patched now.
 
