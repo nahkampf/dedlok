@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.104.0] — 2026-11-20
+
+### Changed
+- The scan window's status poll and every settle cost less for a long-time scanner. `system_scans` gains the index `idx_system_scans_ready` (`character_id`, `pass_ready_at`), so "which reads have matured" no longer walks all of a character's scan rows (about 31 ms against 4 ms on production for 5,000 rows against 600). `Swarm::pick()` reads the main grid's scannable addresses through a one-minute cache (`swarm.pool`) instead of every poll (about 70 ms each).
+- A 400 now logs its reason and what the request carried (`bootstrap/app.php`: exception class, message, method, path, field names with short values, content type) before the error page renders as before. Laravel reports none of them, and abandoning a scan on production answered 400 with nothing to read. Look for `400:` in `storage/logs/laravel.log`.
+
+### Migrations
+- `2026_11_20_100000_scans_indexed_by_pass_ready` — an index only, no data. On a table of this size it builds in well under a second.
+
+
 ## [0.103.1] — 2026-11-19
 
 ### Fixed
@@ -4591,7 +4601,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.103.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.104.0...HEAD
+[0.104.0]: https://github.com/nahkampf/dedlok/compare/v0.103.1...v0.104.0
 [0.103.1]: https://github.com/nahkampf/dedlok/compare/v0.103.0...v0.103.1
 [0.103.0]: https://github.com/nahkampf/dedlok/compare/v0.102.1...v0.103.0
 [0.102.1]: https://github.com/nahkampf/dedlok/compare/v0.102.0...v0.102.1
