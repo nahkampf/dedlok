@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.105.0] — 2026-11-20
+
+### Added
+- Bureau of Network Integrity, Joint Signals Command, Lockjaw, Ninth Circle Security and TAO buy Memory Dump at 80% of market value (`entity_buys`: grades 1-5, no cap). Nobody bought it before.
+
+### Migrations
+- `2026_11_20_120000_buyers_for_memory_dumps` — data only; an existing row for the same entity and item is set to these terms, none is duplicated. Skipped under tests and where an entity or the item is missing.
+
+
 ## [0.104.2] — 2026-11-20
 
 ### Changed
@@ -4619,7 +4628,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.104.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.105.0...HEAD
+[0.105.0]: https://github.com/nahkampf/dedlok/compare/v0.104.2...v0.105.0
 [0.104.2]: https://github.com/nahkampf/dedlok/compare/v0.104.1...v0.104.2
 [0.104.1]: https://github.com/nahkampf/dedlok/compare/v0.104.0...v0.104.1
 [0.104.0]: https://github.com/nahkampf/dedlok/compare/v0.103.1...v0.104.0

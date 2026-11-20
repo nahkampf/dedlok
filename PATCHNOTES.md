@@ -1,3 +1,6 @@
+## 0.105.0 (2026-11-20)
+- Bureau of Network Integrity, Joint Signals Command, Lockjaw, Ninth Circle Security and TAO now buys Memory Dumps
+
 ## 0.104.2 (2026-11-20)
 - Show the handles of the runners when hovering over "other players here" on the cyberspace map
 
