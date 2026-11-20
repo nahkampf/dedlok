@@ -1,3 +1,7 @@
+## 0.104.0 (2026-11-20)
+- Some indexes for system scans to hedge our bets
+- Log 400s from inside Laravel with full stack trace
+
 ## 0.103.1 (2026-11-19)
 - Maybe a fix for a slow "Show scan" fill-in?
 
