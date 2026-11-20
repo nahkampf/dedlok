@@ -624,7 +624,8 @@
              left to abandon, so both of those become lies and the only honest
              button is the one that names the window. The poll does the swap. --}}
         <div class="panel__ft">
-            <form method="POST" action="{{ route('cyberspace.abandon') }}" data-reading-abandon>
+            {{-- autocomplete="off": Firefox restores a hidden field's changed value after a reload, by position, and put the address ui-kit.js had set into _method (a 400). --}}
+            <form method="POST" action="{{ route('cyberspace.abandon') }}" data-reading-abandon autocomplete="off">
                 @csrf @method('DELETE')
                 <input type="hidden" name="address" data-reading-abandon-address value="">
                 <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('cyberspace.reading.abandon') }}</button>
@@ -636,7 +637,7 @@
                  App\Cyberspace\ScanExporter. The cost is on the button's own
                  title rather than behind a confirmation: nothing is destroyed,
                  the read simply becomes the thing you can sell. --}}
-            <form method="POST" action="{{ route('cyberspace.export') }}" data-reading-export hidden>
+            <form method="POST" action="{{ route('cyberspace.export') }}" data-reading-export hidden autocomplete="off">
                 @csrf
                 <input type="hidden" name="address" data-reading-export-address value="">
                 <button type="submit" class="btn btn--sm cut"

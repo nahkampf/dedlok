@@ -1,3 +1,6 @@
+## 0.104.1 (2026-11-20)
+- A quirk in how firefox handles restoring hidden fields might have been the problem with the scan 400s, patched now.
+
 ## 0.104.0 (2026-11-20)
 - Some indexes for system scans to hedge our bets
 - Log 400s from inside Laravel with full stack trace
