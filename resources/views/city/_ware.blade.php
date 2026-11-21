@@ -11,7 +11,7 @@
 
                                 <div class="card__bd stack" style="--gap:var(--s-2)">
                                     @if ($item->flavor)
-                                        <span class="micro" style="color:var(--ink-3)">{{ $item->flavor }}</span>
+                                        <span style="color:var(--ink-3);font-size:var(--fs-sm)">{{ $item->flavor }}</span>
                                     @endif
 
                                     <x-program-spec :item="$item" />
