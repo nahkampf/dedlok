@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.106.0] — 2026-11-21
+
+### Changed
+- Aegis Compute 14 and Veritas Model 9100 (Socket G CPUs) are no longer sold on the market: both are `on_market = false` and their shelf rows are gone. Chrome Palace sells them instead, at 7400 and 10200 (about 1.15 x base cost), two on the shelf and one restocked every five hours.
+
+### Migrations
+- `2026_11_21_100000_two_cpus_move_to_chrome_palace` — data only; skipped under tests and where Chrome Palace or an item is missing. An existing shop row for the pair is set to these terms, none is duplicated.
+
+
 ## [0.105.1] — 2026-11-21
 
 ### Fixed
@@ -4637,7 +4646,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.105.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.106.0...HEAD
+[0.106.0]: https://github.com/nahkampf/dedlok/compare/v0.105.1...v0.106.0
 [0.105.1]: https://github.com/nahkampf/dedlok/compare/v0.105.0...v0.105.1
 [0.105.0]: https://github.com/nahkampf/dedlok/compare/v0.104.2...v0.105.0
 [0.104.2]: https://github.com/nahkampf/dedlok/compare/v0.104.1...v0.104.2
