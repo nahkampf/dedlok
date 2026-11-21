@@ -1,3 +1,6 @@
+## 0.105.1 (2026-11-21)
+- Display the "Enter fortress" button in Interact for runners invited to a fortress
+
 ## 0.105.0 (2026-11-20)
 - Bureau of Network Integrity, Joint Signals Command, Lockjaw, Ninth Circle Security and TAO now buys Memory Dumps
 

@@ -1635,6 +1635,7 @@ return [
                 'nothing' => 'Nothing installed.',
                 'from_stash' => 'From your stash',
                 'administer' => 'Administer this fortress',
+                'enter' => 'Enter fortress',
                 'settings' => 'Settings',
                 'name' => 'Name',
                 'access' => 'Access',

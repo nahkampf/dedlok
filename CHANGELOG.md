@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.105.1] — 2026-11-21
+
+### Fixed
+- Someone invited to a Data Fortress had no way in from the map: the link to the fortress page was shown only to the owner. Anyone admitted now gets a green button in the Interact box, "Enter fortress" for members and "Administer this fortress" for the owner (`cyberspace.fortress.host.enter`). It replaces the plain link under the map.
+
+### Migrations
+- None.
+
+
 ## [0.105.0] — 2026-11-20
 
 ### Added
@@ -4628,7 +4637,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.105.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.105.1...HEAD
+[0.105.1]: https://github.com/nahkampf/dedlok/compare/v0.105.0...v0.105.1
 [0.105.0]: https://github.com/nahkampf/dedlok/compare/v0.104.2...v0.105.0
 [0.104.2]: https://github.com/nahkampf/dedlok/compare/v0.104.1...v0.104.2
 [0.104.1]: https://github.com/nahkampf/dedlok/compare/v0.104.0...v0.104.1
