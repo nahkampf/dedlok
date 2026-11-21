@@ -266,10 +266,6 @@
 
     <p class="micro" style="color:var(--ink-2);margin-top:var(--s-2)">{{ Text::get('cyberspace.map.keys') }}</p>
 
-    @if ($target && $target->type->isFortress() && (int) $target->owner_character_id === $character->id)
-        <a class="btn btn--sm cut" style="margin-top:var(--s-3)" href="{{ route('fortress.show', $target) }}">{{ Text::get('cyberspace.fortress.host.administer') }}</a>
-    @endif
-
     @if ($target && $target->type->isFortress() && \App\Cyberspace\FortressMarket::isOpen($target) && \App\Cyberspace\FortressMarket::mayVisit($character, $target))
         <a class="btn btn--sm cut" style="margin-top:var(--s-3)" href="{{ route('fortress.market', $target) }}">{{ Text::get('cyberspace.fortress.host.visit') }}</a>
     @endif
@@ -370,6 +366,9 @@
                              The scan beside it is a plain button, so there is never a second filled
                              one next to it. --}}
                         <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            @if ($target->type->isFortress() && \App\Cyberspace\FortressAccess::admitted($character, $target))
+                                <a class="btn btn--go cut" href="{{ route('fortress.show', $target) }}">{{ Text::get((int) $target->owner_character_id === $character->id ? 'cyberspace.fortress.host.administer' : 'cyberspace.fortress.host.enter') }}</a>
+                            @endif
                             @if ($canRun)
                                 <a class="btn {{ $invitedHere ? 'btn--join' : ($scan?->isComplete() ? 'btn--go' : 'btn--warn') }} cut" href="{{ route('run.setup') }}">
                                     {{ Text::get($invitedHere ? 'cyberspace.run.setup.join' : 'cyberspace.run.setup.open') }}
