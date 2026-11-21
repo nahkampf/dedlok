@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.106.1] — 2026-11-21
+
+### Added
+- A design's card (Copy or Original) lists the components it takes with their filters and base quantities, the skills that gate the build, and what it produces: the program's name, spec lines and description (`Crafting::requirements()`).
+
+### Changed
+- "Suspend background processes" on the run briefing remembers what was ticked at the last run, per program and number of copies (cookie `run_suspend`). A program stopped since is simply not offered; one not offered last time takes the old default, Analysers ticked.
+- The component filter wording on a recipe line is shorter (`>= grade`, `ICE >= n`).
+
+### Migrations
+- None.
+
+
 ## [0.106.0] — 2026-11-21
 
 ### Changed
@@ -4646,7 +4659,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.106.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.106.1...HEAD
+[0.106.1]: https://github.com/nahkampf/dedlok/compare/v0.106.0...v0.106.1
 [0.106.0]: https://github.com/nahkampf/dedlok/compare/v0.105.1...v0.106.0
 [0.105.1]: https://github.com/nahkampf/dedlok/compare/v0.105.0...v0.105.1
 [0.105.0]: https://github.com/nahkampf/dedlok/compare/v0.104.2...v0.105.0

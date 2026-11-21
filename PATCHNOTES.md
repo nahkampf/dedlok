@@ -1,3 +1,7 @@
+## 0.106.1 (2026-11-21)
+- Designs (copy or original) now lists the components and skills required, plus the important info about the actual program.
+- "Suspend background processes" now remember your settings
+
 ## 0.106.0 (2026-11-21)
 - A few minor updates about cyberdeck market/sales
 
