@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.107.0] — 2026-11-21
+
+### Added
+- The buy listings (market, city wares, exchange / loyalty store) show a design's components, gating skills and product (name, spec lines, description), and an imprint's skill description and per-level effects. Lives in `<x-program-spec>`.
+
+### Changed
+- In those listings effects are green, a program's deck costs sand, a design's components, skills and product white under grey headers, and descriptions use the normal font instead of the mono label style.
+- Chrome Palace buys every item of deck hardware at 70% of its cost, no cap.
+
+### Migrations
+- `2026_11_21_120000_chrome_palace_buys_deck_hardware` — data only; skipped under tests and where Chrome Palace is missing. An existing buy row for the pair is set to these terms, none is duplicated.
+
+
 ## [0.106.1] — 2026-11-21
 
 ### Added
@@ -4659,7 +4672,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.106.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.107.0...HEAD
+[0.107.0]: https://github.com/nahkampf/dedlok/compare/v0.106.1...v0.107.0
 [0.106.1]: https://github.com/nahkampf/dedlok/compare/v0.106.0...v0.106.1
 [0.106.0]: https://github.com/nahkampf/dedlok/compare/v0.105.1...v0.106.0
 [0.105.1]: https://github.com/nahkampf/dedlok/compare/v0.105.0...v0.105.1
