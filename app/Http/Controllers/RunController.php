@@ -67,6 +67,9 @@ class RunController extends Controller
 
     private const LOADOUT_MINUTES = 60 * 24 * 365;
 
+    /** What Suspend had ticked at the last run, as `itemId:copies` pairs for every process it offered then. */
+    private const SUSPEND_COOKIE = 'run_suspend';
+
     public function __construct(private readonly RunStarter $runs) {}
 
     /**
@@ -232,6 +235,7 @@ class RunController extends Controller
             // The background processes that may be switched off for this run, and which of them cannot be because the
             // deck would then hold less than is stored on it.
             'suspendable' => $suspendable = app(ProgramRunner::class)->suspendable($character),
+            'suspendTicked' => $this->suspendTicked($request, $suspendable),
             'suspendBlocked' => $suspendable
                 ->filter(fn (InventoryItem $row): bool => app(ProgramRunner::class)->wouldOverfill($character, [$row->id]))
                 ->pluck('id')->all(),
@@ -382,6 +386,10 @@ class RunController extends Controller
             return back()->with('error', PartyRefusal::NotAtTheDoor->message());
         }
 
+        // Asked before the launch stops anything: the memory covers every process offered, so one left unticked is
+        // remembered as unticked and one that is new is not remembered at all.
+        $offered = app(ProgramRunner::class)->suspendable($character);
+
         $result = $parties->launch(
             $character,
             RunPurpose::from($data['purpose']),
@@ -398,11 +406,50 @@ class RunController extends Controller
 
         // A loadout that WENT IN is remembered, so the next briefing starts
         // from it — including an empty one, which is a choice too.
+        $suspended = array_map('intval', $data['suspend'] ?? []);
+        $memory = $offered->groupBy('item_id')
+            ->map(fn (Collection $copies, int|string $item): string => $item.':'.$copies->whereIn('id', $suspended)->count())
+            ->implode(',');
+
         return redirect()->route('run.show')->withCookie(cookie(
             self::LOADOUT_COOKIE,
             $rows->pluck('item_id')->unique()->implode(','),
             self::LOADOUT_MINUTES,
-        ));
+        ))->withCookie(cookie(self::SUSPEND_COOKIE, $memory, self::LOADOUT_MINUTES));
+    }
+
+    /**
+     * The running copies to tick on the briefing: as many of each program as were ticked last time, the first ones in
+     * the list. A program Suspend did not offer then (new, or stopped at the time) has no memory and takes its default,
+     * the Analysers ticked. What is stopped now is simply not in `$offered`, so the memory never names a missing row.
+     *
+     * @param  Collection<int, InventoryItem>  $offered
+     * @return list<int>
+     */
+    private function suspendTicked(Request $request, Collection $offered): array
+    {
+        $memory = [];
+
+        foreach (explode(',', (string) $request->cookie(self::SUSPEND_COOKIE, '')) as $pair) {
+            [$item, $count] = array_pad(explode(':', $pair), 2, null);
+
+            if (is_numeric($item) && is_numeric($count)) {
+                $memory[(int) $item] = (int) $count;
+            }
+        }
+
+        $seen = [];
+        $ticked = [];
+
+        foreach ($offered as $row) {
+            $nth = $seen[$row->item_id] = ($seen[$row->item_id] ?? 0) + 1;
+
+            if (isset($memory[$row->item_id]) ? $nth <= $memory[$row->item_id] : $row->item->program->kind === ProgramKind::Analyser) {
+                $ticked[] = $row->id;
+            }
+        }
+
+        return $ticked;
     }
 
     /** @return list<int> */

@@ -114,6 +114,36 @@ final class Crafting
         );
     }
 
+    /**
+     * What a design takes, for anybody to read (the card): its component lines at their base quantity, and the skill levels
+     * that gate the build. Nothing about who holds it: `plan()` is what a particular character would meet.
+     *
+     * @return array{lines: list<array{label: string, quantity: int}>, skills: list<array{title: string, level: int}>}
+     */
+    public function requirements(Design $design): array
+    {
+        $design->loadMissing('components.component', 'product.program', 'skill');
+
+        $lines = $design->components->map(fn (DesignComponent $line): array => ['label' => $this->describe($line), 'quantity' => (int) $line->quantity])->all();
+
+        $kind = $design->product?->craftKind();
+        $gates = [
+            [config('crafting.general_skill'), (int) config('crafting.general_level', 1)],
+            [$kind === null ? null : config("crafting.gate.{$kind}"), (int) config('crafting.gate_level', 1)],
+            [$design->skill?->slug, $design->skill_level],
+        ];
+
+        $skills = [];
+
+        foreach ($gates as [$slug, $level]) {
+            if ($slug !== null && SkillStats::skills()->has((string) $slug)) {
+                $skills[] = ['title' => SkillStats::skills()->get((string) $slug)->title, 'level' => (int) $level];
+            }
+        }
+
+        return ['lines' => $lines, 'skills' => $skills];
+    }
+
     // ---- what a press does ------------------------------------------------
 
     public function start(Character $character, InventoryItem $row, bool $confirmWaste = false): CraftingRefusal|Craft

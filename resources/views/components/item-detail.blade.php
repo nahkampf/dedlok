@@ -149,6 +149,33 @@
         </div>
     @endif
 
+    {{-- A design: what it takes to build (components and skills) and what it makes, the product's own spec lines. --}}
+    @if ($item->design?->product)
+        @php($recipe = \App\Crafting\Crafting::make()->requirements($item->design))
+        @php($product = $item->design->product)
+        <div class="item-card__stats">
+            <div class="item-card__stat"><span>{{ Text::get('crafting.card.components') }}</span></div>
+            @foreach ($recipe['lines'] as $line)
+                <div class="item-card__stat"><span>{{ $line['label'] }}</span><b>{{ $line['quantity'] }}</b></div>
+            @endforeach
+        </div>
+        @if ($recipe['skills'] !== [])
+            <div class="item-card__stats">
+                <div class="item-card__stat"><span>{{ Text::get('crafting.card.skills') }}</span></div>
+                @foreach ($recipe['skills'] as $need)
+                    <div class="item-card__stat"><span>{{ $need['title'] }}</span><b>{{ $need['level'] }}</b></div>
+                @endforeach
+            </div>
+        @endif
+        <div class="item-card__stats">
+            <div class="item-card__stat"><span>{{ Text::get('crafting.card.produces') }}</span><b>{{ $product->displayName() }}</b></div>
+            <x-program-spec :item="$product" />
+        </div>
+        @if ($product->displayFlavor())
+            <div class="item-card__flavor">{{ $product->displayFlavor() }}</div>
+        @endif
+    @endif
+
     @if ($item->displayFlavor())
         <div class="item-card__flavor">{{ $item->displayFlavor() }}</div>
     @endif

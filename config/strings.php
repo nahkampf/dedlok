@@ -3863,15 +3863,22 @@ return [
         'cancelled' => 'You gave it up. The components are gone.',
 
         'filter' => [
-            'grade_min' => 'grade :grade or higher',
-            'grade_max' => 'grade :grade or lower',
-            'grade_between' => 'grade :min to :max',
-            'ice_min' => 'ICE :level or more',
-            'ids_min' => 'IDS :level or more',
+            'grade_min' => '>= grade:grade',
+            'grade_max' => '<= grade :grade',
+            'grade_between' => 'grade :min-:max',
+            'ice_min' => 'ICE >= :level',
+            'ids_min' => 'IDS >= :level',
             'unknown_owner' => 'an owner that is gone',
         ],
 
         'skills_missing' => 'Skills missing',
+
+        // The design's card. Placeholder wording, to be written.
+        'card' => [
+            'components' => 'Components reqd',
+            'skills' => 'Skills reqd',
+            'produces' => 'Produces',
+        ],
 
         'refused' => [
             'not_a_design' => 'That is not a design in your hands.',
