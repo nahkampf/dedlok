@@ -16,6 +16,7 @@ use App\Models\Notification;
 use App\Models\Skill;
 use App\Programs\ProgramRunner;
 use App\Support\Qb;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
@@ -245,7 +246,7 @@ final class CraftingTest extends TestCase
         $this->design();
 
         $this->actingAs($this->character->user)->get(route('deck.show', $this->character->equipped_deck_id))
-            ->assertOk()->assertDontSee('isNotEmpty()', false)->assertSee('DUMMY_TEMPORARY_PROGRAM')->assertSee('Design Original')->assertSee('Memory Dump (grade 1 or higher)');
+            ->assertOk()->assertDontSee('isNotEmpty()', false)->assertSee('DUMMY_TEMPORARY_PROGRAM')->assertSee('Design Original')->assertSee('Memory Dump ('.Text::get('crafting.filter.grade_min', ['grade' => 1]).')');
     }
 
     public function test_components_of_one_kind_and_origin_are_one_slot_in_the_stash_but_stay_separate_rows(): void
