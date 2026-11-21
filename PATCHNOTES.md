@@ -1,3 +1,7 @@
+## 0.107.0 (2026-11-21)
+- Chrome Palace now buys your second hand deckware for 70% of its list price, no caps
+- Updated the item view at stores so you get better information about what a thing does
+
 ## 0.106.1 (2026-11-21)
 - Designs (copy or original) now lists the components and skills required, plus the important info about the actual program.
 - "Suspend background processes" now remember your settings

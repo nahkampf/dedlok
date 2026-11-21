@@ -32,7 +32,7 @@
                                 @if ($service)
                                     <span class="micro" style="color:var(--ink-3)">{{ $service->describe((float) $offer->service_amount) }}</span>
                                 @elseif ($item->displayFlavor())
-                                    <span class="micro" style="color:var(--ink-3)">{{ $item->displayFlavor() }}</span>
+                                    <span style="color:var(--ink-3);font-size:var(--fs-sm)">{{ $item->displayFlavor() }}</span>
                                 @endif
                                 @if ($item)
                                     <x-program-spec :item="$item" />
